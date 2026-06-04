@@ -68,16 +68,18 @@ export default function AuthSimpleLayout({
                         </div>
 
                         {/* Privacy Notice - Top of Form */}
-                        <div className="bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-5">
-                            <div className="flex items-start gap-3">
-                                <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <h3 className="text-sm font-semibold text-orange-900 dark:text-orange-100 mb-1">
-                                        Privacy Notice
-                                    </h3>
-                                    <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
-                                        Personal information collected through this form is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the e-Dalaw system.
-                                    </p>
+                        <div className="mx-auto w-full max-w-md">
+                            <div className="bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-5">
+                                <div className="flex items-start gap-3">
+                                    <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-orange-900 dark:text-orange-100 mb-1">
+                                            Privacy Notice
+                                        </h3>
+                                        <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                                            Personal information collected through this form is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the e-Dalaw system.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

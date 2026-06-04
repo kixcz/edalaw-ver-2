@@ -197,11 +197,12 @@ export default function Register({ visitor_role_id }: Props) {
             description="Enter your details below to create your account"
         >
             <Head title="Register" />
-            <form
-                ref={formRef}
-                onSubmit={handleSubmit}
-                className="flex flex-col gap-6"
-            >
+            <div className="mx-auto w-full max-w-md">
+                <form
+                    ref={formRef}
+                    onSubmit={handleSubmit}
+                    className="flex flex-col gap-6"
+                >
                 <div className="grid gap-6 rounded-lg border p-6">
                     <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Personal Information</h3>
@@ -556,6 +557,7 @@ export default function Register({ visitor_role_id }: Props) {
                     </TextLink>
                 </div>
             </form>
+            </div>
         </AuthLayout>
     );
 }

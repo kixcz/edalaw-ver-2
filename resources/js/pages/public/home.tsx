@@ -375,17 +375,17 @@ export default function Home() {
             </section>
 
             {/* Features Section */}
-            <section className="py-[90px] bg-white">
+            <section className="py-[90px] bg-white dark:bg-gray-900 transition-colors duration-300">
                 <div className="max-w-[1200px] mx-auto px-[5%]">
                     <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-500 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
+                        <div className="inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 text-orange-500 dark:text-orange-400 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
                             <Shield className="w-3.5 h-3.5" />
                             Core Features
                         </div>
-                        <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 leading-tight mb-3.5">
+                        <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 dark:text-white leading-tight mb-3.5">
                             Key <span className="text-orange-500">Features</span>
                         </h2>
-                        <p className="text-base text-slate-600 max-w-[580px] mx-auto leading-relaxed">
+                        <p className="text-base text-slate-600 dark:text-gray-400 max-w-[580px] mx-auto leading-relaxed">
                             Comprehensive visitation management tools designed for security, efficiency, and accessibility
                         </p>
                     </div>
@@ -396,13 +396,13 @@ export default function Home() {
                             return (
                                 <div
                                     key={feature.title}
-                                    className="group p-8 bg-white border-2 border-gray-200 rounded-xl hover:border-orange-500 hover:shadow-xl transition-all duration-300 cursor-default"
+                                    className="group p-8 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-orange-500 hover:shadow-xl transition-all duration-300 cursor-default"
                                 >
-                                    <div className="w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center mb-6 group-hover:bg-orange-500 transition-colors">
+                                    <div className="w-16 h-16 bg-orange-100 dark:bg-orange-950/50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-orange-500 transition-colors">
                                         <Icon className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
                                     </div>
-                                    <h3 className="text-xl font-semibold text-slate-800 mb-3">{feature.title}</h3>
-                                    <p className="text-slate-600 leading-relaxed text-sm">{feature.description}</p>
+                                    <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">{feature.title}</h3>
+                                    <p className="text-slate-600 dark:text-gray-400 leading-relaxed text-sm">{feature.description}</p>
                                 </div>
                             );
                         })}
@@ -411,17 +411,17 @@ export default function Home() {
             </section>
 
             {/* How It Works Section */}
-            <section className="py-[90px] bg-gray-50">
+            <section className="py-[90px] bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
                 <div className="max-w-[1200px] mx-auto px-[5%]">
                     <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-500 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
+                        <div className="inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 text-orange-500 dark:text-orange-400 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
                             <Radio className="w-3.5 h-3.5" />
                             Process
                         </div>
-                        <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 leading-tight mb-3.5">
+                        <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 dark:text-white leading-tight mb-3.5">
                             How It <span className="text-orange-500">Works</span>
                         </h2>
-                        <p className="text-base text-slate-600 max-w-[580px] mx-auto leading-relaxed">
+                        <p className="text-base text-slate-600 dark:text-gray-400 max-w-[580px] mx-auto leading-relaxed">
                             Simple, secure, and streamlined process for managing visitations
                         </p>
                     </div>
@@ -431,13 +431,13 @@ export default function Home() {
                             const Icon = step.icon;
                             return (
                                 <div key={step.number} className="relative">
-                                    <div className="bg-white p-6 rounded-xl shadow-md text-center relative z-10 hover:shadow-lg transition-shadow">
+                                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md text-center relative z-10 hover:shadow-lg transition-shadow">
                                         <div className="w-14 h-14 bg-orange-500 text-white rounded-xl flex items-center justify-center mx-auto mb-4">
                                             <Icon className="w-6 h-6" />
                                         </div>
                                         <div className="text-xs font-bold text-orange-500 mb-1">STEP {step.number}</div>
-                                        <h3 className="text-base font-semibold text-slate-800 mb-2">{step.title}</h3>
-                                        <p className="text-xs text-slate-600">{step.description}</p>
+                                        <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-2">{step.title}</h3>
+                                        <p className="text-xs text-slate-600 dark:text-gray-400">{step.description}</p>
                                     </div>
                                     {index < steps.length - 1 && (
                                         <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-0">
@@ -468,7 +468,10 @@ export default function Home() {
                         {stats.map((stat) => {
                             const Icon = stat.icon;
                             return (
-                                <div key={stat.label} className="text-center text-white">
+                                <div 
+                                    key={stat.label} 
+                                    className="text-center text-white"
+                                >
                                     <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-4">
                                         <Icon className="w-8 h-8" />
                                     </div>
@@ -482,17 +485,17 @@ export default function Home() {
             </section>
 
             {/* FAQ Preview Section */}
-            <section className="py-[90px] bg-white">
+            <section className="py-[90px] bg-white dark:bg-gray-900 transition-colors duration-300">
                 <div className="max-w-[1200px] mx-auto px-[5%]">
                     <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-500 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
+                        <div className="inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 text-orange-500 dark:text-orange-400 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
                             <MessageSquare className="w-3.5 h-3.5" />
                             Support
                         </div>
-                        <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 leading-tight mb-3.5">
+                        <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 dark:text-white leading-tight mb-3.5">
                             Frequently Asked <span className="text-orange-500">Questions</span>
                         </h2>
-                        <p className="text-base text-slate-600 max-w-[580px] mx-auto leading-relaxed">
+                        <p className="text-base text-slate-600 dark:text-gray-400 max-w-[580px] mx-auto leading-relaxed">
                             Quick answers to common questions about e-Dalaw
                         </p>
                     </div>
@@ -501,10 +504,10 @@ export default function Home() {
                         {faqPreview.map((item, index) => (
                             <div
                                 key={index}
-                                className="p-6 bg-gray-50 rounded-xl border border-gray-200 hover:border-orange-300 transition-colors"
+                                className="p-6 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700 transition-colors"
                             >
-                                <h3 className="text-base font-semibold text-slate-800 mb-3">{item.question}</h3>
-                                <p className="text-slate-600 leading-relaxed text-sm">{item.answer}</p>
+                                <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-3">{item.question}</h3>
+                                <p className="text-slate-600 dark:text-gray-400 leading-relaxed text-sm">{item.answer}</p>
                             </div>
                         ))}
                     </div>
@@ -512,7 +515,7 @@ export default function Home() {
                     <div className="text-center mt-12">
                         <Link
                             href={faq()}
-                            className="inline-flex items-center gap-2 px-6 py-3 border-2 border-orange-500 text-orange-500 font-semibold rounded-lg hover:bg-orange-50 transition-all no-underline"
+                            className="inline-flex items-center gap-2 px-6 py-3 border-2 border-orange-500 text-orange-500 dark:text-orange-400 font-semibold rounded-lg hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all no-underline"
                         >
                             View All FAQs
                             <ChevronRight className="w-5 h-5" />
@@ -522,18 +525,18 @@ export default function Home() {
             </section>
 
             {/* Contact CTA Section */}
-            <section className="py-[90px] bg-gray-50">
+            <section className="py-[90px] bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
                 <div className="max-w-[1200px] mx-auto px-[5%]">
-                    <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 border border-gray-200">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 md:p-12 border border-gray-200 dark:border-gray-700">
                         <div className="text-center max-w-3xl mx-auto">
-                            <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-500 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20 mx-auto w-fit">
+                            <div className="inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 text-orange-500 dark:text-orange-400 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20 mx-auto w-fit">
                                 <Phone className="w-3.5 h-3.5" />
                                 Support
                             </div>
-                            <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 leading-tight mb-3.5">
+                            <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 dark:text-white leading-tight mb-3.5">
                                 Need <span className="text-orange-500">Help?</span>
                             </h2>
-                            <p className="text-base text-slate-600 mb-8 leading-relaxed">
+                            <p className="text-base text-slate-600 dark:text-gray-400 mb-8 leading-relaxed">
                                 Our support team is here to assist you with any questions or concerns about e-Dalaw
                             </p>
                             <Link
