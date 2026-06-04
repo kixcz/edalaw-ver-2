@@ -36,6 +36,7 @@ class User extends Authenticatable
         'postal_code',
         'contact_number',
         'role_id',
+        'branch_id',
         'approval_status',
         'rejection_reason',
         'email_verified_at',
@@ -43,6 +44,8 @@ class User extends Authenticatable
         'id_document_2_path',
         'email_verified_via_otp',
         'phone_verified_via_otp',
+        'consent_accepted',
+        'consent_timestamp',
     ];
 
     /**
@@ -76,11 +79,21 @@ class User extends Authenticatable
     /**
      * Get the role that owns the user.
      *
-     * @return BelongsTo<Role, User>
+     * @return BelongsTo<Role>
      */
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Get the branch that the user is assigned to.
+     *
+     * @return BelongsTo<Branch>
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     /**
@@ -91,5 +104,81 @@ class User extends Authenticatable
     public function appeals(): HasMany
     {
         return $this->hasMany(Appeal::class);
+    }
+
+    /**
+     * Get the scope assignments where this user is the assigned officer.
+     */
+    public function assignedScopes(): HasMany
+    {
+        return $this->hasMany(JailOfficerScope::class, 'jail_officer_id');
+    }
+
+    /**
+     * Alias for assignedScopes - get jail officer scope assignments.
+     */
+    public function jailOfficerScopes(): HasMany
+    {
+        return $this->assignedScopes();
+    }
+
+    /**
+     * Get the scope assignments made by this user (as warden).
+     */
+    public function createdScopes(): HasMany
+    {
+        return $this->hasMany(JailOfficerScope::class, 'assigned_by');
+    }
+
+    /**
+     * Check if the user is a national office user (no branch restriction).
+     */
+    public function isNationalOffice(): bool
+    {
+        return $this->role && 
+               ($this->role->slug === 'national' || $this->role->name === 'National Office');
+    }
+
+    /**
+     * Check if the user is a super admin.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->role && 
+               ($this->role->slug === 'super-admin' || $this->role->name === 'Super Admin');
+    }
+
+    /**
+     * Check if the user is a jail warden.
+     */
+    public function isJailWarden(): bool
+    {
+        return $this->role && 
+               ($this->role->slug === 'jail_warden' || $this->role->name === 'Jail Warden');
+    }
+    
+    /**
+     * Check if the user is a jail officer.
+     */
+    public function isJailOfficer(): bool
+    {
+        return $this->role && 
+               ($this->role->slug === 'jail_officer' || $this->role->name === 'Jail Officer');
+    }
+    
+    /**
+     * Check if the user has branch-level access.
+     */
+    public function hasBranchAccess(): bool
+    {
+        return $this->isSuperAdmin() || $this->isJailWarden() || $this->isJailOfficer();
+    }
+
+    /**
+     * Get the branch ID for scoping queries.
+     */
+    public function getBranchIdForScope(): ?int
+    {
+        return $this->hasBranchAccess() ? $this->branch_id : null;
     }
 }

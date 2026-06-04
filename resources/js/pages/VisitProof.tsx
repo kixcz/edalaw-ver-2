@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { Printer } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 import { Button } from '@/components/ui/button';
 
@@ -10,7 +11,7 @@ type VisitProofData = {
     inmate_name: string;
     scheduled_date: string;
     scheduled_time: string | null;
-    access_key: string | null;
+    qr_code_data: string | null;
     access_key_expires_at: string | null;
 };
 
@@ -59,10 +60,25 @@ export default function VisitProof({ visit }: Props) {
                     </p>
 
                     <div className="space-y-4 text-gray-800">
-                        <div className="flex justify-between border-b border-gray-200 pb-2">
-                            <span className="font-medium">Access Key</span>
-                            <span className="font-mono font-semibold">{visit.access_key ?? '—'}</span>
-                        </div>
+                        {/* QR Code Display */}
+                        {visit.qr_code_data ? (
+                            <div className="flex flex-col items-center justify-center border border-gray-300 rounded-lg p-6 bg-gray-50">
+                                <QRCodeSVG 
+                                    value={visit.qr_code_data}
+                                    size={192}
+                                    level="H"
+                                    includeMargin={true}
+                                />
+                                <p className="mt-4 text-sm font-medium text-gray-700">Scan this QR code during your physical visit</p>
+                                <p className="text-xs text-gray-500 mt-1">Valid for: {visit.scheduled_date}</p>
+                            </div>
+                        ) : (
+                            <div className="flex justify-between border-b border-gray-200 pb-2">
+                                <span className="font-medium">QR Code</span>
+                                <span className="text-gray-500">Not available</span>
+                            </div>
+                        )}
+
                         <div className="flex justify-between border-b border-gray-200 pb-2">
                             <span className="font-medium">Visitor</span>
                             <span>{visit.visitor_name}</span>
@@ -83,7 +99,7 @@ export default function VisitProof({ visit }: Props) {
                             <span className="font-medium">Scheduled Time</span>
                             <span>{visit.scheduled_time ?? '—'}</span>
                         </div>
-                        {visit.access_key && visit.access_key_expires_at && (
+                        {visit.access_key_expires_at && (
                             <div className="flex justify-between border-b border-gray-200 pb-2">
                                 <span className="font-medium">Valid until</span>
                                 <span>{visit.access_key_expires_at}</span>

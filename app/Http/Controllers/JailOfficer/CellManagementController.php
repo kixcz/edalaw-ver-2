@@ -5,6 +5,9 @@ namespace App\Http\Controllers\JailOfficer;
 use App\Http\Controllers\Controller;
 use App\Models\Cell;
 use App\Models\CellScheduleTemplate;
+use App\Models\Annex;
+use App\Models\Dormitory;
+use App\Models\Jail;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,13 +19,37 @@ class CellManagementController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Cell::withCount(['inmates' => function ($q) {
+        $query = Cell::with(['annex.dormitory.jail', 'inmates' => function ($q) {
             $q->where('status', 'active');
         }]);
 
         // Search filter
         if ($search = $request->input('search')) {
             $query->where('cell_number', 'like', "%{$search}%");
+        }
+
+        // Filter by annex
+        if ($annexId = $request->input('annex_id')) {
+            $query->where('annex_id', $annexId);
+        }
+
+        // Filter by annex (through dormitory)
+        if ($annexId = $request->input('annex_id')) {
+            $query->whereHas('dormitory', function ($q) use ($annexId) {
+                $q->where('annex_id', $annexId);
+            });
+        }
+
+        // Filter by dormitory
+        if ($dormitoryId = $request->input('dormitory_id')) {
+            $query->where('dormitory_id', $dormitoryId);
+        }
+
+        // Filter by jail (through dormitory and annex)
+        if ($jailId = $request->input('jail_id')) {
+            $query->whereHas('dormitory.annex', function ($q) use ($jailId) {
+                $q->where('jail_id', $jailId);
+            });
         }
 
         // Status filter
@@ -32,10 +59,25 @@ class CellManagementController extends Controller
 
         $cells = $query->orderBy('cell_number')->paginate(10)->withQueryString();
 
+        // Get all jails, dormitories, and annexes for dropdowns
+        $jails = Jail::orderBy('name')->get(['id', 'name', 'code']);
+        $dormitories = Dormitory::with('jail')
+            ->orderBy('name')
+            ->get(['id', 'jail_id', 'name']);
+        $annexes = Annex::with('dormitory')
+            ->orderBy('name')
+            ->get(['id', 'dormitory_id', 'name']);
+
         return Inertia::render('BjmpOfficer/CellManagement', [
             'cells' => $cells,
+            'jails' => $jails,
+            'dormitories' => $dormitories,
+            'annexes' => $annexes,
             'filters' => [
                 'search' => $search ?? '',
+                'annex_id' => $annexId ? (int) $annexId : null,
+                'dormitory_id' => $dormitoryId ? (int) $dormitoryId : null,
+                'jail_id' => $jailId ? (int) $jailId : null,
                 'status' => $status ?? 'all',
             ],
         ]);
@@ -47,6 +89,7 @@ class CellManagementController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'annex_id' => 'required|exists:annexes,id',
             'cell_number' => 'required|string|max:50|unique:cells',
             'capacity' => 'required|integer|min:1|max:50',
             'status' => 'required|in:active,inactive',
@@ -66,6 +109,7 @@ class CellManagementController extends Controller
     public function update(Request $request, Cell $cell)
     {
         $validated = $request->validate([
+            'annex_id' => 'required|exists:annexes,id',
             'cell_number' => 'required|string|max:50|unique:cells,cell_number,' . $cell->id,
             'capacity' => 'required|integer|min:1|max:50',
             'status' => 'required|in:active,inactive',

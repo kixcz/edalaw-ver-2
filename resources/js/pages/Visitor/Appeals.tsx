@@ -174,6 +174,7 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols }: 
         appealable_id: 0,
         reason: '',
         documents: [] as File[],
+        privacy_acknowledged: false,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -703,12 +704,33 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols }: 
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Appeal Privacy Notice */}
+                                <div className="rounded-lg border-l-4 border-l-amber-500 bg-amber-500/10 p-4">
+                                    <div className="flex items-start gap-3">
+                                        <input
+                                            type="checkbox"
+                                            id="appeal-privacy-acknowledged"
+                                            checked={form.data.privacy_acknowledged}
+                                            onChange={(e) => form.setData('privacy_acknowledged', e.target.checked)}
+                                            required
+                                            className="mt-1 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                        />
+                                        <label
+                                            htmlFor="appeal-privacy-acknowledged"
+                                            className="text-sm font-normal leading-relaxed cursor-pointer text-muted-foreground"
+                                        >
+                                            <span className="font-semibold text-foreground">Appeal Form Privacy Notice:</span>{" "}
+                                            Information provided in this appeal shall be used exclusively for the review, evaluation, and resolution of the appealed visitation or e-Burol request. All submitted information will be processed only by authorized personnel and handled in accordance with the Data Privacy Act of 2012.
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                             <DialogFooter className="mt-6">
                                 <Button type="button" variant="outline" onClick={handleModalClose}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing}>
+                                <Button type="submit" disabled={form.processing || !form.data.privacy_acknowledged}>
                                     {form.processing ? 'Submitting...' : 'Submit Appeal'}
                                 </Button>
                             </DialogFooter>

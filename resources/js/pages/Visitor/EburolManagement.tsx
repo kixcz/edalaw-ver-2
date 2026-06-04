@@ -1,8 +1,9 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Calendar, Clock, FileText, MapPin, Scale, User, Users, MoreVertical, Eye, Edit, CalendarClock, Trash2, Filter, Video } from 'lucide-react';
+import { Calendar, Clock, FileText, MapPin, Scale, User, Users, MoreVertical, Eye, Edit, CalendarClock, Trash2, Filter, Video, Search, AlertCircle, CheckCircle2, Building, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 import { DataTable } from '@/components/data-table';
 import InputError from '@/components/input-error';
@@ -82,6 +83,19 @@ type Eburol = {
     join_url?: string | null;
 };
 
+type InmateSearchResult = {
+    id: number;
+    first_name: string;
+    middle_name: string | null;
+    last_name: string;
+    inmate_number: string;
+    cell: {
+        id: number;
+        cell_number: string;
+    };
+    available_days: Record<number, { virtual: boolean; physical: boolean }>;
+};
+
 type Props = {
     eburols: Eburol[];
 };
@@ -148,6 +162,12 @@ export default function EburolManagement({ eburols }: Props) {
     const [isAppealModalOpen, setIsAppealModalOpen] = useState(false);
     const [selectedEburol, setSelectedEburol] = useState<Eburol | null>(null);
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    
+    // Inmate search state
+    const [inmateSearchResult, setInmateSearchResult] = useState<InmateSearchResult | null>(null);
+    const [inmateSearchError, setInmateSearchError] = useState<string | null>(null);
+    const [isSearchingInmate, setIsSearchingInmate] = useState(false);
+    const [selectedInmateId, setSelectedInmateId] = useState<number | null>(null);
     const [videoTermsModalOpen, setVideoTermsModalOpen] = useState(false);
     const [selectedSessionIdForVideo, setSelectedSessionIdForVideo] = useState<number | null>(null);
     const [videoTermsAccepted, setVideoTermsAccepted] = useState(false);
@@ -172,6 +192,7 @@ export default function EburolManagement({ eburols }: Props) {
         additional_details: '',
         death_certificate: null as File | null,
         relationship_proof: null as File | null,
+        privacy_acknowledged: false,
     });
 
     const editForm = useForm({
@@ -216,6 +237,70 @@ export default function EburolManagement({ eburols }: Props) {
             .then((data) => setEburolSlotAvailability(data))
             .catch(() => setEburolSlotAvailability({}));
     }, [form.data.wake_start_date]);
+
+    // Search for inmate by name (same as ScheduleManagement)
+    const handleSearchInmate = async () => {
+        if (!form.data.inmate_first_name || !form.data.inmate_last_name) {
+            setInmateSearchError('Please enter both first name and last name to search');
+            return;
+        }
+
+        setIsSearchingInmate(true);
+        setInmateSearchError(null);
+        setInmateSearchResult(null);
+        setSelectedInmateId(null);
+
+        try {
+            console.log('Searching for inmate:', {
+                first_name: form.data.inmate_first_name,
+                middle_name: form.data.inmate_middle_name,
+                last_name: form.data.inmate_last_name,
+            });
+            
+            const response = await axios.post('/visitor/schedule/search-inmate', {
+                first_name: form.data.inmate_first_name,
+                middle_name: form.data.inmate_middle_name,
+                last_name: form.data.inmate_last_name,
+            });
+
+            console.log('Search response:', response.data);
+
+            if (response.data.found && response.data.inmate) {
+                setInmateSearchResult(response.data.inmate);
+                setSelectedInmateId(response.data.inmate.id);
+            } else {
+                setInmateSearchError(response.data.message || 'Inmate not found');
+            }
+        } catch (error: any) {
+            console.error('Inmate search error:', error);
+            if (error.response?.status === 404) {
+                setInmateSearchError(error.response.data.message || 'Inmate not found');
+            } else if (error.response?.status === 500) {
+                setInmateSearchError('Server error. Please try again later.');
+            } else {
+                setInmateSearchError('An error occurred while searching. Please try again.');
+            }
+        } finally {
+            setIsSearchingInmate(false);
+        }
+    };
+
+    const handleClearInmateSearch = () => {
+        setInmateSearchResult(null);
+        setInmateSearchError(null);
+        setSelectedInmateId(null);
+        form.setData('inmate_first_name', '');
+        form.setData('inmate_middle_name', '');
+        form.setData('inmate_last_name', '');
+    };
+
+    const handleSelectInmate = (inmate: InmateSearchResult) => {
+        form.setData('inmate_first_name', inmate.first_name);
+        form.setData('inmate_middle_name', inmate.middle_name || '');
+        form.setData('inmate_last_name', inmate.last_name);
+        setInmateSearchResult(inmate);
+        setSelectedInmateId(inmate.id);
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -783,37 +868,72 @@ export default function EburolManagement({ eburols }: Props) {
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Inmate Search Section */}
                             <div className="space-y-2">
-                                <Label htmlFor="modal_inmate_first_name">Inmate First Name *</Label>
-                                <Input
-                                    id="modal_inmate_first_name"
-                                    name="inmate_first_name"
-                                    value={form.data.inmate_first_name}
-                                    onChange={(e) => form.setData('inmate_first_name', e.target.value)}
-                                    required
-                                />
+                                <Label>Inmate Information *</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        id="modal_inmate_first_name"
+                                        name="inmate_first_name"
+                                        placeholder="First Name"
+                                        value={form.data.inmate_first_name}
+                                        onChange={(e) => form.setData('inmate_first_name', e.target.value)}
+                                        disabled={!!inmateSearchResult}
+                                    />
+                                    <Input
+                                        placeholder="Middle Name"
+                                        value={form.data.inmate_middle_name}
+                                        onChange={(e) => form.setData('inmate_middle_name', e.target.value)}
+                                        disabled={!!inmateSearchResult}
+                                    />
+                                    <Input
+                                        placeholder="Last Name"
+                                        value={form.data.inmate_last_name}
+                                        onChange={(e) => form.setData('inmate_last_name', e.target.value)}
+                                        disabled={!!inmateSearchResult}
+                                    />
+                                    {!inmateSearchResult ? (
+                                        <Button
+                                            type="button"
+                                            onClick={handleSearchInmate}
+                                            disabled={isSearchingInmate}
+                                        >
+                                            {isSearchingInmate ? (
+                                                <Spinner className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Search className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={handleClearInmateSearch}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                                {inmateSearchError && (
+                                    <p className="text-sm text-destructive flex items-center gap-1">
+                                        <AlertCircle className="h-3 w-3" />
+                                        {inmateSearchError}
+                                    </p>
+                                )}
+                                {inmateSearchResult && (
+                                    <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                        <div className="flex-1">
+                                            <p className="font-medium text-sm">
+                                                {inmateSearchResult.first_name} {inmateSearchResult.middle_name || ''} {inmateSearchResult.last_name}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                Cell: {inmateSearchResult.cell?.cell_number || 'Not assigned'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                                 <InputError message={form.errors.inmate_first_name} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="modal_inmate_middle_name">Inmate Middle Name</Label>
-                                <Input
-                                    id="modal_inmate_middle_name"
-                                    name="inmate_middle_name"
-                                    value={form.data.inmate_middle_name}
-                                    onChange={(e) => form.setData('inmate_middle_name', e.target.value)}
-                                />
-                                <InputError message={form.errors.inmate_middle_name} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="modal_inmate_last_name">Inmate Last Name *</Label>
-                                <Input
-                                    id="modal_inmate_last_name"
-                                    name="inmate_last_name"
-                                    value={form.data.inmate_last_name}
-                                    onChange={(e) => form.setData('inmate_last_name', e.target.value)}
-                                    required
-                                />
-                                <InputError message={form.errors.inmate_last_name} />
                             </div>
 
                             <div className="space-y-2">
@@ -962,34 +1082,118 @@ export default function EburolManagement({ eburols }: Props) {
 
                             <div className="space-y-2">
                                 <Label htmlFor="modal_death_certificate">Death Certificate *</Label>
-                                <Input
-                                    id="modal_death_certificate"
-                                    type="file"
-                                    name="death_certificate"
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0] || null;
-                                        form.setData('death_certificate', file);
-                                    }}
-                                    required
-                                />
-                                <p className="text-xs text-muted-foreground">Accepted formats: PDF, JPG, PNG (Max 10MB)</p>
+                                <div className="relative border-2 border-dashed rounded-lg p-4 transition-colors hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                    <Input
+                                        id="modal_death_certificate"
+                                        type="file"
+                                        name="death_certificate"
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0] || null;
+                                            form.setData('death_certificate', file);
+                                        }}
+                                        required
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    />
+                                    <div className="space-y-3">
+                                        {form.data.death_certificate ? (
+                                            <div className="flex items-center gap-4">
+                                                {form.data.death_certificate.type.startsWith('image/') ? (
+                                                    <img 
+                                                        src={URL.createObjectURL(form.data.death_certificate)} 
+                                                        alt="Preview"
+                                                        className="h-24 w-24 object-cover rounded-lg border-2 shadow-sm"
+                                                    />
+                                                ) : (
+                                                    <div className="h-24 w-24 flex items-center justify-center bg-muted rounded-lg border-2">
+                                                        <FileText className="h-12 w-12 text-muted-foreground" />
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-semibold truncate">{form.data.death_certificate.name}</p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        Size: {(form.data.death_certificate.size / 1024 / 1024).toFixed(2)} MB
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground capitalize">
+                                                        Type: {form.data.death_certificate.type.split('/')[1]?.toUpperCase() || 'PDF'}
+                                                    </p>
+                                                    <Badge variant="secondary" className="mt-2">
+                                                        ✓ File selected
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center py-8 text-center">
+                                                <div className="rounded-full bg-muted p-4 mb-3">
+                                                    <Upload className="h-8 w-8 text-muted-foreground" />
+                                                </div>
+                                                <p className="text-sm font-medium">Click to upload or drag and drop</p>
+                                                <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG (Max 10MB)</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground -mt-2">
+                                    Accepted formats: PDF, JPG, PNG (Max 10MB)
+                                </p>
                                 <InputError message={form.errors.death_certificate} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="modal_relationship_proof">Proof of Relationship *</Label>
-                                <Input
-                                    id="modal_relationship_proof"
-                                    type="file"
-                                    name="relationship_proof"
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0] || null;
-                                        form.setData('relationship_proof', file);
-                                    }}
-                                    required
-                                />
-                                <p className="text-xs text-muted-foreground">Accepted formats: PDF, JPG, PNG (Max 10MB)</p>
+                                <div className="relative border-2 border-dashed rounded-lg p-4 transition-colors hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                    <Input
+                                        id="modal_relationship_proof"
+                                        type="file"
+                                        name="relationship_proof"
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0] || null;
+                                            form.setData('relationship_proof', file);
+                                        }}
+                                        required
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    />
+                                    <div className="space-y-3">
+                                        {form.data.relationship_proof ? (
+                                            <div className="flex items-center gap-4">
+                                                {form.data.relationship_proof.type.startsWith('image/') ? (
+                                                    <img 
+                                                        src={URL.createObjectURL(form.data.relationship_proof)} 
+                                                        alt="Preview"
+                                                        className="h-24 w-24 object-cover rounded-lg border-2 shadow-sm"
+                                                    />
+                                                ) : (
+                                                    <div className="h-24 w-24 flex items-center justify-center bg-muted rounded-lg border-2">
+                                                        <FileText className="h-12 w-12 text-muted-foreground" />
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-semibold truncate">{form.data.relationship_proof.name}</p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        Size: {(form.data.relationship_proof.size / 1024 / 1024).toFixed(2)} MB
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground capitalize">
+                                                        Type: {form.data.relationship_proof.type.split('/')[1]?.toUpperCase() || 'PDF'}
+                                                    </p>
+                                                    <Badge variant="secondary" className="mt-2">
+                                                        ✓ File selected
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center py-8 text-center">
+                                                <div className="rounded-full bg-muted p-4 mb-3">
+                                                    <Upload className="h-8 w-8 text-muted-foreground" />
+                                                </div>
+                                                <p className="text-sm font-medium">Click to upload or drag and drop</p>
+                                                <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG (Max 10MB)</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground -mt-2">
+                                    Accepted formats: PDF, JPG, PNG (Max 10MB)
+                                </p>
                                 <InputError message={form.errors.relationship_proof} />
                             </div>
 
@@ -1006,6 +1210,28 @@ export default function EburolManagement({ eburols }: Props) {
                                 <InputError message={form.errors.additional_details} />
                             </div>
 
+                            {/* E-Burol Privacy Notice */}
+                            <div className="rounded-lg border-l-4 border-l-purple-500 bg-purple-500/10 p-4">
+                                <div className="flex items-start gap-3">
+                                    <Checkbox
+                                        id="eburol-privacy-acknowledged"
+                                        checked={form.data.privacy_acknowledged}
+                                        onCheckedChange={(checked) => form.setData('privacy_acknowledged', Boolean(checked))}
+                                        required
+                                        className="mt-1 h-5 w-5"
+                                    />
+                                    <div className="flex-1 space-y-2">
+                                        <Label
+                                            htmlFor="eburol-privacy-acknowledged"
+                                            className="text-sm font-normal leading-relaxed cursor-pointer"
+                                        >
+                                            <span className="font-semibold text-foreground">E-Burol Application Privacy Notice:</span>{" "}
+                                            <span className="text-muted-foreground">Information submitted through this application will be collected, processed, and reviewed solely for the evaluation, verification, approval, scheduling, and administration of e-Burol requests. Submitted information and supporting documents shall be accessed only by authorized personnel and processed in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.</span>
+                                        </Label>
+                                    </div>
+                                </div>
+                            </div>
+
                             <DialogFooter className="gap-2 sm:gap-0">
                                 <Button
                                     type="button"
@@ -1017,7 +1243,7 @@ export default function EburolManagement({ eburols }: Props) {
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing}>
+                                <Button type="submit" disabled={form.processing || !form.data.privacy_acknowledged}>
                                     {form.processing && <Spinner />}
                                     Submit Application
                                 </Button>
@@ -1077,55 +1303,67 @@ export default function EburolManagement({ eburols }: Props) {
                     </CardContent>
                 </Card>
 
-                {/* Video Call Terms & Conditions Modal */}
+                {/* Video Call Informed Consent Modal */}
                 <Dialog open={videoTermsModalOpen} onOpenChange={setVideoTermsModalOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Terms & Conditions</DialogTitle>
-                            <DialogDescription>
-                                Please read and accept before joining the meeting.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-                                <li>The call is monitored by an officer.</li>
-                                <li>The call is recorded.</li>
-                                <li>Violations may result in termination of the call and/or future visit privileges.</li>
-                            </ul>
-                            <div className="flex items-center gap-2">
+                    <DialogContent className="sm:max-w-2xl border-l-4 border-l-orange-500">
+                        
+                        
+                        <div className="space-y-6 py-4">
+                            <div className="bg-orange-50 p-4 rounded-md">
+                                <p className="text-sm text-gray-800 leading-relaxed">
+                                    <strong className="font-semibold text-gray-900">Session Participation Consent:</strong>{" "}
+                                    <span className="text-gray-700">By joining this session, I acknowledge and agree that the session may be monitored, recorded, reviewed, and documented by authorized personnel for security, compliance, audit, documentation, incident investigation, and legitimate operational purposes. I understand that chat messages, audio, video, and other session-related activities may be logged and retained in accordance with applicable policies and retention requirements. I further understand that any violation of applicable rules, regulations, or visitation policies may result in the immediate termination of the session and may be subject to appropriate administrative or legal action.</span>
+                                </p>
+                            </div>
+
+                            <div className="flex items-start gap-3">
                                 <Checkbox
-                                    id="eburol-video-terms"
+                                    id="eburol-video-consent"
                                     checked={videoTermsAccepted}
                                     onCheckedChange={(c) => setVideoTermsAccepted(c === true)}
+                                    className="h-5 w-5 mt-0.5"
                                 />
-                                <Label htmlFor="eburol-video-terms" className="text-sm font-normal cursor-pointer">
-                                    I understand and accept these terms.
+                                <Label htmlFor="eburol-video-consent" className="text-sm font-medium cursor-pointer leading-snug">
+                                    I have read, understood, and agree to the session monitoring and recording conditions.
                                 </Label>
                             </div>
                         </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setVideoTermsModalOpen(false)}>
-                                Cancel
-                            </Button>
-                            <Button
-                                disabled={!videoTermsAccepted || acceptingTerms}
+
+                        <DialogFooter className="gap-2 sm:gap-0">
+                            <Button 
+                                variant="outline" 
                                 onClick={() => {
+                                    setVideoTermsModalOpen(false);
+                                    setSelectedSessionIdForVideo(null);
+                                }}
+                                className="flex-1 mr-2 sm:flex-none"
+                            >
+                                Decline
+                            </Button>
+                            <Button 
+                                disabled={!videoTermsAccepted || acceptingTerms}
+                                onClick={async () => {
                                     if (selectedSessionIdForVideo === null) return;
                                     const sessionId = selectedSessionIdForVideo;
                                     setAcceptingTerms(true);
-                                    router.post(`/visit/session/${sessionId}/accept-terms`, {}, {
-                                        onSuccess: () => {
+                                    
+                                    try {
+                                        const response = await axios.post(`/visit/session/${sessionId}/accept-consent`, {});
+                                        if (response.data.success) {
                                             setVideoTermsModalOpen(false);
                                             setSelectedSessionIdForVideo(null);
                                             setAcceptingTerms(false);
-                                            // Open video room in NEW tab
                                             window.open(`/visit/session/${sessionId}/video-room`, '_blank');
-                                        },
-                                        onError: () => setAcceptingTerms(false),
-                                    });
+                                        }
+                                    } catch (error) {
+                                        console.error('Error accepting consent:', error);
+                                        setAcceptingTerms(false);
+                                        alert('Error accepting consent. Please try again.');
+                                    }
                                 }}
+                                className="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 text-white"
                             >
-                                {acceptingTerms ? 'Accepting...' : 'Accept and Join'}
+                                {acceptingTerms ? 'Processing...' : 'I Accept'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>

@@ -25,9 +25,15 @@
                 <!-- Join Button or Schedule Message -->
                 @if($session['can_join_now'] && $session['join_url'])
                     <button id="joinButton" onclick="handleJoin()" 
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed">
-                        Join Call
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            {{ !$session['consent_accepted'] ? 'disabled' : '' }}>
+                        {{ !$session['consent_accepted'] ? 'Accept Consent to Join' : 'Join Call' }}
                     </button>
+                    @if(!$session['consent_accepted'])
+                        <p class="text-xs text-orange-600 text-center mt-2">
+                            You must accept the informed consent before joining the call
+                        </p>
+                    @endif
                 @elseif($session['schedule_reminder'])
                     <div class="space-y-4">
                         <p class="text-sm text-gray-600 text-center">
@@ -56,7 +62,7 @@
 
                 <!-- Disclaimer -->
                 <p class="text-xs text-gray-500 text-center mt-6">
-                    You will be redirected to the video call. The call is monitored and recorded.
+                    By joining this session, you agree to monitoring and recording.
                 </p>
             </div>
         </div>
@@ -96,6 +102,44 @@
     </div>
 </div>
 @endif
+
+<!-- Informed Consent Modal -->
+@if(!$session['consent_accepted'])
+<div id="consentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-6 border w-full max-w-2xl shadow-2xl rounded-lg bg-white">
+        <div class="border-l-4 border-l-orange-500 pl-4">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Session Participation Consent</h3>
+            
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                <p class="text-sm text-gray-700 leading-relaxed">
+                    <strong class="text-gray-900">By joining this session, I acknowledge and agree that the session may be monitored, recorded, reviewed, and documented by authorized personnel for security, compliance, audit, documentation, incident investigation, and legitimate operational purposes.</strong>
+                    <span class="text-gray-600"> I understand that chat messages, audio, video, and other session-related activities may be logged and retained in accordance with applicable policies and retention requirements. I further understand that any violation of applicable rules, regulations, or visitation policies may result in the immediate termination of the session and may be subject to appropriate administrative or legal action.</span>
+                </p>
+            </div>
+
+            <div class="flex items-start gap-3 mb-4">
+                <input type="checkbox" id="consentCheckbox" 
+                       class="mt-1 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                       onchange="toggleConsentButton()">
+                <label for="consentCheckbox" class="text-sm text-gray-700 cursor-pointer">
+                    I have read, understood, and agree to the session monitoring and recording conditions.
+                </label>
+            </div>
+
+            <div class="flex gap-3 justify-end mt-6">
+                <button id="declineButton" onclick="declineConsent()" 
+                        class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition duration-200">
+                    Decline
+                </button>
+                <button id="acceptButton" onclick="acceptConsent()" disabled
+                        class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    I Accept
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 @endsection
 
 @push('scripts')
@@ -115,6 +159,51 @@
         markParticipantJoined();
     });
     @endif
+
+    function toggleConsentButton() {
+        const checkbox = document.getElementById('consentCheckbox');
+        const acceptButton = document.getElementById('acceptButton');
+        acceptButton.disabled = !checkbox.checked;
+    }
+
+    function acceptConsent() {
+        const acceptButton = document.getElementById('acceptButton');
+        acceptButton.disabled = true;
+        acceptButton.textContent = 'Processing...';
+
+        fetch('{{ route("visit-session.accept-consent", $session["id"]) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-XSRF-TOKEN': getCsrfToken()
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload page to update button state
+                window.location.reload();
+            } else {
+                alert('Error accepting consent. Please try again.');
+                acceptButton.disabled = false;
+                acceptButton.textContent = 'I Accept';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error accepting consent. Please try again.');
+            acceptButton.disabled = false;
+            acceptButton.textContent = 'I Accept';
+        });
+    }
+
+    function declineConsent() {
+        if (confirm('You must accept the informed consent to join the video call. Would you like to leave this page?')) {
+            window.location.href = '{{ route("visitor.schedule.index") }}';
+        }
+    }
 
     function handleJoin() {
         const joinButton = document.getElementById('joinButton');

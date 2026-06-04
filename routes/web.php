@@ -43,6 +43,25 @@ Route::get('/', function () {
         return redirect()->route('dashboard');
     }
 
+    return Inertia::render('public/home');
+})->name('home');
+
+// Public Information Portal Routes
+Route::prefix('about')->name('about.')->group(function () {
+    Route::get('/', function () { return Inertia::render('public/about'); })->name('index');
+    Route::get('/objectives', function () { return Inertia::render('public/objectives'); })->name('objectives');
+});
+
+Route::get('/services', function () { return Inertia::render('public/services'); })->name('services');
+Route::get('/how-it-works', function () { return Inertia::render('public/how-it-works'); })->name('how-it-works');
+Route::get('/faq', function () { return Inertia::render('public/faq'); })->name('faq');
+Route::get('/privacy', function () { return Inertia::render('public/privacy'); })->name('privacy');
+Route::get('/terms', function () { return Inertia::render('public/terms'); })->name('terms');
+Route::get('/contact', function () { return Inertia::render('public/contact'); })->name('contact');
+Route::get('/announcements', function () { return Inertia::render('public/announcements'); })->name('announcements');
+
+// Dedicated Login Route
+Route::get('/login', function () {
     return Inertia::render('auth/login', [
         'canResetPassword' => Features::enabled(Features::resetPasswords()),
         'canRegister' => Features::enabled(Features::registration()),
@@ -52,7 +71,7 @@ Route::get('/', function () {
         'csrfToken' => csrf_token(),
         'oldEmail' => request()->old('email'),
     ]);
-})->name('home');
+})->name('login');
 
 Route::get('/test-token', function () {
 
@@ -184,6 +203,9 @@ Route::get('/documents/user/{path}', [App\Http\Controllers\DocumentController::c
 Route::get('/documents/visit/{path}', [App\Http\Controllers\DocumentController::class, 'serveVisitDocument'])
     ->where('path', '.*')
     ->name('documents.visit');
+Route::get('/documents/visitor/{path}', [App\Http\Controllers\DocumentController::class, 'serveVisitorDocument'])
+    ->where('path', '.*')
+    ->name('documents.visitor');
 
 Route::post('/visit-session/save-session-id', [App\Http\Controllers\Visitor\VisitSessionController::class, 'saveSessionId'])->name('visit-session.save-session-id');
 Route::get('/visit-session/{session}/status', [App\Http\Controllers\Visitor\VisitSessionController::class, 'checkStatus'])->name('visit-session.status');
@@ -202,6 +224,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         $user = auth()->user();
         $role = $user->role?->slug;
 
+        if ($role === 'national') {
+            return redirect()->route('dashboard.national-office');
+        }
         if ($role === 'super_admin') {
             return redirect()->route('dashboard.super-admin');
         }
@@ -227,6 +252,75 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     Route::middleware(['role:super_admin'])->get('dashboard/super-admin', \App\Http\Controllers\Dashboard\SuperAdminDashboardController::class)
         ->name('dashboard.super-admin');
+
+    Route::middleware(['role:national'])->get('dashboard/national-office', \App\Http\Controllers\Dashboard\NationalOfficeDashboardController::class)
+        ->name('dashboard.national-office');
+
+    // Regional Supervisor Routes
+    Route::middleware(['role:regional_supervisor'])->group(function () {
+        Route::get('dashboard/regional-supervisor', [\App\Http\Controllers\Dashboard\RegionalOfficeDashboardController::class, 'index'])
+            ->name('dashboard.regional-supervisor');
+        Route::post('dashboard/branches', [\App\Http\Controllers\BranchManagementController::class, 'store'])
+            ->name('branches.store');
+        Route::put('dashboard/branches/{branch}', [\App\Http\Controllers\BranchManagementController::class, 'update'])
+            ->name('branches.update');
+        Route::delete('dashboard/branches/{branch}', [\App\Http\Controllers\BranchManagementController::class, 'destroy'])
+            ->name('branches.destroy');
+    });
+
+    // Jail Warden Routes
+    Route::middleware(['role:jail_warden'])->group(function () {
+        Route::get('dashboard/jail-warden', [\App\Http\Controllers\Dashboard\JailWardenDashboardController::class, 'index'])
+            ->name('dashboard.jail-warden');
+        Route::post('dashboard/jail-warden/officer-scopes', [\App\Http\Controllers\JailOfficerScopeController::class, 'store'])
+            ->name('jail-warden.officer-scopes.store');
+        Route::put('dashboard/jail-warden/officer-scopes/{scope}', [\App\Http\Controllers\JailOfficerScopeController::class, 'update'])
+            ->name('jail-warden.officer-scopes.update');
+        Route::delete('dashboard/jail-warden/officer-scopes/{scope}', [\App\Http\Controllers\JailOfficerScopeController::class, 'destroy'])
+            ->name('jail-warden.officer-scopes.destroy');
+        
+        // Annex Management
+        Route::get('jail-warden/annexes', [\App\Http\Controllers\JailWarden\AnnexManagementController::class, 'index'])
+            ->name('jail-warden.annexes.index');
+        Route::post('jail-warden/annexes', [\App\Http\Controllers\JailWarden\AnnexManagementController::class, 'store'])
+            ->name('jail-warden.annexes.store');
+        Route::put('jail-warden/annexes/{annex}', [\App\Http\Controllers\JailWarden\AnnexManagementController::class, 'update'])
+            ->name('jail-warden.annexes.update');
+        Route::delete('jail-warden/annexes/{annex}', [\App\Http\Controllers\JailWarden\AnnexManagementController::class, 'destroy'])
+            ->name('jail-warden.annexes.destroy');
+        
+        // Dormitory Management
+        Route::get('jail-warden/dormitories', [\App\Http\Controllers\JailWarden\DormitoryManagementController::class, 'index'])
+            ->name('jail-warden.dormitories.index');
+        Route::post('jail-warden/dormitories', [\App\Http\Controllers\JailWarden\DormitoryManagementController::class, 'store'])
+            ->name('jail-warden.dormitories.store');
+        Route::put('jail-warden/dormitories/{dormitory}', [\App\Http\Controllers\JailWarden\DormitoryManagementController::class, 'update'])
+            ->name('jail-warden.dormitories.update');
+        Route::delete('jail-warden/dormitories/{dormitory}', [\App\Http\Controllers\JailWarden\DormitoryManagementController::class, 'destroy'])
+            ->name('jail-warden.dormitories.destroy');
+        
+        // Cell Management
+        Route::get('jail-warden/cells', [\App\Http\Controllers\JailWarden\CellManagementController::class, 'index'])
+            ->name('jail-warden.cells.index');
+        Route::post('jail-warden/cells', [\App\Http\Controllers\JailWarden\CellManagementController::class, 'store'])
+            ->name('jail-warden.cells.store');
+        Route::put('jail-warden/cells/{cell}', [\App\Http\Controllers\JailWarden\CellManagementController::class, 'update'])
+            ->name('jail-warden.cells.update');
+        Route::delete('jail-warden/cells/{cell}', [\App\Http\Controllers\JailWarden\CellManagementController::class, 'destroy'])
+            ->name('jail-warden.cells.destroy');
+        
+        // Jail Officer Management
+        Route::get('jail-warden/officers', [\App\Http\Controllers\JailWarden\JailOfficerManagementController::class, 'index'])
+            ->name('jail-warden.officers.index');
+        Route::post('jail-warden/officers', [\App\Http\Controllers\JailWarden\JailOfficerManagementController::class, 'store'])
+            ->name('jail-warden.officers.store');
+        
+        // PDL Management
+        Route::get('jail-warden/pdls', [\App\Http\Controllers\JailWarden\PdlManagementController::class, 'index'])
+            ->name('jail-warden.pdls.index');
+        Route::post('jail-warden/pdls', [\App\Http\Controllers\JailWarden\PdlManagementController::class, 'store'])
+            ->name('jail-warden.pdls.store');
+    });
 
     Route::middleware(['role:bjmp_officer'])->get('dashboard/bjmp-officer', [\App\Http\Controllers\Dashboard\BjmpOfficerDashboardController::class, '__invoke'])
         ->name('dashboard.bjmp-officer');
@@ -394,6 +488,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('schedule.search-inmate');
         Route::post('schedule/check-cell-availability', [\App\Http\Controllers\Visitor\ScheduleController::class, 'checkCellAvailability'])
             ->name('schedule.check-cell-availability');
+        Route::post('schedule/check-inmate-tagged', [\App\Http\Controllers\Visitor\ScheduleController::class, 'checkInmateTagged'])
+            ->name('schedule.check-inmate-tagged');
         Route::get('call-logs', [\App\Http\Controllers\Visitor\CallLogController::class, 'index'])
             ->name('call-logs.index');
         Route::get('eburol', [\App\Http\Controllers\Visitor\EburolController::class, 'index'])
@@ -438,6 +534,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('suggestions.store');
         Route::get('history', [\App\Http\Controllers\Visitor\AuditLogController::class, 'index'])
             ->name('history.index');
+        Route::get('files-uploaded', [\App\Http\Controllers\Visitor\FilesUploadedController::class, 'index'])
+            ->name('files-uploaded.index');
+        Route::get('tagged-inmates', [\App\Http\Controllers\Visitor\TaggedInmatesController::class, 'index'])
+            ->name('tagged-inmates.index');
     });
 
     Route::middleware(['role:visitor'])->group(function () {
@@ -447,6 +547,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('visit-session.video-room');
         Route::post('visit/session/{session}/accept-terms', [\App\Http\Controllers\Visitor\VisitSessionController::class, 'acceptTerms'])
             ->name('visit-session.accept-terms');
+        Route::post('visit/session/{session}/accept-consent', [\App\Http\Controllers\Visitor\VisitSessionController::class, 'acceptSessionConsent'])
+            ->name('visit-session.accept-consent');
         Route::post('visit/session/{session}/participant-joined', [\App\Http\Controllers\Visitor\VisitSessionController::class, 'participantJoined'])
             ->name('visit-session.participant-joined');
         Route::post('visit/session/{session}/participant-left', [\App\Http\Controllers\Visitor\VisitSessionController::class, 'participantLeft'])
@@ -486,6 +588,63 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('cell-schedules.update');
         Route::post('cell-schedules/bulk-update', [\App\Http\Controllers\BjmpOfficer\CellScheduleTemplateController::class, 'bulkUpdate'])
             ->name('cell-schedules.bulk-update');
+    });
+
+    // Hierarchical Jail Management (Jail Officer only)
+    Route::middleware(['role:jail_officer'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
+        // Jail Management
+        Route::get('jails', [\App\Http\Controllers\JailOfficer\JailManagementController::class, 'index'])
+            ->name('jails.index');
+        Route::post('jails', [\App\Http\Controllers\JailOfficer\JailManagementController::class, 'store'])
+            ->name('jails.store');
+        Route::put('jails/{jail}', [\App\Http\Controllers\JailOfficer\JailManagementController::class, 'update'])
+            ->name('jails.update');
+        Route::delete('jails/{jail}', [\App\Http\Controllers\JailOfficer\JailManagementController::class, 'destroy'])
+            ->name('jails.destroy');
+        Route::get('jails/{jail}', [\App\Http\Controllers\JailOfficer\JailManagementController::class, 'show'])
+            ->name('jails.show');
+
+        // Dormitory Management
+        Route::get('dormitories', [\App\Http\Controllers\JailOfficer\DormitoryManagementController::class, 'index'])
+            ->name('dormitories.index');
+        Route::post('dormitories', [\App\Http\Controllers\JailOfficer\DormitoryManagementController::class, 'store'])
+            ->name('dormitories.store');
+        Route::put('dormitories/{dormitory}', [\App\Http\Controllers\JailOfficer\DormitoryManagementController::class, 'update'])
+            ->name('dormitories.update');
+        Route::delete('dormitories/{dormitory}', [\App\Http\Controllers\JailOfficer\DormitoryManagementController::class, 'destroy'])
+            ->name('dormitories.destroy');
+
+        // Annex Management
+        Route::get('annexes', [\App\Http\Controllers\JailOfficer\AnnexManagementController::class, 'index'])
+            ->name('annexes.index');
+        Route::post('annexes', [\App\Http\Controllers\JailOfficer\AnnexManagementController::class, 'store'])
+            ->name('annexes.store');
+        Route::put('annexes/{annex}', [\App\Http\Controllers\JailOfficer\AnnexManagementController::class, 'update'])
+            ->name('annexes.update');
+        Route::delete('annexes/{annex}', [\App\Http\Controllers\JailOfficer\AnnexManagementController::class, 'destroy'])
+            ->name('annexes.destroy');
+
+        // Enhanced Cell Management with hierarchical filtering
+        Route::get('cells-hierarchical', [\App\Http\Controllers\JailOfficer\CellManagementController::class, 'index'])
+            ->name('cells.hierarchical');
+        Route::post('cells-hierarchical', [\App\Http\Controllers\JailOfficer\CellManagementController::class, 'store'])
+            ->name('cells.hierarchical-store');
+        Route::put('cells-hierarchical/{cell}', [\App\Http\Controllers\JailOfficer\CellManagementController::class, 'update'])
+            ->name('cells.hierarchical-update');
+        Route::delete('cells-hierarchical/{cell}', [\App\Http\Controllers\JailOfficer\CellManagementController::class, 'destroy'])
+            ->name('cells.hierarchical-destroy');
+
+        // Enhanced Inmate Management with hierarchical filtering
+        Route::get('inmates-hierarchical', [\App\Http\Controllers\JailOfficer\InmateManagementController::class, 'index'])
+            ->name('inmates.hierarchical');
+        Route::post('inmates-hierarchical', [\App\Http\Controllers\JailOfficer\InmateManagementController::class, 'store'])
+            ->name('inmates.hierarchical-store');
+        Route::put('inmates-hierarchical/{inmate}', [\App\Http\Controllers\JailOfficer\InmateManagementController::class, 'update'])
+            ->name('inmates.hierarchical-update');
+        Route::delete('inmates-hierarchical/{inmate}', [\App\Http\Controllers\JailOfficer\InmateManagementController::class, 'destroy'])
+            ->name('inmates.hierarchical-destroy');
+        Route::post('inmates-hierarchical/{inmate}/transfer', [\App\Http\Controllers\JailOfficer\InmateManagementController::class, 'transfer'])
+            ->name('inmates.hierarchical-transfer');
     });
 
     Route::middleware(['role:bjmp_officer'])->prefix('bjmp-officer')->name('bjmp-officer.')->group(function () {
@@ -552,6 +711,14 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::post('notifications/read-all', [\App\Http\Controllers\JailOfficer\NotificationController::class, 'markAllAsRead'])
             ->name('notifications.read-all');
 
+        // Assigned Visit Sessions (Merged approval + monitoring)
+        Route::get('assigned-visit-sessions', [\App\Http\Controllers\JailOfficer\AssignedVisitSessionsController::class, 'index'])
+            ->name('assigned-visit-sessions.index');
+        Route::post('assigned-visit-sessions/{visit}/approve', [\App\Http\Controllers\JailOfficer\AssignedVisitSessionsController::class, 'approve'])
+            ->name('assigned-visit-sessions.approve');
+        Route::post('assigned-visit-sessions/{visit}/reject', [\App\Http\Controllers\JailOfficer\AssignedVisitSessionsController::class, 'reject'])
+            ->name('assigned-visit-sessions.reject');
+
         // Schedule Management (Visits)
         Route::get('schedules', [\App\Http\Controllers\JailOfficer\ScheduleManagementController::class, 'index'])
             ->name('schedules.index');
@@ -601,6 +768,18 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('assigned-sessions.start');
         Route::post('assigned-sessions/{session}/end', [\App\Http\Controllers\JailOfficer\AssignedSessionsController::class, 'endSession'])
             ->name('assigned-sessions.end');
+        
+        // Session Management Controls (Active sessions only)
+        Route::post('assigned-sessions/{session}/kill', [\App\Http\Controllers\JailOfficer\AssignedSessionsController::class, 'killSession'])
+            ->name('assigned-sessions.kill');
+        Route::post('assigned-sessions/{session}/mute-audio', [\App\Http\Controllers\JailOfficer\AssignedSessionsController::class, 'muteAudio'])
+            ->name('assigned-sessions.mute-audio');
+        Route::post('assigned-sessions/{session}/unmute-audio', [\App\Http\Controllers\JailOfficer\AssignedSessionsController::class, 'unmuteAudio'])
+            ->name('assigned-sessions.unmute-audio');
+        Route::post('assigned-sessions/{session}/disable-camera', [\App\Http\Controllers\JailOfficer\AssignedSessionsController::class, 'disableCamera'])
+            ->name('assigned-sessions.disable-camera');
+        Route::post('assigned-sessions/{session}/enable-camera', [\App\Http\Controllers\JailOfficer\AssignedSessionsController::class, 'enableCamera'])
+            ->name('assigned-sessions.enable-camera');
         Route::post('assigned-sessions/{session}/lock-chat', [\App\Http\Controllers\JailOfficer\AssignedSessionsController::class, 'lockChat'])
             ->name('assigned-sessions.lock-chat');
         Route::post('assigned-sessions/{session}/unlock-chat', [\App\Http\Controllers\JailOfficer\AssignedSessionsController::class, 'unlockChat'])

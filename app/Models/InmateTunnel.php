@@ -39,6 +39,45 @@ class InmateTunnel extends Model
         return $this->belongsTo(VisitSession::class);
     }
 
+    /**
+     * Get the inmate associated with this tunnel through the visit session.
+     * For visits: gets inmate from visit record
+     * For eburol: gets inmate from eburol record
+     */
+    public function getInmateAttribute(): ?object
+    {
+        $session = $this->visitSession;
+        if (!$session) {
+            return null;
+        }
+
+        // Try to get inmate from visit
+        if ($session->visit_id && $session->visit) {
+            $visit = $session->visit;
+            return (object) [
+                'id' => null, // Visit doesn't have direct inmate ID
+                'full_name' => trim("{$visit->inmate_first_name} {$visit->inmate_middle_name} {$visit->inmate_last_name}"),
+                'first_name' => $visit->inmate_first_name,
+                'middle_name' => $visit->inmate_middle_name,
+                'last_name' => $visit->inmate_last_name,
+            ];
+        }
+
+        // Try to get inmate from eburol
+        if ($session->eburol_id && $session->eburol) {
+            $eburol = $session->eburol;
+            return (object) [
+                'id' => null, // Eburol doesn't have direct inmate ID
+                'full_name' => trim("{$eburol->inmate_first_name} {$eburol->inmate_middle_name} {$eburol->inmate_last_name}"),
+                'first_name' => $eburol->inmate_first_name,
+                'middle_name' => $eburol->inmate_middle_name,
+                'last_name' => $eburol->inmate_last_name,
+            ];
+        }
+
+        return null;
+    }
+
     public function isValid(): bool
     {
         return ! $this->is_used && $this->expires_at->isFuture();

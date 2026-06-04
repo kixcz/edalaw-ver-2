@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\EnsureRole::class,
             'approved' => \App\Http\Middleware\EnsureApproved::class,
             'prevent_duplicate_inmate' => \App\Http\Middleware\PreventDuplicateInmateSession::class,
+            'branch_scope' => \App\Http\Middleware\EnforceBranchScope::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

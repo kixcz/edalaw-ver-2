@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Cell extends Model
 {
@@ -16,6 +17,7 @@ class Cell extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'dormitory_id',
         'cell_number',
         'capacity',
         'status',
@@ -31,6 +33,32 @@ class Cell extends Model
         return [
             'capacity' => 'integer',
         ];
+    }
+
+    /**
+     * Get the dormitory that this cell belongs to.
+     *
+     * @return BelongsTo<Dormitory>
+     */
+    public function dormitory(): BelongsTo
+    {
+        return $this->belongsTo(Dormitory::class);
+    }
+
+    /**
+     * Get the annex through the dormitory.
+     */
+    public function annex(): \Illuminate\Database\Eloquent\Relations\HasOneThrough
+    {
+        return $this->hasOneThrough(Annex::class, Dormitory::class, 'id', 'dormitory_id', 'dormitory_id');
+    }
+
+    /**
+     * Get the branch through the dormitory and annex.
+     */
+    public function branch(): HasOneThrough
+    {
+        return $this->hasOneThrough(Branch::class, Annex::class, 'dormitory_id', 'id', 'dormitory_id', 'branch_id');
     }
 
     /**

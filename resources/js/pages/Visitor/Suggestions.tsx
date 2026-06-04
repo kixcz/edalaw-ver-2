@@ -101,6 +101,7 @@ export default function Suggestions({ suggestions }: Props) {
         type: '',
         subject: '',
         message: '',
+        privacy_acknowledged: false,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -265,12 +266,33 @@ export default function Suggestions({ suggestions }: Props) {
                                         Minimum 20 characters, maximum 5000 characters
                                     </p>
                                 </div>
+
+                                {/* Feedback/Complaint Privacy Notice */}
+                                <div className="rounded-lg border-l-4 border-l-teal-500 bg-teal-500/10 p-4">
+                                    <div className="flex items-start gap-3">
+                                        <input
+                                            type="checkbox"
+                                            id="feedback-privacy-acknowledged"
+                                            checked={form.data.privacy_acknowledged}
+                                            onChange={(e) => form.setData('privacy_acknowledged', e.target.checked)}
+                                            required
+                                            className="mt-1 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                        />
+                                        <label
+                                            htmlFor="feedback-privacy-acknowledged"
+                                            className="text-sm font-normal leading-relaxed cursor-pointer text-muted-foreground"
+                                        >
+                                            <span className="font-semibold text-foreground">Feedback and Complaint Form Privacy Notice:</span>{" "}
+                                            Information submitted through this form will be used solely for service evaluation, complaint investigation, issue resolution, quality improvement, and administrative review. Personal information shall be processed only by authorized personnel in accordance with Republic Act No. 10173 and applicable privacy policies.
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                             <DialogFooter className="mt-6">
                                 <Button type="button" variant="outline" onClick={handleModalClose}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing}>
+                                <Button type="submit" disabled={form.processing || !form.data.privacy_acknowledged}>
                                     {form.processing ? 'Submitting...' : 'Submit Feedback'}
                                 </Button>
                             </DialogFooter>

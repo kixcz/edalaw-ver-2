@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Eye } from 'lucide-react';
+import { Camera, Eye, Lock, Mic, MicOff, MoreVertical, Power, Video, VideoOff } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 
@@ -16,6 +16,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Select,
     SelectContent,
@@ -33,6 +41,7 @@ import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
 import { formatVisitSchedule, formatSessionSchedule } from '@/lib/formatVisitSchedule';
 import type { BreadcrumbItem } from '@/types';
+import axios from 'axios';
 
 function formatTimeUntil(startIso: string): string {
     const now = Date.now();
@@ -49,7 +58,7 @@ function formatTimeUntil(startIso: string): string {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Assigned Sessions', href: '/jail-officer/assigned-sessions' },
+    { title: 'Visit Monitoring', href: '/jail-officer/assigned-sessions' },
 ];
 
 type Session = {
@@ -98,6 +107,8 @@ export default function AssignedSessions({ sessions, filters: initialFilters }: 
     useToast();
     const [typeFilter, setTypeFilter] = useState(initialFilters?.type ?? 'all');
     const [beforeScheduleSession, setBeforeScheduleSession] = useState<Session | null>(null);
+    const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+    const [selectedSessionForActions, setSelectedSessionForActions] = useState<Session | null>(null);
 
     const columns: ColumnDef<Session>[] = useMemo(() => [
         {
@@ -148,6 +159,7 @@ export default function AssignedSessions({ sessions, filters: initialFilters }: 
                     // Open video call in new tab
                     window.open(`/jail-officer/assigned-sessions/${s.id}/join`, '_blank');
                 };
+                
                 return (
                     <div className="flex items-center gap-2">
                         {!isCompleted && (
@@ -170,6 +182,57 @@ export default function AssignedSessions({ sessions, filters: initialFilters }: 
                                 </Tooltip>
                             </TooltipProvider>
                         )}
+                        
+                        {/* Three-dot menu for session management - only for ACTIVE sessions */}
+                        {s.status === 'active' && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                        <span className="sr-only">Open menu</span>
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Session Controls</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    
+                                    {/* Kill Session */}
+                                    <DropdownMenuItem 
+                                        onClick={() => handleKillSession(s)}
+                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                    >
+                                        <Power className="mr-2 h-4 w-4" />
+                                        Kill Session
+                                    </DropdownMenuItem>
+                                    
+                                    {/* Audio Controls */}
+                                    <DropdownMenuItem onClick={() => handleMuteAudio(s)}>
+                                        <MicOff className="mr-2 h-4 w-4" />
+                                        Mute Audio
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleUnmuteAudio(s)}>
+                                        <Mic className="mr-2 h-4 w-4" />
+                                        Unmute Audio
+                                    </DropdownMenuItem>
+                                    
+                                    {/* Camera Controls */}
+                                    <DropdownMenuItem onClick={() => handleDisableCamera(s)}>
+                                        <VideoOff className="mr-2 h-4 w-4" />
+                                        Disable Camera
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleEnableCamera(s)}>
+                                        <Video className="mr-2 h-4 w-4" />
+                                        Enable Camera
+                                    </DropdownMenuItem>
+                                    
+                                    {/* Chat Controls */}
+                                    <DropdownMenuItem onClick={() => s.chat_locked ? handleUnlockChat(s) : handleLockChat(s)}>
+                                        <Lock className="mr-2 h-4 w-4" />
+                                        {s.chat_locked ? 'Unlock Chat' : 'Lock Chat'}
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                     </div>
                 );
             },
@@ -178,6 +241,75 @@ export default function AssignedSessions({ sessions, filters: initialFilters }: 
 
     const timeUntilStr = beforeScheduleSession ? formatTimeUntil(beforeScheduleSession.scheduled_start) : '';
 
+    // Session management action handlers
+    const handleKillSession = async (session: Session) => {
+        if (!confirm('Are you sure you want to TERMINATE this active session? This action cannot be undone.')) {
+            return;
+        }
+        try {
+            await axios.post(`/jail-officer/assigned-sessions/${session.id}/kill`);
+            window.location.reload(); // Reload to update status
+        } catch (error: any) {
+            alert(error?.response?.data?.error || 'Failed to kill session');
+        }
+    };
+
+    const handleMuteAudio = async (session: Session) => {
+        try {
+            await axios.post(`/jail-officer/assigned-sessions/${session.id}/mute-audio`);
+            alert('Audio mute command sent to all participants');
+        } catch (error: any) {
+            alert(error?.response?.data?.error || 'Failed to mute audio');
+        }
+    };
+
+    const handleUnmuteAudio = async (session: Session) => {
+        try {
+            await axios.post(`/jail-officer/assigned-sessions/${session.id}/unmute-audio`);
+            alert('Audio unmute command sent to all participants');
+        } catch (error: any) {
+            alert(error?.response?.data?.error || 'Failed to unmute audio');
+        }
+    };
+
+    const handleDisableCamera = async (session: Session) => {
+        try {
+            await axios.post(`/jail-officer/assigned-sessions/${session.id}/disable-camera`);
+            alert('Camera disable command sent to all participants');
+        } catch (error: any) {
+            alert(error?.response?.data?.error || 'Failed to disable camera');
+        }
+    };
+
+    const handleEnableCamera = async (session: Session) => {
+        try {
+            await axios.post(`/jail-officer/assigned-sessions/${session.id}/enable-camera`);
+            alert('Camera enable command sent to all participants');
+        } catch (error: any) {
+            alert(error?.response?.data?.error || 'Failed to enable camera');
+        }
+    };
+
+    const handleLockChat = async (session: Session) => {
+        try {
+            await axios.post(`/jail-officer/assigned-sessions/${session.id}/lock-chat`);
+            alert('Chat has been locked');
+            window.location.reload();
+        } catch (error: any) {
+            alert(error?.response?.data?.error || 'Failed to lock chat');
+        }
+    };
+
+    const handleUnlockChat = async (session: Session) => {
+        try {
+            await axios.post(`/jail-officer/assigned-sessions/${session.id}/unlock-chat`);
+            alert('Chat has been unlocked');
+            window.location.reload();
+        } catch (error: any) {
+            alert(error?.response?.data?.error || 'Failed to unlock chat');
+        }
+    };
+
     const filteredSessions = useMemo(() => {
         if (typeFilter === 'all') return sessions;
         return sessions.filter((s) => s.type === typeFilter);
@@ -185,17 +317,17 @@ export default function AssignedSessions({ sessions, filters: initialFilters }: 
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Assigned Sessions" />
+            <Head title="Visit Monitoring" />
             <div className="flex flex-col gap-4 p-4">
                 <div>
-                    <h1 className="text-2xl font-semibold">Assigned Sessions</h1>
-                    <p className="text-muted-foreground">Manage your assigned visit and e-burol video sessions.</p>
+                    <h1 className="text-2xl font-semibold">Visit Monitoring</h1>
+                    <p className="text-muted-foreground">Monitor virtual visits for inmates in your assigned facility areas.</p>
                 </div>
                 <Card>
                     <CardHeader>
                         <div>
-                            <CardTitle>Sessions</CardTitle>
-                            <CardDescription>{filteredSessions.length} of {sessions.length} session(s) assigned to you</CardDescription>
+                            <CardTitle>Visits</CardTitle>
+                            <CardDescription>{filteredSessions.length} of {sessions.length} visit(s) in your assigned areas</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent>

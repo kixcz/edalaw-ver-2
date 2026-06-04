@@ -11,10 +11,7 @@ use Illuminate\Support\Facades\Log;
 
 class ChatMessageFlagController extends Controller
 {
-    /**
-     * Flag a chat message as inappropriate (jail officer only).
-     * NOTE: This is for ChatMessage model (monitoring sessions), NOT ChatLog (visit sessions).
-     */
+   
     public function flag(Request $request, VisitSession $session, ChatLog $message): JsonResponse
     {
         Log::error('❌ WRONG ENDPOINT CALLED! You are trying to flag a visit session message using the monitoring session endpoint.', [

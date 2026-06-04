@@ -11,16 +11,13 @@ use Inertia\Response;
 
 class CellScheduleTemplateController extends Controller
 {
-    /**
-     * Display schedule templates for all cells.
-     */
+   
     public function index(Request $request): Response
     {
         $cells = Cell::with(['scheduleTemplates'])
             ->orderBy('cell_number')
             ->get();
 
-        // Format cells with their schedule data
         $formattedCells = $cells->map(function ($cell) {
             $schedules = [];
             foreach ($cell->scheduleTemplates as $template) {
@@ -38,7 +35,6 @@ class CellScheduleTemplateController extends Controller
             ];
         });
 
-        // Day names for display
         $dayNames = [
             0 => 'Sunday',
             1 => 'Monday',
@@ -55,10 +51,6 @@ class CellScheduleTemplateController extends Controller
         ]);
     }
 
-    /**
-     * Update schedule templates for a cell.
-     */
-    public function update(Request $request, Cell $cell)
     {
         $validated = $request->validate([
             'schedules' => 'required|array',
@@ -83,9 +75,6 @@ class CellScheduleTemplateController extends Controller
         return redirect()->back()->with('success', 'Schedule templates updated successfully for ' . $cell->cell_number);
     }
 
-    /**
-     * Get available days for a specific cell.
-     */
     public function getAvailableDays(Cell $cell)
     {
         $templates = $cell->scheduleTemplates;
@@ -105,9 +94,6 @@ class CellScheduleTemplateController extends Controller
         ]);
     }
 
-    /**
-     * Bulk update schedule templates for multiple cells.
-     */
     public function bulkUpdate(Request $request)
     {
         $validated = $request->validate([

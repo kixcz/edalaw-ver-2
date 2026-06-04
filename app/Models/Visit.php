@@ -9,10 +9,12 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use App\Traits\HasBranchScope;
 
 class Visit extends Model
 {
-    use HasFactory;
+    use HasFactory, HasBranchScope;
 
     /**
      * The attributes that are mass assignable.
@@ -22,19 +24,25 @@ class Visit extends Model
     protected $fillable = [
         'user_id',
         'jail_officer_id',
+        'inmate_id',
+        'jail_id',
         'scheduled_date',
         'scheduled_time',
         'visit_type',
         'inmate_first_name',
         'inmate_middle_name',
         'inmate_last_name',
+        'relationship_to_inmate',
         'status',
         'notes',
+        'relationship_proof_file_id',
+        'additional_proof_file_id',
         'relationship_proof_path',
         'additional_proof_path',
         'meeting_link',
         'access_key',
         'access_key_expires_at',
+        'qr_code_data',
         'rejection_reason',
         'daily_co_room_id',
         'daily_co_room_name',
@@ -78,6 +86,25 @@ class Visit extends Model
         } while (self::where('access_key', $key)->exists());
 
         return $key;
+    }
+
+    /**
+     * Generate QR code data for physical visits.
+     * The QR code contains visit information in JSON format.
+     */
+    public static function generateQRCodeData(Visit $visit): string
+    {
+        $qrData = [
+            'visit_id' => $visit->id,
+            'visitor_email' => $visit->user->email,
+            'visitor_name' => trim("{$visit->user->first_name} {$visit->user->middle_name} {$visit->user->last_name}"),
+            'inmate_name' => trim("{$visit->inmate_first_name} {$visit->inmate_middle_name} {$visit->inmate_last_name}"),
+            'scheduled_date' => $visit->scheduled_date->format('Y-m-d'),
+            'scheduled_time' => $visit->scheduled_time,
+            'unique_token' => bin2hex(random_bytes(16)),
+        ];
+
+        return json_encode($qrData);
     }
 
     /**
@@ -144,6 +171,54 @@ class Visit extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the inmate for this visit.
+     *
+     * @return BelongsTo<Inmate, Visit>
+     */
+    public function inmate(): BelongsTo
+    {
+        return $this->belongsTo(Inmate::class);
+    }
+
+    /**
+     * Get the jail that this visit is associated with.
+     *
+     * @return BelongsTo<Jail, Visit>
+     */
+    public function jail(): BelongsTo
+    {
+        return $this->belongsTo(Jail::class);
+    }
+
+    /**
+     * Get the branch through the jail.
+     */
+    public function branch(): HasOneThrough
+    {
+        return $this->hasOneThrough(Branch::class, Jail::class);
+    }
+
+    /**
+     * Get the relationship proof file for this visit.
+     *
+     * @return BelongsTo<UploadedFile, Visit>
+     */
+    public function relationshipProofFile(): BelongsTo
+    {
+        return $this->belongsTo(UploadedFile::class, 'relationship_proof_file_id');
+    }
+
+    /**
+     * Get the additional proof file for this visit.
+     *
+     * @return BelongsTo<UploadedFile, Visit>
+     */
+    public function additionalProofFile(): BelongsTo
+    {
+        return $this->belongsTo(UploadedFile::class, 'additional_proof_file_id');
     }
 
     /**

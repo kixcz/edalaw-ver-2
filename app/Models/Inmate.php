@@ -4,7 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Inmate extends Model
 {
@@ -13,34 +15,36 @@ class Inmate extends Model
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
-        'cell_id',
         'first_name',
         'middle_name',
         'last_name',
         'inmate_number',
+        'cell_id',
         'date_of_birth',
         'status',
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Get the full name of the inmate.
      */
-    protected function casts(): array
+    public function getFullNameAttribute(): string
     {
-        return [
-            'date_of_birth' => 'date',
-        ];
+        return trim("{$this->first_name} {$this->middle_name} {$this->last_name}");
     }
 
     /**
-     * Get the cell this inmate belongs to.
-     *
-     * @return BelongsTo<Cell, Inmate>
+     * Get the visits for this inmate.
+     */
+    public function visits(): HasMany
+    {
+        return $this->hasMany(Visit::class);
+    }
+
+    /**
+     * Get the cell that this inmate is assigned to.
      */
     public function cell(): BelongsTo
     {
@@ -48,39 +52,26 @@ class Inmate extends Model
     }
 
     /**
-     * Scope a query to only include active inmates.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * Get the annex through the cell.
      */
-    public function scopeActive($query)
+    public function annex(): HasOneThrough
     {
-        return $query->where('status', 'active');
+        return $this->hasOneThrough(Annex::class, Cell::class);
     }
 
     /**
-     * Scope a query to filter by cell.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $cellId
-     * @return \Illuminate\Database\Eloquent\Builder
+     * Get the dormitory through the cell and annex.
      */
-    public function scopeByCell($query, int $cellId)
+    public function dormitory(): HasOneThrough
     {
-        return $query->where('cell_id', $cellId);
+        return $this->hasOneThrough(Dormitory::class, Cell::class, 'annex_id', 'id', 'cell_id', 'dormitory_id');
     }
 
     /**
-     * Get the full name of the inmate.
+     * Get the jail through the cell, annex, and dormitory.
      */
-    public function getFullNameAttribute(): string
+    public function jail(): HasOneThrough
     {
-        $name = $this->first_name;
-        if ($this->middle_name) {
-            $name .= ' ' . $this->middle_name;
-        }
-        $name .= ' ' . $this->last_name;
-
-        return $name;
+        return $this->hasOneThrough(Jail::class, Cell::class, 'annex_id', 'id', 'cell_id', 'jail_id');
     }
 }

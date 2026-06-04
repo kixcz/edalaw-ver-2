@@ -1,5 +1,6 @@
-import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BarChart3, Bell, Calendar, CalendarCheck, FileText, LayoutGrid, Link2, MessageSquare, Phone, Scale, Shield, Users, Heart, Monitor, Video, Camera, Flag, Settings, Sliders, Film, MessageCircle, Building, Clock, Archive } from 'lucide-react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { AlertTriangle, BarChart3, Bell, Calendar, CalendarCheck, FileText, Folder, LayoutGrid, Link2, MessageSquare, Phone, Scale, Shield, Users, Heart, Monitor, Video, Camera, Flag, Settings, Sliders, Film, MessageCircle, Building, Clock, Archive, Building2, Columns4, BrickWall, Fence, Warehouse, PersonStanding } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -18,6 +19,7 @@ import AppLogo from './app-logo';
 
 export function AppSidebar() {
     const page = usePage<SharedData>();
+    const sidebarRef = useRef<HTMLDivElement>(null);
     
     if (!page?.props) {
         return null;
@@ -26,12 +28,56 @@ export function AppSidebar() {
     const auth = page.props.auth;
     const userRole = auth?.user?.role;
 
+    // Save scroll position before navigation
+    useEffect(() => {
+        let isMounted = true;
+        
+        const handleStart = () => {
+            if (isMounted && sidebarRef.current) {
+                const scrollTop = sidebarRef.current.scrollTop;
+                localStorage.setItem('jailOfficerSidebarScrollPosition', scrollTop.toString());
+            }
+        };
+
+        router.on('start', handleStart);
+
+        return () => {
+            isMounted = false;
+            // Note: Inertia v2+ doesn't have router.off(), cleanup happens automatically
+        };
+    }, []);
+
+    // Restore scroll position after page load
+    useEffect(() => {
+        const savedPosition = localStorage.getItem('jailOfficerSidebarScrollPosition');
+        if (savedPosition && sidebarRef.current) {
+            const scrollTop = parseInt(savedPosition, 10);
+            // Use setTimeout to ensure the DOM is ready
+            setTimeout(() => {
+                if (sidebarRef.current) {
+                    sidebarRef.current.scrollTop = scrollTop;
+                }
+            }, 50);
+        }
+    }, [page.component]); // Restore when page component changes
+
     const mainNavItems: NavItem[] = [];
    
+    // Role-specific dashboard routes
+    const getDashboardRoute = () => {
+        if (userRole === 'jail_warden') return '/dashboard/jail-warden';
+        if (userRole === 'jail_officer') return '/dashboard/jail-officer';
+        if (userRole === 'monitoring_officer') return '/dashboard/monitoring-officer';
+        if (userRole === 'bjmp_officer') return '/dashboard';
+        if (userRole === 'visitor') return '/dashboard';
+        if (userRole === 'super_admin') return '/dashboard';
+        return '/dashboard';
+    };
+    
     if (userRole !== 'visitor' && userRole !== 'super_admin') {
         mainNavItems.push({
             title: 'Dashboard',
-            href: '/dashboard',
+            href: getDashboardRoute(),
             icon: LayoutGrid,
         });
     }
@@ -210,6 +256,16 @@ export function AppSidebar() {
                         href: '/visitor/sessions',
                         icon: Shield,
                     },
+                    {
+                        title: 'Tagged Inmates',
+                        href: '/visitor/tagged-inmates',
+                        icon: Users,
+                    },
+                    {
+                        title: 'Files Archive',
+                        href: '/visitor/files-uploaded',
+                        icon: Folder,
+                    },
                 ],
             },
             {
@@ -342,10 +398,95 @@ export function AppSidebar() {
         ];
     }
 
-    // Jail Officer navigation (combines BJMP Officer + Monitoring Officer features)
+    // Jail Officer navigation (streamlined - only essential modules + scope-based facility access)
     let jailOfficerNavGroups: Array<{ label: string; items: NavItem[] }> | undefined;
     if (userRole === 'jail_officer') {
         const unreadJailCount = page.props.unreadNotificationCount ?? 0;
+        
+        // Get user's active scopes
+        const userScopes: any[] = Array.isArray(page.props.auth?.user?.assigned_scopes) ? page.props.auth.user.assigned_scopes : [];
+        const activeScopes = userScopes.filter((scope) => scope.is_active);
+        
+        // Determine which facility modules to show based on scope
+        const facilityItems: NavItem[] = [];
+        
+        // Add scope-specific modules based on hierarchy
+        activeScopes.forEach((scope: any) => {
+            if (scope.scope_type === 'cell') {
+                // Cell-level assignment: Show only that specific cell and its PDLs
+                facilityItems.push(
+                    {
+                        title: `Cell ${scope.cell?.cell_number || 'My Cell'}`,
+                        href: `/jail-officer/cells-hierarchical?cell=${scope.cell_id}`,
+                        icon: Fence,
+                    },
+                    {
+                        title: 'PDLs in Cell',
+                        href: `/jail-officer/inmates-hierarchical?cell=${scope.cell_id}`,
+                        icon: PersonStanding,
+                    },
+                    {
+                        title: 'Cell Schedule',
+                        href: `/jail-officer/cell-schedules?cell=${scope.cell_id}`,
+                        icon: Clock,
+                    }
+                );
+            } else if (scope.scope_type === 'dormitory') {
+                // Dormitory-level assignment: Show dorm overview, all cells in dorm, and all PDLs
+                facilityItems.push(
+                    {
+                        title: scope.dormitory?.name || 'My Dormitory',
+                        href: `/jail-officer/dormitories`,
+                        icon: Building,
+                    },
+                    {
+                        title: 'Cells in Dormitory',
+                        href: `/jail-officer/cells-hierarchical?dormitory=${scope.dormitory_id}`,
+                        icon: Columns4,
+                    },
+                    {
+                        title: 'PDLs in Dormitory',
+                        href: `/jail-officer/inmates-hierarchical?dormitory=${scope.dormitory_id}`,
+                        icon: PersonStanding,
+                    },
+                    {
+                        title: 'Cell Schedules',
+                        href: `/jail-officer/cell-schedules?dormitory=${scope.dormitory_id}`,
+                        icon: Clock,
+                    }
+                );
+            } else if (scope.scope_type === 'annex') {
+                // Annex-level assignment: Show annex overview, all dorms, all cells, all PDLs
+                facilityItems.push(
+                    {
+                        title: scope.annex?.name || 'My Annex',
+                        href: `/jail-officer/annexes`,
+                        icon: Warehouse,
+                    },
+                    {
+                        title: 'Dormitories in Annex',
+                        href: `/jail-officer/dormitories`,
+                        icon: Building,
+                    },
+                    {
+                        title: 'Cells in Annex',
+                        href: `/jail-officer/cells-hierarchical?annex=${scope.annex_id}`,
+                        icon: Fence,
+                    },
+                    {
+                        title: 'PDLs in Annex',
+                        href: `/jail-officer/inmates-hierarchical?annex=${scope.annex_id}`,
+                        icon: PersonStanding,
+                    },
+                    {
+                        title: 'Cell Schedules',
+                        href: `/jail-officer/cell-schedules?annex=${scope.annex_id}`,
+                        icon: Clock,
+                    }
+                );
+            }
+        });
+        
         jailOfficerNavGroups = [
             {
                 label: 'Main',
@@ -364,107 +505,108 @@ export function AppSidebar() {
                 ],
             },
             {
-                label: 'Services',
+                label: 'Visit Management',
                 items: [
                     {
-                        title: 'Visit',
-                        href: '/jail-officer/schedules',
+                        title: 'Assigned Visit Sessions',
+                        href: '/jail-officer/assigned-visit-sessions',
                         icon: Calendar,
                     },
                     {
-                        title: 'E-Burol',
-                        href: '/jail-officer/eburols',
+                        title: 'E-Burol Monitoring',
+                        href: '/jail-officer/eburol-monitoring',
                         icon: Heart,
                     },
-                    // {
-                    //     title: 'Appeals',
-                    //     href: '/jail-officer/appeals',
-                    //     icon: Scale,
-                    // },
                 ],
             },
             {
                 label: 'Session Monitoring',
                 items: [
                     {
-                        title: 'Assigned Sessions',
-                        href: '/jail-officer/assigned-sessions',
-                        icon: Video,
+                        title: 'Chat Logs',
+                        href: '/jail-officer/chat-logs',
+                        icon: MessageCircle,
                     },
-                    // {
-                    //     title: 'Visit Monitoring',
-                    //     href: '/jail-officer/visit-monitoring',
-                    //     icon: Camera,
-                    // },
-                    {
-                        title: 'Eburol Monitoring',
-                        href: '/jail-officer/eburol-monitoring',
-                        icon: Monitor,
-                    },
-                    // {
-                    //     title: 'Session Monitoring',
-                    //     href: '/jail-officer/session-monitoring',
-                    //     icon: Shield,
-                    // },
-                    // {
-                    //     title: 'Visit Monitored',
-                    //     href: '/jail-officer/visits-monitored',
-                    //     icon: BarChart3,
-                    // },
-                ],
-            },
-            {
-                label: 'Recordings',
-                items: [
-                    // {
-                    //     title: 'Video Recordings',
-                    //     href: '/jail-officer/video-recordings',
-                    //     icon: Film,
-                    // },
                     {
                         title: 'Chat Archive',
                         href: '/jail-officer/chat-recordings',
                         icon: Archive,
-                    }, 
-                    {
-                        title: 'Chat Logs',
-                        href: '/jail-officer/chat-logs',
-                        icon: MessageCircle,
                     },
                     {
                         title: 'Audit Logs',
                         href: '/jail-officer/audit-logs',
                         icon: FileText,
                     },
-                    // {
-                    //     title: 'History',
-                    //     href: '/jail-officer/history',
-                    //     icon: FileText,
-                    // },
+                ],
+            },
+            ...(facilityItems.length > 0 ? [{
+                label: 'Facility Management',
+                items: facilityItems,
+            }] : []),
+            {
+                label: 'Configuration',
+                items: [
+                    {
+                        title: 'Settings',
+                        href: '/settings',
+                        icon: Settings,
+                    },
+                ],
+            },
+        ];
+    }
+
+    // Jail Warden navigation with categories
+    let jailWardenNavGroups: Array<{ label: string; items: NavItem[] }> | undefined;
+    if (userRole === 'jail_warden') {
+        jailWardenNavGroups = [
+            {
+                label: 'Main',
+                items: [
+                    {
+                        title: 'Dashboard',
+                        href: '/dashboard/jail-warden',
+                        icon: LayoutGrid,
+                    },
                 ],
             },
             {
                 label: 'Facility Management',
                 items: [
                     {
-                        title: 'Cell Management',
-                        href: '/bjmp-officer/cells',
+                        title: 'Annex',
+                        href: '/jail-warden/annexes',
+                        icon: Warehouse,
+                    },
+                    {
+                        title: 'Dormitory',
+                        href: '/jail-warden/dormitories',
                         icon: Building,
                     },
                     {
-                        title: 'Inmate Management',
-                        href: '/bjmp-officer/inmates',
+                        title: 'Cell',
+                        href: '/jail-warden/cells',
+                        icon: Fence,
+                    },
+                ],
+            },
+            {
+                label: 'Inmate Management',
+                items: [
+                    {
+                        title: 'PDLs',
+                        href: '/jail-warden/pdls',
                         icon: Users,
                     },
+                ],
+            },
+            {
+                label: 'Personnel',
+                items: [
                     {
-                        title: 'Cell Schedules',
-                        href: '/bjmp-officer/cell-schedules',
-                        icon: Clock,
-                    },
-                    {
-                        title: 'Inmate Tunnels',
-                        href: '/jail-officer/inmate-tunnels',
-                        icon: Link2,
+                        title: 'Jail Officers',
+                        href: '/jail-warden/officers',
+                        icon: Users,
                     },
                 ],
             },
@@ -482,12 +624,12 @@ export function AppSidebar() {
     }
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar ref={sidebarRef} collapsible="icon" variant="inset" className="sidebar-scroll-custom">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href="/dashboard" prefetch>
+                            <Link href={getDashboardRoute()} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
@@ -506,6 +648,8 @@ export function AppSidebar() {
                     <NavMain groups={monitoringOfficerNavGroups} />
                 ) : userRole === 'jail_officer' && jailOfficerNavGroups ? (
                     <NavMain groups={jailOfficerNavGroups} />
+                ) : userRole === 'jail_warden' && jailWardenNavGroups ? (
+                    <NavMain groups={jailWardenNavGroups} />
                 ) : (
                     <NavMain items={mainNavItems} />
                 )}

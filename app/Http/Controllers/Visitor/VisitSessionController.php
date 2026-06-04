@@ -24,6 +24,9 @@ class VisitSessionController extends Controller
         // Check if user can join now (within schedule and session is active)
         $canJoinNow = $session->isWithinSchedule() && ! $session->isCompleted();
         
+        // Check if consent has been accepted
+        $consentAccepted = $session->session_consent_accepted ?? false;
+        
         // Prepare schedule reminder if session hasn't started yet
         $scheduleReminder = null;
         if (! $canJoinNow && ! $session->isCompleted()) {
@@ -64,6 +67,7 @@ class VisitSessionController extends Controller
                 'inmate_name' => $inmateName,
                 'schedule_reminder' => $scheduleReminder,
                 'can_join_now' => $canJoinNow,
+                'consent_accepted' => $consentAccepted,
                 'join_url' => $joinUrl,
             ],
         ]);
@@ -86,6 +90,21 @@ class VisitSessionController extends Controller
         return response()->json([
             'success' => true,
             'video_room_url' => $videoRoomUrl,
+        ]);
+    }
+
+    /**
+     * Accept session consent for video call monitoring.
+     */
+    public function acceptSessionConsent(Request $request, VisitSession $session)
+    {
+        $session->session_consent_accepted = true;
+        $session->session_consent_timestamp = now();
+        $session->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Consent accepted successfully',
         ]);
     }
 

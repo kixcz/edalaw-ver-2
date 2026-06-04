@@ -8,9 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { RelationshipPicker } from '@/components/RelationshipPicker';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Clock, Plus, Scale, User, Video, X, CalendarClock, FileText, MoreVertical, FileOutput, VideoIcon, Search, Building, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Scale, User, Video, X, CalendarClock, FileText, MoreVertical, FileOutput, VideoIcon, Search, Building, AlertCircle, CheckCircle2, Upload, Eye } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table';
@@ -201,6 +202,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
     const [rescheduleBookedSlots, setRescheduleBookedSlots] = useState<string[]>([]);
     const [slotCapacities, setSlotCapacities] = useState<Record<string, { current: number; max: number; isFull: boolean }>>({});
     const [userBookedSlots, setUserBookedSlots] = useState<string[]>([]);
+    const [inmateBookedSlots, setInmateBookedSlots] = useState<string[]>([]);
     const [rescheduleSlotCapacities, setRescheduleSlotCapacities] = useState<Record<string, { current: number; max: number; isFull: boolean }>>({});
     const [isDayUnavailable, setIsDayUnavailable] = useState(false);
     const [rescheduleDayUnavailable, setRescheduleDayUnavailable] = useState(false);
@@ -218,6 +220,8 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
     const [videoTermsAccepted, setVideoTermsAccepted] = useState(false);
     const [acceptingTerms, setAcceptingTerms] = useState(false);
     const [beforeScheduleSession, setBeforeScheduleSession] = useState<{ sessionId: number; visit: Visit } | null>(null);
+    const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
+    const [selectedVisitForDetails, setSelectedVisitForDetails] = useState<Visit | null>(null);
     const todayDate = new Date();
     const today = todayDate.toISOString().split('T')[0];
     const tomorrow = new Date(todayDate);
@@ -253,6 +257,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
     const [inmateSearchError, setInmateSearchError] = useState<string | null>(null);
     const [selectedInmateId, setSelectedInmateId] = useState<number | null>(null);
     const [cellAvailabilityError, setCellAvailabilityError] = useState<string | null>(null);
+    const [isInmateTagged, setIsInmateTagged] = useState<boolean | null>(null);
 
     const form = useForm({
         scheduled_date: '',
@@ -261,9 +266,11 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
         inmate_first_name: '',
         inmate_middle_name: '',
         inmate_last_name: '',
+        relationship_to_inmate: '',
         notes: '',
         relationship_proof: null as File | null,
         additional_proof: null as File | null,
+        privacy_acknowledged: false,
     });
 
     const rescheduleForm = useForm({
@@ -292,6 +299,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
         if (!selectedDate || !visitType) {
             setSlotCapacities({});
             setUserBookedSlots([]);
+            setInmateBookedSlots([]);
             setLoadingSlots(false);
             return;
         }
@@ -300,7 +308,12 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
             setLoadingSlots(true);
             setIsDayUnavailable(false);
             try {
-                const response = await fetch(`/visitor/schedules/booked-slots?date=${selectedDate}&visit_type=${visitType}`);
+                let url = `/visitor/schedules/booked-slots?date=${selectedDate}&visit_type=${visitType}`;
+                if (selectedInmateId) {
+                    url += `&inmate_id=${selectedInmateId}`;
+                }
+                
+                const response = await fetch(url);
                 const data = await response.json();
                 if (data.slotCapacities) {
                     setSlotCapacities(data.slotCapacities);
@@ -309,6 +322,11 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                     setUserBookedSlots(data.userBookedSlots);
                 } else {
                     setUserBookedSlots([]);
+                }
+                if (Array.isArray(data.inmateBookedSlots)) {
+                    setInmateBookedSlots(data.inmateBookedSlots);
+                } else {
+                    setInmateBookedSlots([]);
                 }
                 if (data.isDayUnavailable === true) {
                     setIsDayUnavailable(true);
@@ -334,7 +352,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
         };
 
         fetchSlotCapacities();
-    }, [selectedDate, visitType]);
+    }, [selectedDate, visitType, selectedInmateId]);
 
     // Filter visits based on selected filters
     const filteredVisits = useMemo(() => {
@@ -411,23 +429,57 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
         setInmateSearchResult(null);
         setSelectedInmateId(null);
         setCellAvailabilityError(null);
+        setIsInmateTagged(null);
 
         try {
+            console.log('Searching for inmate:', {
+                first_name: form.data.inmate_first_name,
+                middle_name: form.data.inmate_middle_name,
+                last_name: form.data.inmate_last_name,
+            });
+            
             const response = await axios.post('/visitor/schedule/search-inmate', {
                 first_name: form.data.inmate_first_name,
                 middle_name: form.data.inmate_middle_name,
                 last_name: form.data.inmate_last_name,
             });
 
+            console.log('Search response:', response.data);
+
             if (response.data.found && response.data.inmate) {
                 setInmateSearchResult(response.data.inmate);
                 setSelectedInmateId(response.data.inmate.id);
+                
+                // Check if inmate is already tagged to this visitor
+                if (response.data.inmate.id) {
+                    try {
+                        const tagResponse = await axios.post('/visitor/schedule/check-inmate-tagged', {
+                            inmate_id: response.data.inmate.id,
+                        });
+                        setIsInmateTagged(tagResponse.data.is_tagged);
+                        
+                        if (tagResponse.data.is_tagged) {
+                            toast.success('This inmate is already tagged to your account. No need to upload proof of relationship documents.');
+                        }
+                    } catch (tagError) {
+                        console.error('Error checking tag status:', tagError);
+                        // Continue even if tag check fails
+                    }
+                }
+                
+                // Show warning if inmate has no cell assigned
+                if (response.data.warning) {
+                    toast.warning(response.data.warning);
+                }
             } else {
                 setInmateSearchError(response.data.message || 'Inmate not found');
             }
         } catch (error: any) {
+            console.error('Inmate search error:', error);
             if (error.response?.status === 404) {
                 setInmateSearchError(error.response.data.message || 'Inmate not found');
+            } else if (error.response?.status === 500) {
+                setInmateSearchError('Server error. Please try again later.');
             } else {
                 setInmateSearchError('An error occurred while searching. Please try again.');
             }
@@ -534,6 +586,14 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
         setIsAppealModalOpen(false);
         setSelectedVisitForAppeal(null);
         appealForm.reset();
+    };
+
+    const handleOpenScheduleModal = () => {
+        setIsModalOpen(true);
+    };
+
+    const handleCloseScheduleModal = () => {
+        setIsModalOpen(false);
     };
 
     const handleAppealSubmit = (e: React.FormEvent) => {
@@ -684,27 +744,27 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
             header: 'Visit Type',
             cell: ({ row }) => getVisitTypeBadge(row.original.visit_type),
         },
-        {
-            id: 'access_key',
-            header: 'Access Key',
-            cell: ({ row }) => {
-                const visit = row.original;
-                if (visit.visit_type === 'virtual') {
-                    return <span className="text-sm text-muted-foreground">Not applicable</span>;
-                }
-                if (visit.access_key) {
-                    return (
-                        <code className="rounded bg-muted px-2 py-1 font-mono text-sm font-bold">
-                            {visit.access_key}
-                        </code>
-                    );
-                }
-                if (visit.status === 'approved') {
-                    return <span className="text-sm text-muted-foreground">Not generated</span>;
-                }
-                return <span className="text-sm text-muted-foreground">—</span>;
-            },
-        },
+        // {
+        //     id: 'access_key',
+        //     header: 'Access Key',
+        //     cell: ({ row }) => {
+        //         const visit = row.original;
+        //         if (visit.visit_type === 'virtual') {
+        //             return <span className="text-sm text-muted-foreground">Not applicable</span>;
+        //         }
+        //         if (visit.access_key) {
+        //             return (
+        //                 <code className="rounded bg-muted px-2 py-1 font-mono text-sm font-bold">
+        //                     {visit.access_key}
+        //                 </code>
+        //             );
+        //         }
+        //         if (visit.status === 'approved') {
+        //             return <span className="text-sm text-muted-foreground">Not generated</span>;
+        //         }
+        //         return <span className="text-sm text-muted-foreground">—</span>;
+        //     },
+        // },
         {
             id: 'jail_officer',
             header: 'Jail Officer',
@@ -724,25 +784,25 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
             header: 'Status',
             cell: ({ row }) => getStatusBadge(row.original.status),
         },
-        {
-            id: 'rejection_reason',
-            header: 'Rejection Reasons',
-            cell: ({ row }) => {
-                const visit = row.original;
-                if (visit.status === 'approved') {
-                    return <span className="text-sm text-muted-foreground">Application was approved</span>;
-                }
-                if (visit.status === 'pending') {
-                    return <span className="text-sm text-muted-foreground">Application was pending</span>;
-                }
-                if (visit.status === 'rejected' && visit.rejection_reason) {
-                    return (
-                        <p className="max-w-xs text-sm text-destructive">{visit.rejection_reason}</p>
-                    );
-                }
-                return <span className="text-sm text-muted-foreground">—</span>;
-            },
-        },
+        // {
+        //     id: 'rejection_reason',
+        //     header: 'Rejection Reasons',
+        //     cell: ({ row }) => {
+        //         const visit = row.original;
+        //         if (visit.status === 'approved') {
+        //             return <span className="text-sm text-muted-foreground">Application was approved</span>;
+        //         }
+        //         if (visit.status === 'pending') {
+        //             return <span className="text-sm text-muted-foreground">Application was pending</span>;
+        //         }
+        //         if (visit.status === 'rejected' && visit.rejection_reason) {
+        //             return (
+        //                 <p className="max-w-xs text-sm text-destructive">{visit.rejection_reason}</p>
+        //             );
+        //         }
+        //         return <span className="text-sm text-muted-foreground">—</span>;
+        //     },
+        // },
         {
             id: 'icon',
             header: '',
@@ -870,6 +930,46 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            
+                            {/* View Details - Always shown */}
+                            <DropdownMenuItem onClick={() => {
+                                setSelectedVisitForDetails(visit);
+                                setIsViewDetailsModalOpen(true);
+                            }}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View details
+                            </DropdownMenuItem>
+                            
+                            {/* Proof of Appointment - Only for approved physical visits */}
+                            {visit.visit_type === 'physical' && visit.status === 'approved' && (
+                                <DropdownMenuItem onClick={() => {
+                                    window.open(`/visits/${visit.id}/proof`, '_blank');
+                                }}>
+                                    <FileOutput className="mr-2 h-4 w-4" />
+                                    Proof of appointment
+                                </DropdownMenuItem>
+                            )}
+                            
+                            {/* Rejection Reason - Only for rejected visits */}
+                            {visit.status === 'rejected' && visit.rejection_reason && (
+                                <DropdownMenuItem onClick={() => {
+                                    setSelectedVisitForDetails(visit);
+                                    setIsViewDetailsModalOpen(true);
+                                }}>
+                                    <AlertCircle className="mr-2 h-4 w-4" />
+                                    View rejection reason
+                                </DropdownMenuItem>
+                            )}
+                            
+                            {visit.status === 'approved' && (
+                                <DropdownMenuItem onClick={() => {
+                                    const inmateName = encodeURIComponent(`${visit.inmate_first_name} ${visit.inmate_last_name}`);
+                                    window.location.href = `/visitor/schedule?inmate=${inmateName}`;
+                                }}>
+                                    <User className="mr-2 h-4 w-4" />
+                                    Set new schedule
+                                </DropdownMenuItem>
+                            )}
                             {(visit.status === 'pending' || visit.status === 'approved') && (
                                 <>
                                     <DropdownMenuItem onClick={() => handleOpenRescheduleModal(visit)}>
@@ -936,109 +1036,112 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {filteredVisits.length === 0 && visits.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
-                                <Calendar className="size-12 mx-auto mb-4 opacity-50" />
-                                <p>No visit schedules found.</p>
-                                <p className="text-sm mt-2">Click "Apply for Schedule" to submit a request.</p>
-                            </div>
-                        ) : (
-                            <DataTable
-                                columns={columns}
-                                data={filteredVisits}
-                                searchKey="inmate_first_name"
-                                searchPlaceholder="Search by inmate name, date..."
-                                initialSorting={[{ id: 'scheduled_date', desc: true }]}
-                                headerActions={
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                            <SelectTrigger className="w-[150px]">
-                                                <SelectValue placeholder="All Statuses" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">All Statuses</SelectItem>
-                                                <SelectItem value="pending">Pending</SelectItem>
-                                                <SelectItem value="approved">Approved</SelectItem>
-                                                <SelectItem value="rejected">Rejected</SelectItem>
-                                                <SelectItem value="completed">Completed</SelectItem>
-                                                <SelectItem value="missed">Missed</SelectItem>
-                                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <Select value={visitTypeFilter} onValueChange={setVisitTypeFilter}>
-                                            <SelectTrigger className="w-[130px]">
-                                                <SelectValue placeholder="All Types" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">All Types</SelectItem>
-                                                <SelectItem value="virtual">Virtual</SelectItem>
-                                                <SelectItem value="physical">Physical</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                }
-                            />
-                        )}
+                        <DataTable
+                            columns={columns}
+                            data={filteredVisits}
+                            searchKey="inmate_first_name"
+                            searchPlaceholder="Search by inmate name, date..."
+                            initialSorting={[{ id: 'scheduled_date', desc: true }]}
+                            headerActions={
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                        <SelectTrigger className="w-[150px]">
+                                            <SelectValue placeholder="All Statuses" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Statuses</SelectItem>
+                                            <SelectItem value="pending">Pending</SelectItem>
+                                            <SelectItem value="approved">Approved</SelectItem>
+                                            <SelectItem value="rejected">Rejected</SelectItem>
+                                            <SelectItem value="completed">Completed</SelectItem>
+                                            <SelectItem value="missed">Missed</SelectItem>
+                                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Select value={visitTypeFilter} onValueChange={setVisitTypeFilter}>
+                                        <SelectTrigger className="w-[130px]">
+                                            <SelectValue placeholder="All Types" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Types</SelectItem>
+                                            <SelectItem value="virtual">Virtual</SelectItem>
+                                            <SelectItem value="physical">Physical</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            }
+                            emptyStateAction={
+                                <button
+                                    type="button"
+                                    onClick={handleOpenScheduleModal}
+                                    className="text-sm text-primary hover:underline font-medium"
+                                >
+                                    Apply for Visit
+                                </button>
+                            }
+                        />
                     </CardContent>
                 </Card>
 
                 <Dialog open={videoTermsModalOpen} onOpenChange={setVideoTermsModalOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Terms & Conditions</DialogTitle>
-                            <DialogDescription>
-                                Please read and accept before joining the video call.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-                                <li>The call is monitored by an officer.</li>
-                                <li>The call is recorded.</li>
-                                <li>Violations may result in termination of the call and/or future visit privileges.</li>
-                            </ul>
-                            <div className="flex items-center gap-2">
+                    <DialogContent className="sm:max-w-2xl border-l-4 border-l-orange-500">
+                      
+                        <div className="space-y-6 py-4">
+                            <div className="bg-orange-50 p-4 rounded-md">
+                                <p className="text-sm text-gray-800 leading-relaxed">
+                                    <strong className="font-semibold text-gray-900">Session Participation Consent:</strong>{" "}
+                                    <span className="text-gray-700">By joining this session, I acknowledge and agree that the session may be monitored, recorded, reviewed, and documented by authorized personnel for security, compliance, audit, documentation, incident investigation, and legitimate operational purposes. I understand that chat messages, audio, video, and other session-related activities may be logged and retained in accordance with applicable policies and retention requirements. I further understand that any violation of applicable rules, regulations, or visitation policies may result in the immediate termination of the session and may be subject to appropriate administrative or legal action.</span>
+                                </p>
+                            </div>
+
+                            <div className="flex items-start gap-3">
                                 <Checkbox
-                                    id="video-terms"
+                                    id="video-consent"
                                     checked={videoTermsAccepted}
                                     onCheckedChange={(c) => setVideoTermsAccepted(c === true)}
+                                    className="h-5 w-5 mt-0.5"
                                 />
-                                <Label htmlFor="video-terms" className="text-sm font-normal cursor-pointer">
-                                    I understand and accept these terms.
+                                <Label htmlFor="video-consent" className="text-sm font-medium cursor-pointer leading-snug">
+                                    I have read, understood, and agree to the session monitoring and recording conditions.
                                 </Label>
                             </div>
                         </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setVideoTermsModalOpen(false)}>
-                                Cancel
-                            </Button>
-                            <Button
-                                disabled={!videoTermsAccepted || acceptingTerms}
+
+                        <DialogFooter className="gap-2 sm:gap-0">
+                            <Button 
+                                variant="outline" 
                                 onClick={() => {
+                                    setVideoTermsModalOpen(false);
+                                    setSelectedSessionForVideo(null);
+                                }}
+                                className="flex-1 mr-2 sm:flex-none"
+                            >
+                                Decline
+                            </Button>
+                            <Button 
+                                disabled={!videoTermsAccepted || acceptingTerms}
+                                onClick={async () => {
                                     if (!selectedSessionForVideo) return;
                                     const sessionId = selectedSessionForVideo.sessionId;
                                     setAcceptingTerms(true);
                                     
-                                    // Use axios for better CSRF handling
-                                    axios.post(`/visit/session/${sessionId}/accept-terms`, {})
-                                        .then(response => {
-                                            console.log('Terms accepted, opening video room:', response.data);
+                                    try {
+                                        const response = await axios.post(`/visit/session/${sessionId}/accept-consent`, {});
+                                        if (response.data.success) {
                                             setVideoTermsModalOpen(false);
                                             setSelectedSessionForVideo(null);
                                             setAcceptingTerms(false);
-                                            // Open video room in NEW tab
-                                            if (response.data.video_room_url) {
-                                                window.open(response.data.video_room_url, '_blank');
-                                            } else {
-                                                console.error('No video_room_url in response');
-                                            }
-                                        })
-                                        .catch(error => {
-                                            console.error('Error accepting terms:', error);
-                                            setAcceptingTerms(false);
-                                        });
+                                            window.open(`/visit/session/${sessionId}/video-room`, '_blank');
+                                        }
+                                    } catch (error) {
+                                        console.error('Error accepting consent:', error);
+                                        setAcceptingTerms(false);
+                                        alert('Error accepting consent. Please try again.');
+                                    }
                                 }}
+                                className="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 text-white"
                             >
-                                {acceptingTerms ? 'Accepting...' : 'Accept and Join'}
+                                {acceptingTerms ? 'Processing...' : 'I Accept'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -1061,6 +1164,86 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                             </Button>
                             <Button variant="secondary" onClick={() => setBeforeScheduleSession(null)}>
                                 Cancel
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* View Details Modal */}
+                <Dialog open={isViewDetailsModalOpen} onOpenChange={(open) => !open && setIsViewDetailsModalOpen(false)}>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle>Visit Details</DialogTitle>
+                        </DialogHeader>
+                        
+                        {selectedVisitForDetails && (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-muted-foreground">Inmate Name</h4>
+                                        <p className="text-sm">
+                                            {selectedVisitForDetails.inmate_first_name}
+                                            {selectedVisitForDetails.inmate_middle_name && ` ${selectedVisitForDetails.inmate_middle_name}`}
+                                            {selectedVisitForDetails.inmate_last_name && ` ${selectedVisitForDetails.inmate_last_name}`}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-muted-foreground">Visit Type</h4>
+                                        <p className="text-sm capitalize">{selectedVisitForDetails.visit_type}</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-muted-foreground">Scheduled Date</h4>
+                                        <p className="text-sm">{selectedVisitForDetails.scheduled_date}</p>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-muted-foreground">Scheduled Time</h4>
+                                        <p className="text-sm">{selectedVisitForDetails.scheduled_time || 'Not specified'}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-semibold text-muted-foreground">Status</h4>
+                                    <div className="mt-1">
+                                        {getStatusBadge(selectedVisitForDetails.status)}
+                                    </div>
+                                </div>
+
+                                {selectedVisitForDetails.jail_officer_name && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-muted-foreground">Assigned Jail Officer</h4>
+                                        <p className="text-sm">{selectedVisitForDetails.jail_officer_name}</p>
+                                    </div>
+                                )}
+
+                                {selectedVisitForDetails.notes && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-muted-foreground">Notes</h4>
+                                        <p className="text-sm">{selectedVisitForDetails.notes}</p>
+                                    </div>
+                                )}
+
+                                {selectedVisitForDetails.rejection_reason && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-muted-foreground">Rejection Reason</h4>
+                                        <p className="text-sm text-destructive">{selectedVisitForDetails.rejection_reason}</p>
+                                    </div>
+                                )}
+
+                                <div className="pt-4 border-t">
+                                    <h4 className="text-sm font-semibold text-muted-foreground">Created At</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                        {new Date(selectedVisitForDetails.created_at).toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsViewDetailsModalOpen(false)}>
+                                Close
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -1293,57 +1476,84 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                                     </div>
                                 )}
 
+                                {/* Relationship to Inmate */}
+                                <div className="flex flex-col gap-2">
+                                    <RelationshipPicker
+                                        id="relationship_to_inmate"
+                                        value={form.data.relationship_to_inmate || ''}
+                                        onChange={(value) => form.setData('relationship_to_inmate', value)}
+                                        error={form.errors.relationship_to_inmate}
+                                        label="Your relationship to the inmate *"
+                                    />
+                                </div>
+
                                 <div className="flex flex-col gap-2">
                                     <Label htmlFor="scheduled_date">
                                         Scheduled Date <span className="text-destructive">*</span>
                                     </Label>
-                                    <div className="relative">
-                                        <CalendarIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                        <Input
-                                            id="scheduled_date"
-                                            type="date"
-                                            required
-                                            min={minScheduleDate}
-                                            name="scheduled_date"
-                                            className="pl-10"
-                                            value={form.data.scheduled_date || ''}
-                                            onChange={(e) => {
-                                                const date = e.target.value;
-                                                
-                                                // Validate date against cell schedule
-                                                if (date && inmateSearchResult && form.data.visit_type) {
-                                                    const selectedDate = new Date(date);
-                                                    const dayOfWeek = selectedDate.getDay();
-                                                    const availability = inmateSearchResult.available_days[dayOfWeek];
-                                                    const isAllowed = form.data.visit_type === 'virtual' 
-                                                        ? availability?.virtual 
-                                                        : availability?.physical;
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                className={cn(
+                                                    'w-full justify-start text-left font-normal',
+                                                    !form.data.scheduled_date && 'text-muted-foreground'
+                                                )}
+                                                disabled={!inmateSearchResult || !form.data.visit_type}
+                                            >
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {form.data.scheduled_date ? format(new Date(form.data.scheduled_date), 'PPP') : <span>Select a date</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={form.data.scheduled_date ? new Date(form.data.scheduled_date) : undefined}
+                                                onSelect={(date) => {
+                                                    if (!date) return;
                                                     
-                                                    if (!isAllowed) {
-                                                        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                                                        const allowedDays = Object.entries(inmateSearchResult.available_days)
-                                                            .filter(([d, a]) => form.data.visit_type === 'virtual' ? a.virtual : a.physical)
-                                                            .map(([d]) => dayNames[parseInt(d)]);
-                                                        toast.error(`This cell is not available for ${form.data.visit_type} visits on ${dayNames[dayOfWeek]}s. Please select a ${allowedDays.join(', ')}.`);
-                                                        form.setData('scheduled_date', '');
-                                                        setSelectedDate('');
-                                                        return;
+                                                    const dateStr = format(date, 'yyyy-MM-dd');
+                                                    
+                                                    // Validate date against cell schedule
+                                                    if (date && inmateSearchResult && form.data.visit_type) {
+                                                        const selectedDate = new Date(dateStr);
+                                                        const dayOfWeek = selectedDate.getDay();
+                                                        const availability = inmateSearchResult.available_days[dayOfWeek];
+                                                        const isAllowed = form.data.visit_type === 'virtual' 
+                                                            ? availability?.virtual 
+                                                            : availability?.physical;
+                                                        
+                                                        if (!isAllowed) {
+                                                            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                                            const allowedDays = Object.entries(inmateSearchResult.available_days)
+                                                                .filter(([d, a]) => form.data.visit_type === 'virtual' ? a.virtual : a.physical)
+                                                                .map(([d]) => dayNames[parseInt(d)]);
+                                                            toast.error(`This cell is not available for ${form.data.visit_type} visits on ${dayNames[dayOfWeek]}s. Please select a ${allowedDays.join(', ')}.`);
+                                                            return;
+                                                        }
                                                     }
-                                                }
-                                                
-                                                form.setData('scheduled_date', date);
-                                                setSelectedDate(date);
-                                                if (form.data.scheduled_time) {
-                                                    form.setData('scheduled_time', '');
-                                                }
-                                                // Check cell availability
-                                                if (form.data.visit_type) {
-                                                    checkCellAvailability(date, form.data.visit_type);
-                                                }
-                                            }}
-                                            disabled={!inmateSearchResult || !form.data.visit_type}
-                                        />
-                                    </div>
+                                                    
+                                                    form.setData('scheduled_date', dateStr);
+                                                    setSelectedDate(dateStr);
+                                                    if (form.data.scheduled_time) {
+                                                        form.setData('scheduled_time', '');
+                                                    }
+                                                    // Check cell availability
+                                                    if (form.data.visit_type) {
+                                                        checkCellAvailability(dateStr, form.data.visit_type);
+                                                    }
+                                                }}
+                                                initialFocus
+                                                disabled={(date) => {
+                                                    const minDate = new Date(minScheduleDate);
+                                                    // Allow today's date - only disable past dates
+                                                    const today = new Date();
+                                                    today.setHours(0, 0, 0, 0);
+                                                    return date < today;
+                                                }}
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
                                     <InputError message={form.errors.scheduled_date} />
                                     {inmateSearchResult && form.data.visit_type && (() => {
                                         const allowedDays = Object.entries(inmateSearchResult.available_days)
@@ -1415,6 +1625,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                                                     bookedSlots={bookedSlots}
                                                     slotCapacities={slotCapacities}
                                                     userBookedSlots={userBookedSlots}
+                                                    inmateBookedSlots={inmateBookedSlots}
                                                     visitType={form.data.visit_type as 'physical' | 'virtual'}
                                                     durationMinutes={durationMinutes}
                                                     intervalMinutes={intervalMinutes}
@@ -1444,48 +1655,142 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                                         Required Documents
                                     </h3>
 
-                                    <div className="flex flex-col gap-4">
-                                        <div className="flex flex-col gap-2">
-                                            <Label htmlFor="relationship_proof">
-                                                Proof of Relationship <span className="text-destructive">*</span>
-                                            </Label>
-                                            <Input
-                                                id="relationship_proof"
-                                                type="file"
-                                                name="relationship_proof"
-                                                accept=".pdf,.jpg,.jpeg,.png"
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0] || null;
-                                                    form.setData('relationship_proof', file);
-                                                }}
-                                                required
-                                            />
-                                            <p className="text-xs text-muted-foreground">
-                                                Accepted formats: PDF, JPG, PNG (Max 10MB)
-                                            </p>
-                                            <InputError message={form.errors.relationship_proof} />
+                                    {isInmateTagged === true ? (
+                                        <div className="rounded-lg bg-green-50 border border-green-200 p-4">
+                                            <div className="flex items-start gap-3">
+                                                <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                                                <div>
+                                                    <h4 className="text-sm font-semibold text-green-900">Proof of Relationship Not Required</h4>
+                                                    <p className="text-xs text-green-700 mt-1">
+                                                        This inmate is already tagged to your account from a previous approved visit. You do not need to upload proof of relationship documents.
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col gap-2">
-                                            <Label htmlFor="additional_proof">
-                                                Additional/Supporting Proof of Relationship <span className="text-destructive">*</span>
-                                            </Label>
-                                            <Input
-                                                id="additional_proof"
-                                                type="file"
-                                                name="additional_proof"
-                                                accept=".pdf,.jpg,.jpeg,.png"
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0] || null;
-                                                    form.setData('additional_proof', file);
-                                                }}
-                                                required
-                                            />
-                                            <p className="text-xs text-muted-foreground">
-                                                Accepted formats: PDF, JPG, PNG (Max 10MB)
-                                            </p>
-                                            <InputError message={form.errors.additional_proof} />
+                                    ) : (
+                                        <div className="flex flex-col gap-4">
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="relationship_proof">
+                                                    Proof of Relationship <span className="text-destructive">*</span>
+                                                </Label>
+                                                <div className="relative border-2 border-dashed rounded-lg p-4 transition-colors hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                                    <Input
+                                                        id="relationship_proof"
+                                                        type="file"
+                                                        name="relationship_proof"
+                                                        accept=".pdf,.jpg,.jpeg,.png"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0] || null;
+                                                            form.setData('relationship_proof', file);
+                                                        }}
+                                                        required={isInmateTagged !== true}
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                    />
+                                                    <div className="space-y-3">
+                                                        {form.data.relationship_proof ? (
+                                                            <div className="flex items-center gap-4">
+                                                                {form.data.relationship_proof.type.startsWith('image/') ? (
+                                                                    <img 
+                                                                        src={URL.createObjectURL(form.data.relationship_proof)} 
+                                                                        alt="Preview"
+                                                                        className="h-24 w-24 object-cover rounded-lg border-2 shadow-sm"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="h-24 w-24 flex items-center justify-center bg-muted rounded-lg border-2">
+                                                                        <FileText className="h-12 w-12 text-muted-foreground" />
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-sm font-semibold truncate">{form.data.relationship_proof.name}</p>
+                                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                                        Size: {(form.data.relationship_proof.size / 1024 / 1024).toFixed(2)} MB
+                                                                    </p>
+                                                                    <p className="text-xs text-muted-foreground capitalize">
+                                                                        Type: {form.data.relationship_proof.type.split('/')[1]?.toUpperCase() || 'PDF'}
+                                                                    </p>
+                                                                    <Badge variant="secondary" className="mt-2">
+                                                                        ✓ File selected
+                                                                    </Badge>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col items-center justify-center py-8 text-center">
+                                                                <div className="rounded-full bg-muted p-4 mb-3">
+                                                                    <Upload className="h-8 w-8 text-muted-foreground" />
+                                                                </div>
+                                                                <p className="text-sm font-medium">Click to upload or drag and drop</p>
+                                                                <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG (Max 10MB)</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground -mt-2">
+                                                    Accepted formats: PDF, JPG, PNG (Max 10MB)
+                                                </p>
+                                                <InputError message={form.errors.relationship_proof} />
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="additional_proof">
+                                                    Additional/Supporting Proof of Relationship <span className="text-destructive">*</span>
+                                                </Label>
+                                                <div className="relative border-2 border-dashed rounded-lg p-4 transition-colors hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                                    <Input
+                                                        id="additional_proof"
+                                                        type="file"
+                                                        name="additional_proof"
+                                                        accept=".pdf,.jpg,.jpeg,.png"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0] || null;
+                                                            form.setData('additional_proof', file);
+                                                        }}
+                                                        required={isInmateTagged !== true}
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                    />
+                                                    <div className="space-y-3">
+                                                        {form.data.additional_proof ? (
+                                                            <div className="flex items-center gap-4">
+                                                                {form.data.additional_proof.type.startsWith('image/') ? (
+                                                                    <img 
+                                                                        src={URL.createObjectURL(form.data.additional_proof)} 
+                                                                        alt="Preview"
+                                                                        className="h-24 w-24 object-cover rounded-lg border-2 shadow-sm"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="h-24 w-24 flex items-center justify-center bg-muted rounded-lg border-2">
+                                                                        <FileText className="h-12 w-12 text-muted-foreground" />
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-sm font-semibold truncate">{form.data.additional_proof.name}</p>
+                                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                                        Size: {(form.data.additional_proof.size / 1024 / 1024).toFixed(2)} MB
+                                                                    </p>
+                                                                    <p className="text-xs text-muted-foreground capitalize">
+                                                                        Type: {form.data.additional_proof.type.split('/')[1]?.toUpperCase() || 'PDF'}
+                                                                    </p>
+                                                                    <Badge variant="secondary" className="mt-2">
+                                                                        ✓ File selected
+                                                                    </Badge>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col items-center justify-center py-8 text-center">
+                                                                <div className="rounded-full bg-muted p-4 mb-3">
+                                                                    <Upload className="h-8 w-8 text-muted-foreground" />
+                                                                </div>
+                                                                <p className="text-sm font-medium">Click to upload or drag and drop</p>
+                                                                <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG (Max 10MB)</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground -mt-2">
+                                                    Accepted formats: PDF, JPG, PNG (Max 10MB)
+                                                </p>
+                                                <InputError message={form.errors.additional_proof} />
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
 
                                 <div className="flex flex-col gap-2">
@@ -1500,12 +1805,42 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                                     />
                                     <InputError message={form.errors.notes} />
                                 </div>
+
+                                {/* Privacy Notice - Conditional based on visit type */}
+                                {form.data.visit_type && (
+                                    <div className="rounded-lg border-l-4 border-l-blue-500 bg-blue-500/10 p-4 mt-2">
+                                        <div className="flex items-start gap-3">
+                                            <Checkbox
+                                                id="privacy_acknowledged"
+                                                checked={form.data.privacy_acknowledged}
+                                                onCheckedChange={(checked) => form.setData('privacy_acknowledged', Boolean(checked))}
+                                                required
+                                                className="mt-1 h-5 w-5"
+                                            />
+                                            <div className="flex-1 space-y-2">
+                                                <Label
+                                                    htmlFor="privacy_acknowledged"
+                                                    className="text-sm font-normal leading-relaxed cursor-pointer"
+                                                >
+                                                    <span className="font-semibold text-foreground">Privacy Notice:</span>{" "}
+                                                    <span className="text-muted-foreground">
+                                                        {form.data.visit_type === 'virtual' ? (
+                                                            <>The information provided in this visitation request will be collected and processed solely for identity verification, visitation scheduling, approval processing, security monitoring, record management, and other legitimate operational purposes. All information shall be handled in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.</>
+                                                        ) : (
+                                                            <>The information collected through this request will be used exclusively for visitor verification, schedule management, facility access validation, security monitoring, and compliance with visitation procedures. Personal data shall be processed in accordance with Republic Act No. 10173 and applicable institutional regulations.</>
+                                                        )}
+                                                    </span>
+                                                </Label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <DialogFooter className="mt-6">
                                 <Button type="button" variant="outline" onClick={handleModalClose}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing}>
+                                <Button type="submit" disabled={form.processing || !form.data.privacy_acknowledged}>
                                     {form.processing && <Spinner className="mr-2 size-4" />}
                                     Submit Visit Request
                                 </Button>

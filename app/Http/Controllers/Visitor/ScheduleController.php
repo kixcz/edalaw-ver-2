@@ -259,10 +259,37 @@ class ScheduleController extends Controller
             ->values()
             ->all();
 
+        // Inmate-specific booked slots (if inmate_id is provided)
+        $inmateBookedSlots = [];
+        if ($request->has('inmate_id')) {
+            $inmateBookedSlots = Visit::where('inmate_id', $request->inmate_id)
+                ->where('scheduled_date', $date)
+                ->where('visit_type', VisitType::from($visitType))
+                ->whereIn('status', [VisitStatus::Pending, VisitStatus::Approved])
+                ->whereNotNull('scheduled_time')
+                ->get()
+                ->map(function ($visit) {
+                    $t = $visit->scheduled_time;
+                    if ($t instanceof \Carbon\Carbon) {
+                        return $t->format('H:i');
+                    }
+                    if (is_string($t) && preg_match('/^\d{2}:\d{2}/', $t)) {
+                        return substr($t, 0, 5);
+                    }
+
+                    return (string) $t;
+                })
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+        }
+
         return response()->json([
             'slotCapacities' => $slotCapacities,
             'isDayUnavailable' => $isDayUnavailable,
             'userBookedSlots' => $userBookedSlots,
+            'inmateBookedSlots' => $inmateBookedSlots,
             'durationMinutes' => $durationMinutes,
             'intervalMinutes' => $intervalMinutes,
             'startTime' => $startTime,
@@ -539,59 +566,138 @@ class ScheduleController extends Controller
      */
     public function searchInmate(Request $request): JsonResponse
     {
-        $request->validate([
-            'first_name' => ['required', 'string', 'max:100'],
-            'middle_name' => ['nullable', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
-        ]);
+        try {
+            $request->validate([
+                'first_name' => ['required', 'string', 'max:100'],
+                'middle_name' => ['nullable', 'string', 'max:100'],
+                'last_name' => ['required', 'string', 'max:100'],
+            ]);
 
-        // Use case-insensitive search
-        $firstName = strtolower($request->first_name);
-        $lastName = strtolower($request->last_name);
-        $middleName = $request->middle_name ? strtolower($request->middle_name) : null;
+            // Use case-insensitive search
+            $firstName = strtolower($request->first_name);
+            $lastName = strtolower($request->last_name);
+            $middleName = $request->middle_name ? strtolower($request->middle_name) : null;
 
-        $query = Inmate::with('cell.scheduleTemplates')
-            ->whereRaw('LOWER(first_name) LIKE ?', ['%' . $firstName . '%'])
-            ->whereRaw('LOWER(last_name) LIKE ?', ['%' . $lastName . '%'])
-            ->where('status', 'active');
+            \Log::info('Searching for inmate:', [
+                'first_name' => $firstName,
+                'middle_name' => $middleName,
+                'last_name' => $lastName,
+            ]);
 
-        if ($request->filled('middle_name')) {
-            $query->whereRaw('LOWER(middle_name) LIKE ?', ['%' . $middleName . '%']);
-        }
+            $query = Inmate::with('cell.scheduleTemplates')
+                ->whereRaw('LOWER(first_name) LIKE ?', ['%' . $firstName . '%'])
+                ->whereRaw('LOWER(last_name) LIKE ?', ['%' . $lastName . '%'])
+                ->where('status', 'active');
 
-        $inmate = $query->first();
+            if ($request->filled('middle_name')) {
+                $query->whereRaw('LOWER(middle_name) LIKE ?', ['%' . $middleName . '%']);
+            }
 
-        if (! $inmate) {
+            $inmate = $query->first();
+
+            \Log::info('Search result:', ['found' => $inmate !== null, 'inmate_id' => $inmate?->id]);
+
+            if (! $inmate) {
+                return response()->json([
+                    'found' => false,
+                    'message' => 'No inmate found with the provided name. Please check the spelling and try again.',
+                ], 404);
+            }
+
+            // Check if inmate has a cell assigned
+            if (! $inmate->cell) {
+                \Log::warning('Inmate without cell:', ['inmate_id' => $inmate->id]);
+                
+                return response()->json([
+                    'found' => true,
+                    'inmate' => [
+                        'id' => $inmate->id,
+                        'first_name' => $inmate->first_name,
+                        'middle_name' => $inmate->middle_name,
+                        'last_name' => $inmate->last_name,
+                        'inmate_number' => $inmate->inmate_number,
+                        'cell' => null,
+                        'available_days' => [],
+                    ],
+                    'warning' => 'This inmate does not have a cell assigned. Please contact support.',
+                ]);
+            }
+
+            // Get cell schedule templates
+            $availableDays = [];
+            foreach ($inmate->cell->scheduleTemplates as $template) {
+                $availableDays[$template->day_of_week] = [
+                    'virtual' => $template->virtual_available,
+                    'physical' => $template->physical_available,
+                ];
+            }
+
+            \Log::info('Returning inmate data successfully', [
+                'inmate_id' => $inmate->id,
+                'cell_id' => $inmate->cell->id,
+                'schedule_templates_count' => count($availableDays),
+            ]);
+
+            $responseData = [
+                'found' => true,
+                'inmate' => [
+                    'id' => $inmate->id,
+                    'first_name' => $inmate->first_name,
+                    'middle_name' => $inmate->middle_name ?? null,
+                    'last_name' => $inmate->last_name,
+                    'inmate_number' => $inmate->inmate_number,
+                    'cell' => [
+                        'id' => $inmate->cell->id,
+                        'cell_number' => $inmate->cell->cell_number,
+                    ],
+                    'available_days' => $availableDays,
+                ],
+            ];
+
+            \Log::info('Response data prepared', ['response' => json_encode($responseData)]);
+
+            return response()->json($responseData);
+        } catch (\Exception $e) {
+            \Log::error('Inmate search error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'found' => false,
-                'message' => 'No inmate found with the provided name. Please check the spelling and try again.',
-            ], 404);
+                'message' => 'An error occurred while searching for the inmate. Please try again.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
+    }
 
-        // Get cell schedule templates
-        $availableDays = [];
-        foreach ($inmate->cell->scheduleTemplates as $template) {
-            $availableDays[$template->day_of_week] = [
-                'virtual' => $template->virtual_available,
-                'physical' => $template->physical_available,
-            ];
+    /**
+     * Check if an inmate is tagged to the authenticated visitor.
+     */
+    public function checkInmateTagged(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'inmate_id' => ['required', 'integer', 'exists:inmates,id'],
+            ]);
+
+            $userId = auth()->id();
+            
+            // Check if there's an approved visit for this inmate and user
+            $isTagged = Visit::where('user_id', $userId)
+                ->where('inmate_id', $request->inmate_id)
+                ->where('status', 'approved')
+                ->exists();
+
+            return response()->json([
+                'is_tagged' => $isTagged,
+                'message' => $isTagged ? 'Inmate is already tagged to your account' : 'Inmate is not tagged to your account',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Check inmate tagged error: ' . $e->getMessage());
+            
+            return response()->json([
+                'error' => 'An error occurred while checking inmate tag status.',
+            ], 500);
         }
-
-        return response()->json([
-            'found' => true,
-            'inmate' => [
-                'id' => $inmate->id,
-                'first_name' => $inmate->first_name,
-                'middle_name' => $inmate->middle_name,
-                'last_name' => $inmate->last_name,
-                'inmate_number' => $inmate->inmate_number,
-                'cell' => [
-                    'id' => $inmate->cell->id,
-                    'cell_number' => $inmate->cell->cell_number,
-                ],
-                'available_days' => $availableDays,
-            ],
-        ]);
     }
 
     /**

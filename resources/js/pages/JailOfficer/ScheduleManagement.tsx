@@ -510,73 +510,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
                 );
             },
         },
-        // {
-        //     id: 'icon',
-        //     header: '',
-        //     cell: ({ row }) => {
-        //         const visit = row.original;
-        //         // Check if schedule has ended
-        //         const isScheduleEnded = visit.schedule_ended === true;
-                
-        //         // Join video call button for approved virtual visits with active sessions
-        //         if (visit.visit_type === 'virtual' && visit.status === 'approved' && visit.visit_session_id) {
-        //             if (isScheduleEnded) {
-        //                 return (
-        //                     <Button 
-        //                         size="sm" 
-        //                         variant="outline" 
-        //                         disabled
-        //                         className="bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-        //                         title="Schedule has ended - cannot join"
-        //                     >
-        //                         <Video className="mr-1 h-4 w-4" />
-        //                         Ended
-        //                     </Button>
-        //                 );
-        //             }
-        //             return (
-        //                 <Button 
-        //                     size="sm" 
-        //                     variant="outline" 
-        //                     className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-        //                     onClick={() => {
-        //                         if (!visit.visit_session_id) return;
-                                
-        //                         // Check if session has started using backend-calculated flag
-        //                         if (!visit.schedule_started) {
-        //                             setBeforeScheduleVisit(visit);
-        //                             return;
-        //                         }
-                                
-        //                         // Open video call in new tab
-        //                         window.open(`/jail-officer/assigned-sessions/${visit.visit_session_id}/join`, '_blank');
-        //                     }}
-        //                     title="Join video call in new tab"
-        //                 >
-        //                     <Video className="mr-1 h-4 w-4" />
-        //                     Join
-        //                 </Button>
-        //             );
-        //         }
-        //         if (visit.visit_type === 'physical' && visit.status === 'approved') {
-        //             return (
-        //                 <Button size="sm" variant="outline" asChild>
-        //                     <a
-        //                         href={`/visits/${visit.id}/proof`}
-        //                         target="_blank"
-        //                         rel="noopener noreferrer"
-        //                         className="inline-flex gap-2"
-        //                         title="Proof of appointment"
-        //                     >
-        //                         <FileOutput className="h-4 w-4" />
-        //                         PDF
-        //                     </a>
-        //                 </Button>
-        //             );
-        //         }
-        //         return <span className="text-sm text-muted-foreground">â€”</span>;
-        //     },
-        // },
+        
         {
             id: 'actions',
             header: 'Actions',

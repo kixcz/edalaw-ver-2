@@ -34,6 +34,12 @@ type CallLog = {
     notes: string | null;
     status: string;
     created_at: string;
+    visitor_name?: string | null;
+    inmate_name?: string | null;
+    scheduled_end?: string | null;
+    visitor_joined_at?: string | null;
+    inmate_joined_at?: string | null;
+    end_reason?: string | null;
 };
 
 type Props = {
@@ -80,11 +86,29 @@ export default function CallLogs({ callLogs }: Props) {
             case 'completed':
                 return (
                     <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-                        Completed
+                        ✓ Completed
+                    </Badge>
+                );
+            case 'active':
+                return (
+                    <Badge variant="default" className="bg-blue-500 hover:bg-blue-600 animate-pulse">
+                        ● Active
+                    </Badge>
+                );
+            case 'scheduled':
+                return (
+                    <Badge variant="secondary" className="bg-gray-500 hover:bg-gray-600">
+                        ◷ Scheduled
                     </Badge>
                 );
             case 'missed':
-                return <Badge variant="destructive">Missed</Badge>;
+                return <Badge variant="destructive">✕ Missed</Badge>;
+            case 'terminated':
+                return (
+                    <Badge variant="outline" className="bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20">
+                        ⚠ Terminated
+                    </Badge>
+                );
             case 'failed':
             case 'rejected':
                 return (
@@ -105,21 +129,18 @@ export default function CallLogs({ callLogs }: Props) {
     const columns: ColumnDef<CallLog>[] = useMemo(
         () => [
             {
-                accessorKey: 'phone_number',
-                header: 'Phone Number',
+                accessorKey: 'notes',
+                header: 'Call Details',
                 cell: ({ row }) => {
                     const callLog = row.original;
-                    const label = callLog.call_type === 'video'
-                        ? (callLog.notes ?? 'Video visit')
-                        : (callLog.phone_number ?? '—');
                     return (
-                        <div className="flex items-center gap-2">
-                            {getCallTypeIcon(callLog.call_type)}
+                        <div className="flex items-center gap-3">
+                            <Video className="h-5 w-5 text-purple-600" />
                             <div>
-                                <div className="font-medium">{label}</div>
-                                <Badge variant="outline" className="text-xs capitalize mt-1">
-                                    {callLog.call_type}
-                                </Badge>
+                                <div className="font-medium">{callLog.notes || 'Video visit'}</div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    Visitor: {callLog.visitor_name || 'N/A'} • Inmate: {callLog.inmate_name || 'N/A'}
+                                </div>
                             </div>
                         </div>
                     );
@@ -127,7 +148,7 @@ export default function CallLogs({ callLogs }: Props) {
             },
             {
                 accessorKey: 'call_date',
-                header: 'Date & Time',
+                header: 'Scheduled Date & Time',
                 cell: ({ row }) => (
                     <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
@@ -146,19 +167,6 @@ export default function CallLogs({ callLogs }: Props) {
                 accessorKey: 'status',
                 header: 'Status',
                 cell: ({ row }) => getStatusBadge(row.original.status),
-            },
-            {
-                accessorKey: 'notes',
-                header: 'Notes',
-                cell: ({ row }) => (
-                    <div className="max-w-md">
-                        {row.original.notes ? (
-                            <div className="text-sm truncate">{row.original.notes}</div>
-                        ) : (
-                            <span className="text-sm text-muted-foreground">No notes</span>
-                        )}
-                    </div>
-                ),
             },
             {
                 id: 'actions',

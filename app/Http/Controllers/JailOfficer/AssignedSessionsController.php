@@ -21,17 +21,41 @@ class AssignedSessionsController extends Controller
 {
     /**
      * List visit_sessions assigned to the current jail officer.
+     * Shows visits where the inmate is in a cell that matches the JO's assigned scope.
      */
     public function index(Request $request): Response
     {
         $user = $request->user();
         $isSuperAdmin = $user->role?->slug === 'super_admin';
 
-        $query = VisitSession::with(['visit.user', 'eburol.user', 'visit', 'eburol']);
+        $query = VisitSession::with(['visit.user', 'eburol.user', 'visit.inmate.cell', 'eburol', 'visit']);
+        
         if (! $isSuperAdmin) {
-            // Filter sessions where the jail officer is assigned to the visit
+            // Filter sessions based on jail officer's assigned scope
             $query->whereHas('visit', function ($q) use ($user) {
-                $q->where('jail_officer_id', $user->id);
+                // Get all active scopes for this jail officer
+                $scopeIds = $user->jailOfficerScopes()->where('is_active', true);
+                
+                // Match visits where the inmate's cell falls within the JO's scope
+                $q->whereHas('inmate', function ($inmateQuery) use ($scopeIds) {
+                    // Check if inmate's cell matches any of the JO's assigned scopes
+                    $inmateQuery->where(function ($query) use ($scopeIds) {
+                        // Direct cell assignment
+                        $query->whereHas('cell', function ($cellQuery) use ($scopeIds) {
+                            $cellQuery->whereIn('id', $scopeIds->clone()->where('scope_type', 'cell')->pluck('cell_id'));
+                        })
+                        // Or inmate's annex matches JO's annex assignment
+                        ->orWhereHas('annex', function ($annexQuery) use ($scopeIds) {
+                            $annexQuery->whereIn('id', $scopeIds->clone()->where('scope_type', 'annex')->pluck('annex_id'));
+                        })
+                        // Or inmate's dormitory matches JO's dormitory assignment
+                        ->orWhereHas('dormitory', function ($dormQuery) use ($scopeIds) {
+                            $dormQuery->whereIn('id', $scopeIds->clone()->where('scope_type', 'dormitory')->pluck('dormitory_id'));
+                        });
+                    });
+                })
+                // Fallback: Also include visits explicitly assigned to this JO
+                ->orWhere('jail_officer_id', $user->id);
             });
         }
 
@@ -62,6 +86,15 @@ class AssignedSessionsController extends Controller
                 }
                 $scheduleEnded = now()->isAfter($session->scheduled_end);
 
+                // Auto-start session if within schedule and not yet started
+                $status = $session->status;
+                if ($status === 'scheduled' && $session->isWithinSchedule() && !$scheduleEnded) {
+                    // Session should be active if within time window
+                    $status = 'active';
+                    // Optionally update the database (commented out to avoid unnecessary writes)
+                    // $session->update(['status' => 'active', 'started_at' => now()]);
+                }
+
                 $tunnel = $session->inmateTunnels()->whereNotNull('short_code')->latest()->first();
 
                 return [
@@ -79,7 +112,7 @@ class AssignedSessionsController extends Controller
                     'scheduled_time' => $scheduledTime,
                     'visit_type' => $visitType,
                     'schedule_ended' => $scheduleEnded,
-                    'status' => $session->status,
+                    'status' => $status, // Use calculated status
                     'recording_status' => $session->recording_status,
                     'started_at' => $session->started_at?->toIso8601String(),
                     'ended_at' => $session->ended_at?->toIso8601String(),
@@ -222,6 +255,154 @@ class AssignedSessionsController extends Controller
         }
 
         return redirect()->back()->with('success', 'Session ended.');
+    }
+
+    /**
+     * Kill active session immediately (emergency termination).
+     */
+    public function killSession(Request $request, VisitSession $session): JsonResponse
+    {
+        $user = $request->user();
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+            abort(403);
+        }
+        if ($session->status !== 'active') {
+            return response()->json(['error' => 'Session is not active.'], 422);
+        }
+
+        $endedAt = now();
+        $durationSeconds = null;
+        if ($session->started_at) {
+            $raw = (int) round($endedAt->diffInSeconds($session->started_at, false));
+            $durationSeconds = max(0, $raw);
+        }
+
+        // Stop recording if active
+        if ($session->recording_status === 'recording' && $session->visitor_participant_id) {
+            app(VisitSessionRecordingService::class)->stopRecordingAndSave($session, $session->visitor_participant_id);
+        }
+
+        $session->update([
+            'status' => 'terminated',
+            'end_reason' => 'killed_by_monitor',
+            'recording_status' => $session->recording_status === 'recording' ? 'saved' : $session->recording_status,
+            'ended_at' => $endedAt,
+            'duration_seconds' => $durationSeconds,
+        ]);
+
+        // Mark tunnel as used
+        InmateTunnel::where('visit_session_id', $session->id)->update(['is_used' => true]);
+
+        SystemLog::create([
+            'visit_session_id' => $session->id,
+            'action' => 'kill_session',
+            'performed_by' => $request->user()->id,
+            'metadata' => [
+                'duration_seconds' => $durationSeconds,
+                'reason' => 'killed_by_monitor',
+            ],
+        ]);
+
+        return response()->json(['message' => 'Session terminated immediately.']);
+    }
+
+    /**
+     * Mute all participants' audio in the session.
+     */
+    public function muteAudio(Request $request, VisitSession $session): JsonResponse
+    {
+        $user = $request->user();
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+            abort(403);
+        }
+        if ($session->status !== 'active') {
+            return response()->json(['error' => 'Session is not active.'], 422);
+        }
+
+        // Note: VideoSDK doesn't have direct API to mute all participants
+        // This would need to be implemented via WebSocket broadcast to clients
+        // For now, we'll log the action and rely on client-side implementation
+        
+        SystemLog::create([
+            'visit_session_id' => $session->id,
+            'action' => 'mute_all_audio',
+            'performed_by' => $request->user()->id,
+            'metadata' => ['target' => 'all_participants'],
+        ]);
+
+        // Broadcast event to notify clients to mute audio
+        // Client-side implementation needed in video-room.blade.php
+        
+        return response()->json(['message' => 'Audio mute command sent to all participants.', 'muted' => true]);
+    }
+
+    /**
+     * Unmute all participants' audio in the session.
+     */
+    public function unmuteAudio(Request $request, VisitSession $session): JsonResponse
+    {
+        $user = $request->user();
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+            abort(403);
+        }
+        if ($session->status !== 'active') {
+            return response()->json(['error' => 'Session is not active.'], 422);
+        }
+
+        SystemLog::create([
+            'visit_session_id' => $session->id,
+            'action' => 'unmute_all_audio',
+            'performed_by' => $request->user()->id,
+            'metadata' => ['target' => 'all_participants'],
+        ]);
+
+        return response()->json(['message' => 'Audio unmute command sent to all participants.', 'unmuted' => true]);
+    }
+
+    /**
+     * Disable all participants' cameras in the session.
+     */
+    public function disableCamera(Request $request, VisitSession $session): JsonResponse
+    {
+        $user = $request->user();
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+            abort(403);
+        }
+        if ($session->status !== 'active') {
+            return response()->json(['error' => 'Session is not active.'], 422);
+        }
+
+        SystemLog::create([
+            'visit_session_id' => $session->id,
+            'action' => 'disable_all_cameras',
+            'performed_by' => $request->user()->id,
+            'metadata' => ['target' => 'all_participants'],
+        ]);
+
+        return response()->json(['message' => 'Camera disable command sent to all participants.', 'camera_disabled' => true]);
+    }
+
+    /**
+     * Enable all participants' cameras in the session.
+     */
+    public function enableCamera(Request $request, VisitSession $session): JsonResponse
+    {
+        $user = $request->user();
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+            abort(403);
+        }
+        if ($session->status !== 'active') {
+            return response()->json(['error' => 'Session is not active.'], 422);
+        }
+
+        SystemLog::create([
+            'visit_session_id' => $session->id,
+            'action' => 'enable_all_cameras',
+            'performed_by' => $request->user()->id,
+            'metadata' => ['target' => 'all_participants'],
+        ]);
+
+        return response()->json(['message' => 'Camera enable command sent to all participants.', 'camera_enabled' => true]);
     }
 
     /**

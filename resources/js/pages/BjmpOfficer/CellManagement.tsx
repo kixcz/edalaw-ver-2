@@ -53,6 +53,39 @@ type Cell = {
     status: 'active' | 'inactive';
     inmates_count: number;
     created_at: string;
+    annex?: {
+        id: number;
+        name: string;
+        dormitory_id: number;
+        dormitory?: {
+            id: number;
+            name: string;
+            jail_id: number;
+            jail?: {
+                id: number;
+                name: string;
+                code: string;
+            };
+        };
+    };
+};
+
+type Jail = {
+    id: number;
+    name: string;
+    code: string;
+};
+
+type Dormitory = {
+    id: number;
+    jail_id: number;
+    name: string;
+};
+
+type Annex = {
+    id: number;
+    dormitory_id: number;
+    name: string;
 };
 
 type Props = {
@@ -63,8 +96,14 @@ type Props = {
         per_page: number;
         total: number;
     };
+    jails: Jail[];
+    dormitories: Dormitory[];
+    annexes: Annex[];
     filters: {
         search: string;
+        annex_id: number | null;
+        dormitory_id: number | null;
+        jail_id: number | null;
         status: string;
     };
 };
@@ -78,9 +117,12 @@ function getStatusBadge(status: string) {
     return <Badge variant={config.variant}>{config.label}</Badge>;
 }
 
-export default function CellManagement({ cells, filters }: Props) {
+export default function CellManagement({ cells, jails = [], dormitories = [], annexes = [], filters }: Props) {
     const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
     const [searchQuery, setSearchQuery] = useState(filters.search ?? '');
+    const [jailFilter, setJailFilter] = useState(filters.jail_id ? String(filters.jail_id) : 'all');
+    const [dormitoryFilter, setDormitoryFilter] = useState(filters.dormitory_id ? String(filters.dormitory_id) : 'all');
+    const [annexFilter, setAnnexFilter] = useState(filters.annex_id ? String(filters.annex_id) : 'all');
     const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');
     
     // Modal states
@@ -91,12 +133,18 @@ export default function CellManagement({ cells, filters }: Props) {
 
     // Forms
     const createForm = useForm({
+        jail_id: '',
+        dormitory_id: '',
+        annex_id: '',
         cell_number: '',
         capacity: 4,
         status: 'active',
     });
 
     const editForm = useForm({
+        jail_id: '',
+        dormitory_id: '',
+        annex_id: '',
         cell_number: '',
         capacity: 4,
         status: 'active',
@@ -105,11 +153,13 @@ export default function CellManagement({ cells, filters }: Props) {
     const deleteForm = useForm({});
 
     const handleSearch = () => {
-        router.get(
-            '/bjmp-officer/cells',
-            { search: searchQuery, status: statusFilter },
-            { preserveState: true, preserveScroll: true }
-        );
+        const params = new URLSearchParams();
+        if (searchQuery) params.set('search', searchQuery);
+        if (jailFilter !== 'all') params.set('jail_id', jailFilter);
+        if (dormitoryFilter !== 'all') params.set('dormitory_id', dormitoryFilter);
+        if (annexFilter !== 'all') params.set('annex_id', annexFilter);
+        if (statusFilter !== 'all') params.set('status', statusFilter);
+        router.get('/bjmp-officer/cells?' + params.toString(), { preserveState: true, preserveScroll: true });
     };
 
     const handleCreateSubmit = (e: React.FormEvent) => {
@@ -147,6 +197,7 @@ export default function CellManagement({ cells, filters }: Props) {
     const openEditModal = (cell: Cell) => {
         setSelectedCell(cell);
         editForm.setData({
+            annex_id: cell.annex?.id ? String(cell.annex.id) : '',
             cell_number: cell.cell_number,
             capacity: cell.capacity,
             status: cell.status,
@@ -161,6 +212,19 @@ export default function CellManagement({ cells, filters }: Props) {
 
     const columns: ColumnDef<Cell>[] = useMemo(
         () => [
+            {
+                accessorKey: 'annex',
+                header: 'Location',
+                cell: ({ row }) => (
+                    <div className="text-sm">
+                        <div className="font-medium">{row.original.annex?.name || 'N/A'}</div>
+                        <div className="text-muted-foreground">
+                            {row.original.annex?.dormitory?.name || ''}
+                            {row.original.annex?.dormitory?.jail?.name ? ` (${row.original.annex.dormitory.jail.name})` : ''}
+                        </div>
+                    </div>
+                ),
+            },
             {
                 accessorKey: 'cell_number',
                 header: 'Cell Number',
@@ -267,29 +331,60 @@ export default function CellManagement({ cells, filters }: Props) {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="mb-4 flex items-center gap-4">
-                            <div className="flex items-center gap-2 flex-1">
-                                <Search className="h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search cells..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                    className="max-w-sm"
-                                />
+                        <div className="mb-4 flex items-center gap-4 flex-wrap">
+                            <div className="flex-1 min-w-[200px]">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search cells..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                        className="pl-9"
+                                    />
+                                </div>
                             </div>
-                            <Select
-                                value={statusFilter}
-                                onValueChange={(value) => {
-                                    setStatusFilter(value);
-                                    router.get(
-                                        '/bjmp-officer/cells',
-                                        { search: searchQuery, status: value },
-                                        { preserveState: true, preserveScroll: true }
-                                    );
-                                }}
-                            >
+                            <Select value={jailFilter} onValueChange={(value) => { setJailFilter(value); setDormitoryFilter('all'); setAnnexFilter('all'); handleSearch(); }}>
                                 <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Filter by jail" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Jails</SelectItem>
+                                    {jails?.map((jail) => (
+                                        <SelectItem key={jail.id} value={String(jail.id)}>
+                                            {jail.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={dormitoryFilter} onValueChange={(value) => { setDormitoryFilter(value); setAnnexFilter('all'); handleSearch(); }}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Filter by dormitory" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Dormitories</SelectItem>
+                                    {dormitories?.filter(d => jailFilter === 'all' || String(d.jail_id) === jailFilter).map((dorm) => (
+                                        <SelectItem key={dorm.id} value={String(dorm.id)}>
+                                            {dorm.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={annexFilter} onValueChange={(value) => { setAnnexFilter(value); handleSearch(); }}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Filter by annex" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Annexes</SelectItem>
+                                    {annexes?.filter(a => dormitoryFilter === 'all' || String(a.dormitory_id) === dormitoryFilter).map((annex) => (
+                                        <SelectItem key={annex.id} value={String(annex.id)}>
+                                            {annex.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); handleSearch(); }}>
+                                <SelectTrigger className="w-[150px]">
                                     <SelectValue placeholder="Filter by status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -320,6 +415,76 @@ export default function CellManagement({ cells, filters }: Props) {
                     </DialogHeader>
                     <form onSubmit={handleCreateSubmit}>
                         <div className="space-y-4 py-4">
+                            <div>
+                                <Label htmlFor="create_jail">Jail</Label>
+                                <Select
+                                    value={createForm.data.jail_id || ''}
+                                    onValueChange={(value) => {
+                                        createForm.setData('jail_id', value);
+                                        createForm.setData('dormitory_id', '');
+                                        createForm.setData('annex_id', '');
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a jail" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {jails?.map((jail) => (
+                                            <SelectItem key={jail.id} value={String(jail.id)}>
+                                                {jail.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="create_dormitory">Dormitory</Label>
+                                <Select
+                                    value={createForm.data.dormitory_id || ''}
+                                    onValueChange={(value) => {
+                                        createForm.setData('dormitory_id', value);
+                                        createForm.setData('annex_id', '');
+                                    }}
+                                    disabled={!createForm.data.jail_id}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a dormitory" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {dormitories
+                                            ?.filter(d => !createForm.data.jail_id || String(d.jail_id) === createForm.data.jail_id)
+                                            .map((dorm) => (
+                                                <SelectItem key={dorm.id} value={String(dorm.id)}>
+                                                    {dorm.name}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="create_annex">Annex/Building</Label>
+                                <Select
+                                    value={createForm.data.annex_id}
+                                    onValueChange={(value) => createForm.setData('annex_id', value)}
+                                    disabled={!createForm.data.dormitory_id}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select an annex" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {annexes
+                                            ?.filter(a => !createForm.data.dormitory_id || String(a.dormitory_id) === createForm.data.dormitory_id)
+                                            .map((annex) => (
+                                                <SelectItem key={annex.id} value={String(annex.id)}>
+                                                    {annex.name}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                                {createForm.errors.annex_id && (
+                                    <p className="text-sm text-destructive mt-1">{createForm.errors.annex_id}</p>
+                                )}
+                            </div>
                             <div>
                                 <Label htmlFor="cell_number">Cell Number</Label>
                                 <Input
@@ -388,6 +553,76 @@ export default function CellManagement({ cells, filters }: Props) {
                     </DialogHeader>
                     <form onSubmit={handleEditSubmit}>
                         <div className="space-y-4 py-4">
+                            <div>
+                                <Label htmlFor="edit_jail">Jail</Label>
+                                <Select
+                                    value={editForm.data.jail_id || String(selectedCell?.annex?.dormitory?.jail_id || '')}
+                                    onValueChange={(value) => {
+                                        editForm.setData('jail_id', value);
+                                        editForm.setData('dormitory_id', '');
+                                        editForm.setData('annex_id', '');
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a jail" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {jails?.map((jail) => (
+                                            <SelectItem key={jail.id} value={String(jail.id)}>
+                                                {jail.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="edit_dormitory">Dormitory</Label>
+                                <Select
+                                    value={editForm.data.dormitory_id || String(selectedCell?.annex?.dormitory_id || '')}
+                                    onValueChange={(value) => {
+                                        editForm.setData('dormitory_id', value);
+                                        editForm.setData('annex_id', '');
+                                    }}
+                                    disabled={!editForm.data.jail_id}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a dormitory" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {dormitories
+                                            .filter(d => !editForm.data.jail_id || String(d.jail_id) === editForm.data.jail_id)
+                                            .map((dorm) => (
+                                                <SelectItem key={dorm.id} value={String(dorm.id)}>
+                                                    {dorm.name}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="edit_annex">Annex/Building</Label>
+                                <Select
+                                    value={editForm.data.annex_id}
+                                    onValueChange={(value) => editForm.setData('annex_id', value)}
+                                    disabled={!editForm.data.dormitory_id}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select an annex" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {annexes
+                                            .filter(a => !editForm.data.dormitory_id || String(a.dormitory_id) === editForm.data.dormitory_id)
+                                            .map((annex) => (
+                                                <SelectItem key={annex.id} value={String(annex.id)}>
+                                                    {annex.name}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                                {editForm.errors.annex_id && (
+                                    <p className="text-sm text-destructive mt-1">{editForm.errors.annex_id}</p>
+                                )}
+                            </div>
                             <div>
                                 <Label htmlFor="edit_cell_number">Cell Number</Label>
                                 <Input

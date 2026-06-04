@@ -12,9 +12,7 @@ use Inertia\Response;
 
 class SessionManagementController extends Controller
 {
-    /**
-     * Display the session management page for all users.
-     */
+   
     public function index(): Response
     {
         $sessions = UserSession::with('user.role')
@@ -65,15 +63,10 @@ class SessionManagementController extends Controller
         ]);
     }
 
-    /**
-     * Revoke a specific session.
-     */
     public function revoke(UserSession $session): RedirectResponse
     {
-        // Delete the session from database
         $session->delete();
 
-        // If using database sessions, also delete from sessions table
         if (config('session.driver') === 'database') {
             DB::table('sessions')
                 ->where('id', $session->session_id)
@@ -83,15 +76,11 @@ class SessionManagementController extends Controller
         return redirect()->back()->with('success', 'Session revoked successfully.');
     }
 
-    /**
-     * Revoke all sessions for a specific user.
-     */
     public function revokeUserSessions(int $user): RedirectResponse
     {
         $sessions = UserSession::where('user_id', $user)->get();
 
         foreach ($sessions as $session) {
-            // If using database sessions, also delete from sessions table
             if (config('session.driver') === 'database') {
                 DB::table('sessions')
                     ->where('id', $session->session_id)
@@ -103,9 +92,6 @@ class SessionManagementController extends Controller
         return redirect()->back()->with('success', 'All sessions for this user have been revoked.');
     }
 
-    /**
-     * Revoke all other sessions for the current user (end login on other devices).
-     */
     public function revokeMyOtherSessions(): RedirectResponse
     {
         $currentSessionId = Session::getId();

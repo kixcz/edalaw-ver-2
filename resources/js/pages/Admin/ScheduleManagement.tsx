@@ -1,7 +1,7 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 
 import type { ColumnDef } from '@tanstack/react-table';
-import { Calendar, Clock, Plus, User, Video, Check, X, MoreVertical, Eye, Edit, Trash2, Key, RefreshCw, FileOutput, VideoIcon } from 'lucide-react';
+import { Calendar, Clock, Plus, User, Video, Check, X, MoreVertical, Eye, Edit, Trash2, Key, RefreshCw, FileOutput, VideoIcon, QrCode } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -200,7 +200,6 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
 
     const approveForm = useForm({
         jail_officer_id: '',
-        access_key: '',
     });
 
     const editForm = useForm({
@@ -233,27 +232,12 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
         jail_officer_id: '',
     });
 
-    // Generate random alphanumeric access key (8-12 characters)
-    const generateAccessKey = (): string => {
-        const length = Math.floor(Math.random() * 5) + 8; // Random length between 8-12
-        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        let result = '';
-        for (let i = 0; i < length; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-    };
-
-    const handleGenerateAccessKey = () => {
-        approveForm.setData('access_key', generateAccessKey());
-    };
-
     const handleApprove = () => {
         if (!selectedVisit) {
             return;
         }
 
-        const data: { jail_officer_id?: string; access_key?: string } = {};
+        const data: { jail_officer_id?: string } = {};
 
         if (selectedVisit.visit_type === 'virtual') {
             if (!approveForm.data.jail_officer_id) {
@@ -263,18 +247,7 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
             data.jail_officer_id = approveForm.data.jail_officer_id;
         }
 
-        if (selectedVisit.visit_type === 'physical') {
-            if (!approveForm.data.access_key || approveForm.data.access_key.length < 8 || approveForm.data.access_key.length > 12) {
-                toast.error('Access key must be 8-12 alphanumeric characters');
-                return;
-            }
-            // Validate alphanumeric
-            if (!/^[A-Z0-9]+$/.test(approveForm.data.access_key.toUpperCase())) {
-                toast.error('Access key must contain only letters and numbers');
-                return;
-            }
-            data.access_key = approveForm.data.access_key.toUpperCase();
-        }
+        // For physical visits, QR code will be automatically generated on the backend
 
         router.post(`/admin/schedules/${selectedVisit.id}/approve`, data, {
             preserveScroll: true,
@@ -680,9 +653,6 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
                                             onClick={() => {
                                                 setSelectedVisit(visit);
                                                 approveForm.reset();
-                                                if (visit.visit_type === 'physical') {
-                                                    approveForm.setData('access_key', generateAccessKey());
-                                                }
                                                 setIsApproveModalOpen(true);
                                             }}
                                         >
@@ -1055,7 +1025,7 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
                             <DialogTitle>Approve Schedule</DialogTitle>
                             <DialogDescription>
                                 {selectedVisit?.visit_type === 'physical'
-                                    ? 'Generate or enter an access key for this physical visit. The key will expire after the scheduled visit time.'
+                                    ? 'A unique QR code will be generated for this physical visit. The visitor can scan it from their proof of appointment document.'
                                     : 'Assign a monitoring officer who will oversee this virtual visit. They will be notified and can manage it from Visit Monitoring.'}
                             </DialogDescription>
                         </DialogHeader>
@@ -1100,35 +1070,16 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
                             )}
 
                             {selectedVisit?.visit_type === 'physical' && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="access_key">
-                                        Access Key <span className="text-destructive">*</span>
-                                    </Label>
-                                    <div className="flex gap-2">
-                                        <Input
-                                            id="access_key"
-                                            type="text"
-                                            required
-                                            value={approveForm.data.access_key}
-                                            onChange={(e) => approveForm.setData('access_key', e.target.value.toUpperCase())}
-                                            placeholder="Enter 8-12 alphanumeric characters"
-                                            minLength={8}
-                                            maxLength={12}
-                                            pattern="[A-Z0-9]{8,12}"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={handleGenerateAccessKey}
-                                            title="Generate random access key"
-                                        >
-                                            <RefreshCw className="h-4 w-4" />
-                                        </Button>
+                                <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+                                    <div className="flex items-start gap-3">
+                                        <QrCode className="h-6 w-6 text-blue-600 mt-0.5" />
+                                        <div className="space-y-1 flex-1">
+                                            <p className="text-sm font-medium text-blue-900">QR Code Generation</p>
+                                            <p className="text-xs text-blue-700">
+                                                A unique QR code will be automatically generated upon approval. The visitor can access it from their proof of appointment document.
+                                            </p>
+                                        </div>
                                     </div>
-                                    <InputError message={approveForm.errors.access_key} />
-                                    <p className="text-xs text-muted-foreground">
-                                        8-12 alphanumeric characters (letters and numbers only). The key will expire after the scheduled visit time.
-                                    </p>
                                 </div>
                             )}
                         </div>

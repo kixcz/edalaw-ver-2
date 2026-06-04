@@ -20,6 +20,8 @@ type TimeSlotPickerProps = {
     slotCapacities?: Record<string, { current: number; max: number; isFull: boolean }>;
     /** Slots where the current user already has a visit (unclickable, tooltip explains) */
     userBookedSlots?: string[];
+    /** Slots where the inmate already has a visit scheduled (unclickable, prevents overbooking) */
+    inmateBookedSlots?: string[];
     onTimeSelect: (time: string) => void;
     className?: string;
     visitType?: 'physical' | 'virtual';
@@ -40,6 +42,7 @@ export function TimeSlotPicker({
     bookedSlots = [],
     slotCapacities = {},
     userBookedSlots = [],
+    inmateBookedSlots = [],
     onTimeSelect,
     className,
     visitType,
@@ -133,11 +136,18 @@ export function TimeSlotPicker({
         return slotTime <= currentTime;
     };
 
+    const isInmateBooked = (slot: TimeSlot): boolean => {
+        return inmateBookedSlots.includes(slot.value);
+    };
+
     const isDisabled = (slot: TimeSlot): boolean => {
-        return slot.isFull || isUserBooked(slot) || isPastTimeSlot(slot);
+        return slot.isFull || isUserBooked(slot) || isInmateBooked(slot) || isPastTimeSlot(slot);
     };
 
     const getDisabledTooltip = (slot: TimeSlot): string => {
+        if (isInmateBooked(slot)) {
+            return 'This inmate already has a visit scheduled at this time. Please choose another.';
+        }
         if (isUserBooked(slot)) {
             return 'You already have a visit in this time slot. Please choose another.';
         }

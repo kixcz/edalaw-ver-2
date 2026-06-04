@@ -12,14 +12,11 @@ use Inertia\Response;
 
 class AuditLogController extends Controller
 {
-    /**
-     * Display the audit log history page.
-     */
+   
     public function index(Request $request): Response
     {
         $query = AuditLog::with(['user.role', 'auditable']);
 
-        // Filter by role
         if ($request->filled('role')) {
             $role = Role::where('slug', $request->role)->first();
             if ($role) {
@@ -29,7 +26,6 @@ class AuditLogController extends Controller
             }
         }
 
-        // Filter by date range
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
@@ -37,7 +33,6 @@ class AuditLogController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        // Search filter - search across name, description, module, action, email, etc.
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -111,14 +106,10 @@ class AuditLogController extends Controller
         ]);
     }
 
-    /**
-     * Export audit logs to CSV.
-     */
     public function export(Request $request)
     {
         $query = AuditLog::with(['user.role', 'auditable']);
 
-        // Apply same filters as index
         if ($request->filled('role')) {
             $role = Role::where('slug', $request->role)->first();
             if ($role) {
@@ -169,7 +160,6 @@ class AuditLogController extends Controller
         $callback = function () use ($auditLogs) {
             $file = fopen('php://output', 'w');
 
-            // Add CSV headers
             fputcsv($file, [
                 'ID',
                 'Date & Time',
@@ -185,7 +175,6 @@ class AuditLogController extends Controller
                 'User Agent',
             ]);
 
-            // Add data rows
             foreach ($auditLogs as $log) {
                 $userName = $log->user
                     ? trim("{$log->user->first_name} {$log->user->middle_name} {$log->user->last_name}")

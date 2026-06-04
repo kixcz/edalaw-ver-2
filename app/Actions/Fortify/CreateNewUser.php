@@ -42,6 +42,13 @@ class CreateNewUser implements CreatesNewUsers
             'id_document_2.required' => 'Please upload a second proof of identity.',
         ])->validate();
 
+        // Validate informed consent acceptance
+        Validator::make($input, [
+            'consent_accepted' => ['required', 'accepted'],
+        ], [
+            'consent_accepted.accepted' => 'You must accept the informed consent to register.',
+        ])->validate();
+
         Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
@@ -74,6 +81,8 @@ class CreateNewUser implements CreatesNewUsers
             'approval_status' => ApprovalStatus::Pending,
             'id_document_1_path' => $idDocument1Path,
             'id_document_2_path' => $idDocument2Path,
+            'consent_accepted' => true,
+            'consent_timestamp' => now(),
         ]);
 
         // Send OTP to email and SMS for verification

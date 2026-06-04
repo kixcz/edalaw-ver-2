@@ -1,5 +1,5 @@
-import { Head, usePage } from '@inertiajs/react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { register } from '@/routes';
+import { home } from '@/routes/public-routes';
 
 type Props = {
     status?: string;
@@ -52,6 +53,15 @@ export default function Login({
             <Head title="Log in" />
 
             <div className="mx-auto w-full max-w-md">
+                {/* Back to Home Link */}
+                <Link
+                    href={home()}
+                    className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-orange-600 transition-colors mb-6"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Home
+                </Link>
+
                 <form
                     method="POST"
                     action={loginUrl || '/login'}

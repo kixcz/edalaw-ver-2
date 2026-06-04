@@ -1,9 +1,11 @@
 import { Head, useForm } from '@inertiajs/react';
+import * as React from 'react';
 import { useRef } from 'react';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -41,8 +43,144 @@ export default function Register({ visitor_role_id }: Props) {
         password_confirmation: '',
         id_document_1: null as File | null,
         id_document_2: null as File | null,
+        consent_accepted: false,
+        privacy_policy_acknowledgment: false,
     });
     const formRef = useRef<HTMLFormElement>(null);
+    const [preview1, setPreview1] = React.useState<string | null>(null);
+    const [preview2, setPreview2] = React.useState<string | null>(null);
+
+    const handleFileChange = (
+        field: 'id_document_1' | 'id_document_2',
+        e: React.ChangeEvent<HTMLInputElement>,
+        setPreview: React.Dispatch<React.SetStateAction<string | null>>
+    ) => {
+        const file = e.target.files?.[0];
+        if (!file) {
+            setPreview(null);
+            return;
+        }
+
+        // Set form data
+        form.setData(field, file);
+
+        // Create preview URL for images
+        if (file.type.startsWith('image/')) {
+            const objectUrl = URL.createObjectURL(file);
+            setPreview(objectUrl);
+        } else if (file.type === 'application/pdf') {
+            // For PDF, we'll show a PDF icon placeholder
+            setPreview('pdf');
+        } else {
+            setPreview(null);
+        }
+    };
+
+    const renderFileInput = (
+        id: string,
+        label: string,
+        preview: string | null,
+        setPreview: React.Dispatch<React.SetStateAction<string | null>>,
+        field: 'id_document_1' | 'id_document_2'
+    ) => {
+        return (
+            <div className="grid gap-2">
+                <Label htmlFor={id}>{label}</Label>
+                <div className="relative overflow-hidden rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 transition-colors hover:border-muted-foreground/40">
+                    {!preview ? (
+                        <label
+                            htmlFor={id}
+                            className="flex cursor-pointer flex-col items-center justify-center p-8"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="mb-3 h-12 w-12 text-muted-foreground"
+                            >
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" x2="12" y1="3" y2="15" />
+                            </svg>
+                            <p className="mb-1 text-sm font-medium text-foreground">
+                                Drag and drop your file here
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                or click to browse (PDF, JPG, PNG)
+                            </p>
+                            <Input
+                                id={id}
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                required
+                                onChange={(e) => handleFileChange(field, e, setPreview)}
+                                className="hidden"
+                            />
+                        </label>
+                    ) : (
+                        <div className="relative flex h-48 w-full items-center justify-center">
+                            {preview === 'pdf' ? (
+                                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="h-16 w-16"
+                                    >
+                                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                                        <polyline points="14 2 14 8 20 8" />
+                                        <path d="M9 15l3 3 3-3" />
+                                        <path d="M12 18V12" />
+                                    </svg>
+                                    <span className="text-sm font-medium">PDF Document</span>
+                                </div>
+                            ) : (
+                                <img
+                                    src={preview}
+                                    alt="Document preview"
+                                    className="h-full w-full object-contain p-2"
+                                />
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPreview(null);
+                                    form.setData(field, null);
+                                    const input = document.getElementById(id);
+                                    if (input) (input as HTMLInputElement).value = '';
+                                }}
+                                className="absolute right-2 top-2 rounded-full bg-destructive p-1.5 text-destructive-foreground opacity-90 transition-opacity hover:opacity-100"
+                                title="Remove file"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-4 w-4"
+                                >
+                                    <path d="M18 6 6 18" />
+                                    <path d="m6 6 12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
+                </div>
+                <InputError message={form.errors[field]} />
+            </div>
+        );
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -281,28 +419,20 @@ export default function Register({ visitor_role_id }: Props) {
                             Upload at least two proofs of identity (e.g. valid ID, birth certificate). Accepted: PDF, JPG, PNG (max 5MB each).
                         </p>
                         <div className="grid grid-cols-1 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="id_document_1">Proof 1 (e.g. Valid ID or Birth Certificate) *</Label>
-                                <Input
-                                    id="id_document_1"
-                                    type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    required
-                                    onChange={(e) => form.setData('id_document_1', e.target.files?.[0] ?? null)}
-                                />
-                                <InputError message={form.errors.id_document_1} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="id_document_2">Proof 2 (e.g. Valid ID or Birth Certificate) *</Label>
-                                <Input
-                                    id="id_document_2"
-                                    type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    required
-                                    onChange={(e) => form.setData('id_document_2', e.target.files?.[0] ?? null)}
-                                />
-                                <InputError message={form.errors.id_document_2} />
-                            </div>
+                            {renderFileInput(
+                                'id_document_1',
+                                'Proof 1 (e.g. Valid ID or Birth Certificate) *',
+                                preview1,
+                                setPreview1,
+                                'id_document_1'
+                            )}
+                            {renderFileInput(
+                                'id_document_2',
+                                'Proof 2 (e.g. Valid ID or Birth Certificate) *',
+                                preview2,
+                                setPreview2,
+                                'id_document_2'
+                            )}
                         </div>
                     </div>
 
@@ -346,11 +476,72 @@ export default function Register({ visitor_role_id }: Props) {
                         </div>
                     </div>
 
+                    <div className="rounded-lg border-l-4 border-l-orange-500 bg-muted/40 p-5 space-y-4">
+                        <div className="flex items-start gap-3">
+                            <Checkbox
+                                id="consent_accepted"
+                                checked={form.data.consent_accepted}
+                                onCheckedChange={(checked) => form.setData('consent_accepted', Boolean(checked))}
+                                required
+                                tabIndex={15}
+                                className="mt-1 h-5 w-5"
+                            />
+                            <div className="flex-1 space-y-2">
+                                <Label
+                                    htmlFor="consent_accepted"
+                                    className="text-sm font-normal leading-relaxed cursor-pointer"
+                                >
+                                    <span className="font-medium text-foreground">Informed Consent:</span>{" "}
+                                    <span className="text-muted-foreground">By creating an e-Dalaw account, I voluntarily provide my personal information and consent to its collection, processing, storage, and use for account registration, identity verification, visitation management, security monitoring, communication, and other legitimate system operations. I understand that my personal data will be processed in accordance with Republic Act No. 10173, otherwise known as the Data Privacy Act of 2012, and applicable institutional policies. I certify that the information I provide is true, accurate, and complete, and I acknowledge that any falsification, misrepresentation, or omission of material information may result in the denial, suspension, or termination of my access to the system and may subject me to applicable administrative, civil, or criminal liabilities.</span>
+                                </Label>
+                                <InputError message={form.errors.consent_accepted} />
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                            <Checkbox
+                                id="privacy_policy_acknowledgment"
+                                checked={form.data.privacy_policy_acknowledgment}
+                                onCheckedChange={(checked) => form.setData('privacy_policy_acknowledgment', Boolean(checked))}
+                                required
+                                tabIndex={16}
+                                className="mt-1 h-5 w-5"
+                            />
+                            <div className="flex-1 space-y-2">
+                                <Label
+                                    htmlFor="privacy_policy_acknowledgment"
+                                    className="text-sm font-normal leading-relaxed cursor-pointer"
+                                >
+                                    <span className="font-medium text-foreground">Data Privacy Policy Acknowledgment:</span>{" "}
+                                    <span className="text-muted-foreground">I have read, understood, and agree to the Data Privacy Policy and Terms of Use.</span>
+                                </Label>
+                                <InputError message={form.errors.privacy_policy_acknowledgment} />
+                            </div>
+                        </div>
+                        
+                        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-4 w-4"
+                            >
+                                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                            Your consent and acknowledgment are required to proceed with registration
+                        </div>
+                    </div>
+
                     <Button
                         type="submit"
                         className="mt-2 w-full"
-                        tabIndex={15}
-                        disabled={form.processing}
+                        tabIndex={17}
+                        disabled={form.processing || !form.data.consent_accepted || !form.data.privacy_policy_acknowledgment}
                         data-test="register-user-button"
                     >
                         {form.processing && <Spinner />}
@@ -360,7 +551,7 @@ export default function Register({ visitor_role_id }: Props) {
 
                 <div className="text-center text-sm text-muted-foreground">
                     Already have an account?{' '}
-                    <TextLink href={login().url} tabIndex={16}>
+                    <TextLink href={login().url} tabIndex={17}>
                         Log in
                     </TextLink>
                 </div>

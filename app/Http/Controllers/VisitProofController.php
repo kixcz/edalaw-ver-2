@@ -44,7 +44,7 @@ class VisitProofController extends Controller
                 'inmate_name' => $inmateName,
                 'scheduled_date' => $visit->scheduled_date->format('F j, Y'),
                 'scheduled_time' => $visit->scheduled_time,
-                'access_key' => $visit->access_key,
+                'qr_code_data' => $visit->qr_code_data,
                 'access_key_expires_at' => $visit->access_key_expires_at?->format('F j, Y g:i A'),
             ],
         ]);

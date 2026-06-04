@@ -17,11 +17,7 @@ use Laravel\Fortify\Fortify;
 
 class AuthenticateUser
 {
-    /**
-     * Handle the incoming request.
-     * Visitor: pending → log in, redirect to pending page; rejected → log in, redirect to rejected page;
-     * approved → send OTP, redirect to OTP page; then dashboard after verify.
-     */
+    
     public function __invoke(Request $request): ?User
     {
         $login = trim((string) $request->input(Fortify::username()));
@@ -83,12 +79,6 @@ class AuthenticateUser
         ]);
     }
 
-    /**
-     * Block login if user already has an active session (another device).
-     * Only sessions with recent last_activity (within session lifetime) count; expired/inactive
-     * sessions do not block, so "forgot to log out" does not prevent login from another device.
-     * Record the attempt, notify super admin and user, then throw.
-     */
     private function guardAgainstConcurrentLogin(Request $request, User $user): void
     {
         $sessionLifetimeMinutes = (int) config('session.lifetime', 120);

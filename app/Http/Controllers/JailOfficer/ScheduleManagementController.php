@@ -171,16 +171,16 @@ class ScheduleManagementController extends Controller
             }
         }
 
-        // Generate access key for physical visits
-        if ($visit->visit_type === VisitType::Physical && ! $visit->access_key) {
-            $updateData['access_key'] = Visit::generateAccessKey();
-            // Access key expires 24 hours after the scheduled visit time
+        // Generate QR code for physical visits
+        if ($visit->visit_type === VisitType::Physical && ! $visit->qr_code_data) {
+            $updateData['qr_code_data'] = Visit::generateQRCodeData($visit);
+            // Access key expires at the scheduled visit time
             $scheduledDateTime = $visit->scheduled_date->copy();
             if ($visit->scheduled_time) {
                 [$hours, $minutes] = explode(':', $visit->scheduled_time);
                 $scheduledDateTime->setTime((int) $hours, (int) $minutes);
             }
-            $updateData['access_key_expires_at'] = $scheduledDateTime->addHours(24);
+            $updateData['access_key_expires_at'] = $scheduledDateTime;
         }
 
         $visit->update($updateData);
@@ -298,16 +298,16 @@ class ScheduleManagementController extends Controller
             }
         }
 
-        // Generate access key for physical visits when approved
-        if ($request->status === 'approved' && $visit->visit_type === VisitType::Physical && ! $visit->access_key) {
-            $updateData['access_key'] = Visit::generateAccessKey();
-            // Access key expires 24 hours after the scheduled visit time
+        // Generate QR code for physical visits when approved
+        if ($request->status === 'approved' && $visit->visit_type === VisitType::Physical && ! $visit->qr_code_data) {
+            $updateData['qr_code_data'] = Visit::generateQRCodeData($visit);
+            // Access key expires at the scheduled visit time
             $scheduledDateTime = $visit->scheduled_date->copy();
             if ($visit->scheduled_time) {
                 [$hours, $minutes] = explode(':', $visit->scheduled_time);
                 $scheduledDateTime->setTime((int) $hours, (int) $minutes);
             }
-            $updateData['access_key_expires_at'] = $scheduledDateTime->addHours(24);
+            $updateData['access_key_expires_at'] = $scheduledDateTime;
         }
 
         $oldStatus = $visit->status->value;

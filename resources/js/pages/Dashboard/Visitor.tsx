@@ -1,7 +1,10 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import { useMemo } from 'react';
 import {
     Bell,
     Calendar,
+    FileText,
+    Folder,
     Heart,
     MessageSquare,
     Moon,
@@ -13,17 +16,30 @@ import {
     Video,
 } from 'lucide-react';
 import {
+    Bar,
+    BarChart,
+    CartesianGrid,
     Cell,
     Legend,
     Pie,
     PieChart,
     ResponsiveContainer,
     Tooltip,
+    XAxis,
+    YAxis,
 } from 'recharts';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    ChartContainer,
+    ChartLegend,
+    ChartLegendContent,
+    ChartTooltip,
+    ChartTooltipContent,
+    type ChartConfig,
+} from '@/components/ui/chart';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useToast } from '@/hooks/use-toast';
@@ -204,7 +220,51 @@ export default function VisitorDashboard({
         { name: 'Suggestions', value: feedback_types.suggestions },
     ];
 
-    const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00'];
+    // Pie chart data for call logs
+    const callLogsChartData = useMemo(() => {
+        const data = [
+            { name: 'Incoming', value: call_logs_stats.incoming_calls, fill: 'var(--color-incoming)' },
+            { name: 'Outgoing', value: call_logs_stats.outgoing_calls, fill: 'var(--color-outgoing)' },
+            { name: 'Completed', value: call_logs_stats.completed_calls, fill: 'var(--color-completed)' },
+            { name: 'Missed', value: call_logs_stats.missed_calls, fill: 'var(--color-missed)' },
+            { name: 'Failed', value: call_logs_stats.failed_calls, fill: 'var(--color-failed)' },
+        ].filter(item => item.value > 0); // Only show categories with values
+        
+        // Fallback if no data - show total with a neutral color
+        if (data.length === 0) {
+            return [{ name: 'Total Calls', value: 0, fill: 'var(--chart-3)' }];
+        }
+        
+        return data;
+    }, [call_logs_stats]);
+
+    const callLogsChartConfig = {
+        value: {
+            label: 'Count',
+        },
+        incoming: {
+            label: 'Incoming',
+            color: 'var(--chart-1)',
+        },
+        outgoing: {
+            label: 'Outgoing',
+            color: 'var(--chart-2)',
+        },
+        completed: {
+            label: 'Completed',
+            color: 'var(--chart-3)',
+        },
+        missed: {
+            label: 'Missed',
+            color: 'var(--chart-4)',
+        },
+        failed: {
+            label: 'Failed',
+            color: 'var(--chart-5)',
+        },
+    } satisfies ChartConfig;
+
+    const COLORS = ['#f59e0b', '#84cc16', '#92400e'];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -334,7 +394,7 @@ export default function VisitorDashboard({
 
                 {/* Pie Charts */}
                 <div className="grid gap-4 md:grid-cols-2">
-                    {/* Visit Type Distribution Pie Chart */}
+                    {/* Visit Type Distribution Bar Chart */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Visit Type Distribution</CardTitle>
@@ -344,29 +404,22 @@ export default function VisitorDashboard({
                         </CardHeader>
                         <CardContent>
                             <ResponsiveContainer width="100%" height={300}>
-                                <PieChart>
-                                    <Pie
-                                        data={visitTypeChartData}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
-                                        outerRadius={80}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                    >
+                                <BarChart data={visitTypeChartData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" />
+                                    <YAxis allowDecimals={false} />
+                                    <Tooltip />
+                                    <Bar dataKey="value" radius={[10, 10, 0, 0]}>
                                         {visitTypeChartData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
+                                    </Bar>
+                                </BarChart>
                             </ResponsiveContainer>
                         </CardContent>
                     </Card>
 
-                    {/* Feedback Type Distribution Pie Chart */}
+                    {/* Feedback Type Distribution Bar Chart */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Feedback Type Distribution</CardTitle>
@@ -376,24 +429,17 @@ export default function VisitorDashboard({
                         </CardHeader>
                         <CardContent>
                             <ResponsiveContainer width="100%" height={300}>
-                                <PieChart>
-                                    <Pie
-                                        data={feedbackTypeChartData}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
-                                        outerRadius={80}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                    >
+                                <BarChart data={feedbackTypeChartData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" />
+                                    <YAxis allowDecimals={false} />
+                                    <Tooltip />
+                                    <Bar dataKey="value" radius={[10, 10, 0, 0]}>
                                         {feedbackTypeChartData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
+                                    </Bar>
+                                </BarChart>
                             </ResponsiveContainer>
                         </CardContent>
                     </Card>
@@ -516,60 +562,39 @@ export default function VisitorDashboard({
 
                 {/* Call Logs Section */}
                 <div className="grid gap-4 md:grid-cols-2">
-                    {/* Call Logs Statistics */}
+                    {/* Call Logs Statistics - Pie Chart */}
                     <Card>
-                        <CardHeader>
+                        <CardHeader className="items-center pb-0">
                             <CardTitle className="flex items-center gap-2">
                                 <Phone className="size-5" />
                                 Call Logs Statistics
                             </CardTitle>
                             <CardDescription>
-                                Overview of your call history
+                                Distribution of call types and statuses
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Total Calls</p>
-                                    <p className="text-2xl font-bold">{call_logs_stats.total_calls}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Incoming</p>
-                                    <p className="text-2xl font-bold text-green-600">
-                                        {call_logs_stats.incoming_calls}
-                                    </p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Outgoing</p>
-                                    <p className="text-2xl font-bold text-blue-600">
-                                        {call_logs_stats.outgoing_calls}
-                                    </p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Video</p>
-                                    <p className="text-2xl font-bold text-purple-600">
-                                        {call_logs_stats.video_calls}
-                                    </p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Completed</p>
-                                    <p className="text-2xl font-bold text-green-500">
-                                        {call_logs_stats.completed_calls}
-                                    </p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Missed</p>
-                                    <p className="text-2xl font-bold text-yellow-500">
-                                        {call_logs_stats.missed_calls}
-                                    </p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">Failed</p>
-                                    <p className="text-2xl font-bold text-red-500">
-                                        {call_logs_stats.failed_calls}
-                                    </p>
-                                </div>
-                            </div>
+                        <CardContent className="flex-1 pb-0">
+                            <ChartContainer
+                                config={callLogsChartConfig}
+                                className="mx-auto aspect-square max-h-[300px]"
+                            >
+                                <PieChart>
+                                    <Pie 
+                                        data={callLogsChartData} 
+                                        dataKey="value" 
+                                        nameKey="name"
+                                        label
+                                        labelLine
+                                    />
+                                    <ChartTooltip 
+                                        content={<ChartTooltipContent hideLabel />} 
+                                    />
+                                    <ChartLegend
+                                        content={<ChartLegendContent payload={callLogsChartData} nameKey="name" />}
+                                        className="-translate-y-2 flex-wrap gap-2 *:basis-1/4 *:justify-center"
+                                    />
+                                </PieChart>
+                            </ChartContainer>
                             <div className="mt-4 pt-4 border-t">
                                 <Link
                                     href="/visitor/call-logs"
@@ -652,6 +677,115 @@ export default function VisitorDashboard({
                                     ))}
                                 </div>
                             )}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Files Uploaded Section */}
+                <div className="grid gap-4 md:grid-cols-2">
+                    {/* Files Uploaded Statistics */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <FileText className="size-5" />
+                                Files Uploaded
+                            </CardTitle>
+                            <CardDescription>
+                                Overview of your uploaded documents
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-muted-foreground">Visit Documents</span>
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                        {recent_schedules.filter(s => s.status === 'approved').length} files
+                                    </Badge>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-muted-foreground">E-Burol Documents</span>
+                                    <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                                        {recent_eburols.filter(e => e.status === 'approved').length} files
+                                    </Badge>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-muted-foreground">Registration Documents</span>
+                                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                                        2 files
+                                    </Badge>
+                                </div>
+                            </div>
+                            <div className="mt-4 pt-4 border-t">
+                                <Link
+                                    href="/visitor/files-uploaded"
+                                    className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                                >
+                                    View All Uploaded Files
+                                    <FileText className="size-4" />
+                                </Link>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Recent Files Preview */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Recent Files</CardTitle>
+                            <CardDescription>
+                                Your recently uploaded documents
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {recent_schedules.slice(0, 2).map((schedule) => (
+                                    <div
+                                        key={schedule.id}
+                                        className="rounded-lg border p-3 space-y-2"
+                                    >
+                                        <div className="flex items-start gap-2">
+                                            <Calendar className="size-4 text-blue-600 mt-1" />
+                                            <div className="space-y-1 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium text-sm">
+                                                        Visit Document
+                                                    </span>
+                                                    {getStatusBadge(schedule.status)}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Inmate: {schedule.inmate_name}
+                                                </p>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {new Date(schedule.scheduled_date).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {recent_eburols.slice(0, 1).map((eburol) => (
+                                    <div
+                                        key={eburol.id}
+                                        className="rounded-lg border p-3 space-y-2"
+                                    >
+                                        <div className="flex items-start gap-2">
+                                            <Folder className="size-4 text-purple-600 mt-1" />
+                                            <div className="space-y-1 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium text-sm">
+                                                        E-Burol Document
+                                                    </span>
+                                                    {getStatusBadge(eburol.status)}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {eburol.deceased_name}
+                                                </p>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {new Date(eburol.wake_start_date).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </CardContent>
                     </Card>
                 </div>

@@ -18,9 +18,7 @@ use Inertia\Response;
 
 class ScheduleManagementController extends Controller
 {
-    /**
-     * Display the schedule management page.
-     */
+    
     public function index(Request $request): Response
     {
         $visits = Visit::with(['user', 'jailOfficer', 'visitSessions' => fn ($q) => $q->orderBy('scheduled_start', 'desc')->limit(1)])
@@ -78,7 +76,6 @@ class ScheduleManagementController extends Controller
                 ];
             });
 
-        // Get all jail officers
         $jailOfficers = User::whereHas('role', function ($query) {
             $query->where('slug', 'jail_officer');
         })
@@ -101,9 +98,6 @@ class ScheduleManagementController extends Controller
         ]);
     }
 
-    /**
-     * Get booked time slots / slot capacities for a date (virtual: 10-min slots, physical: 1-hour slots).
-     */
     public function getBookedTimeSlots(Request $request): JsonResponse
     {
         $request->validate([
@@ -163,9 +157,6 @@ class ScheduleManagementController extends Controller
         ]);
     }
 
-    /**
-     * Approve a visit schedule.
-     */
     public function approve(Request $request, Visit $visit): RedirectResponse
     {
         if ($visit->isScheduleInPast()) {
@@ -180,7 +171,6 @@ class ScheduleManagementController extends Controller
 
         $rules = [
             'jail_officer_id' => ['nullable', 'exists:users,id'],
-            'access_key' => ['nullable', 'string', 'regex:/^[A-Z0-9]{8,12}$/'],
         ];
         if ($visit->visit_type === \App\VisitType::Virtual) {
             $rules['jail_officer_id'] = ['required', 'exists:users,id'];
@@ -195,7 +185,6 @@ class ScheduleManagementController extends Controller
         ];
 
         $roomId = null;
-        // Create VideoSDK room for virtual visits (required for approval)
         if ($visit->visit_type === \App\VisitType::Virtual) {
             $videoSdkService = new \App\Services\VideoSdkService;
             $roomName = "visit-{$visit->id}-".uniqid();
@@ -209,7 +198,6 @@ class ScheduleManagementController extends Controller
                 $updateData['daily_co_room_url'] = $roomResult['room_url'] ?? null;
                 $updateData['room_created_at'] = now();
 
-                // Create monitoring session
                 \App\Models\MonitoringSession::create([
                     'visit_id' => $visit->id,
                     'visitor_id' => $visit->user_id,
@@ -232,42 +220,30 @@ class ScheduleManagementController extends Controller
             }
         }
 
-        // Handle access key for physical visits
         if ($visit->visit_type === \App\VisitType::Physical) {
-            if ($request->access_key) {
-                // Use provided access key
-                $updateData['access_key'] = strtoupper($request->access_key);
-            } elseif (! $visit->access_key) {
-                // Generate new access key if not provided and doesn't exist
-                $updateData['access_key'] = Visit::generateAccessKey();
-            }
+            $qrCodeData = Visit::generateQRCodeData($visit);
+            $updateData['qr_code_data'] = $qrCodeData;
 
-            // Set expiration to scheduled visit time (not 24 hours after)
             $scheduledDateTime = $visit->scheduled_date->copy();
             if ($visit->scheduled_time) {
                 [$hours, $minutes] = explode(':', $visit->scheduled_time);
                 $scheduledDateTime->setTime((int) $hours, (int) $minutes);
             }
-            // Access key expires at the scheduled visit time
             $updateData['access_key_expires_at'] = $scheduledDateTime;
         }
 
         $visit->update($updateData);
 
-        // Refresh visit to get updated meeting_link and jail officer data
         $visit = $visit->fresh();
 
-        // Create visit_sessions record for new flow (visitor token, inmate tunnel, etc.)
         if ($roomId && $visit->visit_type === \App\VisitType::Virtual) {
             app(\App\Services\VisitSessionService::class)->createForVisit($visit, $roomId);
         }
 
-        // Notify jail officer if assigned and it's a new assignment
         if ($visit->jail_officer_id && $oldJailOfficerId !== $visit->jail_officer_id) {
             \App\Services\NotificationService::notifyMonitoringOfficerAboutVisit($visit);
         }
 
-        // Send notification with meeting link
         NotificationService::createVisitNotification($visit, 'approved');
 
         AuditLogService::logAction(
@@ -282,9 +258,6 @@ class ScheduleManagementController extends Controller
             ->with('success', 'Schedule approved successfully.');
     }
 
-    /**
-     * Reject a visit schedule.
-     */
     public function reject(Request $request, Visit $visit): RedirectResponse
     {
         $request->validate([
@@ -309,12 +282,8 @@ class ScheduleManagementController extends Controller
             ->with('success', 'Schedule rejected successfully.');
     }
 
-    /**
-     * Update visit status.
-     */
     public function updateStatus(Request $request, Visit $visit): RedirectResponse
     {
-        // Normalize empty or invalid jail_officer_id so validation and update work when changing to pending/rejected
         $joId = $request->input('jail_officer_id');
         if ($joId === '' || $joId === null || (is_string($joId) && trim($joId) === '')) {
             $request->merge(['jail_officer_id' => null]);
@@ -333,22 +302,18 @@ class ScheduleManagementController extends Controller
         $oldJailOfficerId = $visit->jail_officer_id;
         $updateData = ['status' => \App\VisitStatus::from($request->status)];
 
-        // If rejecting, require and store rejection reason
         if ($request->status === 'rejected') {
             $updateData['rejection_reason'] = $request->rejection_reason;
         } else {
-            // Clear rejection reason if status changes from rejected
             $updateData['rejection_reason'] = null;
         }
 
-        // Set jail officer only when approving (required for virtual)
         if ($request->status === 'approved' && $request->filled('jail_officer_id')) {
             $updateData['jail_officer_id'] = $request->jail_officer_id;
         } elseif (in_array($request->status, ['rejected', 'pending'], true)) {
             $updateData['jail_officer_id'] = null; // Clear when rejected or set back to pending
         }
 
-        // When approving virtual visit, auto-generate meeting link and create session if not already set
         if ($request->status === 'approved' && $visit->visit_type === \App\VisitType::Virtual) {
             if (! $visit->meeting_link) {
                 $videoSdkService = new \App\Services\VideoSdkService;
@@ -383,10 +348,8 @@ class ScheduleManagementController extends Controller
             }
         }
 
-        // Generate access key for physical visits when approved
         if ($request->status === 'approved' && $visit->visit_type === \App\VisitType::Physical && ! $visit->access_key) {
             $updateData['access_key'] = Visit::generateAccessKey();
-            // Access key expires 24 hours after the scheduled visit time
             $scheduledDateTime = $visit->scheduled_date->copy();
             if ($visit->scheduled_time) {
                 [$hours, $minutes] = explode(':', $visit->scheduled_time);
@@ -398,14 +361,12 @@ class ScheduleManagementController extends Controller
         $visit->update($updateData);
         $visit = $visit->fresh();
 
-        // Create visit_session for new flow when virtual and we have a room
         if ($request->status === 'approved' && $visit->visit_type === \App\VisitType::Virtual && $visit->daily_co_room_id) {
             if (! $visit->visitSessions()->exists()) {
                 app(\App\Services\VisitSessionService::class)->createForVisit($visit, $visit->daily_co_room_id);
             }
         }
 
-        // Notify jail officer if assigned and it's a new assignment
         if ($visit->jail_officer_id && $oldJailOfficerId !== $visit->jail_officer_id && in_array($request->status, ['approved', 'pending'])) {
             \App\Services\NotificationService::notifyMonitoringOfficerAboutVisit($visit);
         }
@@ -423,9 +384,6 @@ class ScheduleManagementController extends Controller
             ->with('success', 'Schedule status updated successfully.');
     }
 
-    /**
-     * Generate or regenerate access key for a physical visit.
-     */
     public function generateAccessKey(Visit $visit): RedirectResponse
     {
         if ($visit->visit_type !== \App\VisitType::Physical) {
@@ -450,9 +408,6 @@ class ScheduleManagementController extends Controller
             ->with('success', "Access key generated successfully: {$accessKey}");
     }
 
-    /**
-     * Create a new schedule (auto-approved). Virtual: tunnel + meeting link generated. Physical: access key generated.
-     */
     public function store(Request $request): RedirectResponse
     {
         $validator = Validator::make($request->all(), [
@@ -580,9 +535,6 @@ class ScheduleManagementController extends Controller
             ->with('success', 'Schedule created and approved successfully.');
     }
 
-    /**
-     * Update a visit schedule.
-     */
     public function update(Request $request, Visit $visit): RedirectResponse
     {
         $validator = Validator::make($request->all(), [
@@ -609,7 +561,6 @@ class ScheduleManagementController extends Controller
                 ->withInput();
         }
 
-        // Check for time slot conflicts (excluding current visit)
         $conflictingVisit = Visit::where('scheduled_date', $request->scheduled_date)
             ->where('scheduled_time', $request->scheduled_time)
             ->whereIn('status', [VisitStatus::Pending, VisitStatus::Approved])
@@ -651,9 +602,6 @@ class ScheduleManagementController extends Controller
             ->with('success', 'Schedule updated successfully.');
     }
 
-    /**
-     * Delete a visit schedule.
-     */
     public function destroy(Request $request, Visit $visit): RedirectResponse
     {
         $visitId = $visit->id;

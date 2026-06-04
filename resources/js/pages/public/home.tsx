@@ -1,0 +1,580 @@
+import { Link } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
+import { 
+    Video, 
+    Building, 
+    Shield, 
+    ChevronRight, 
+    Users, 
+    CalendarCheck, 
+    CheckCircle, 
+    Lock,
+    ShieldCheck,
+    ArrowRight,
+    Phone,
+    Clock,
+    MessageSquare,
+    Menu,
+    X,
+    Eye,
+    Radio
+} from 'lucide-react';
+import PublicLayout from '@/layouts/public-layout';
+import { register, login, faq, contact, howItWorks } from '@/routes/public-routes';
+
+export default function Home() {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+    const [privacyAccepted, setPrivacyAccepted] = useState(false);
+
+    useEffect(() => {
+        // Always show privacy modal on page load
+        setPrivacyAccepted(false);
+
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const handlePrivacyAccept = () => {
+        setPrivacyAccepted(true);
+    };
+
+    const features = [
+        {
+            icon: Video,
+            title: 'Virtual Visitation',
+            description: 'Participate in approved and supervised virtual visits through secure video conferencing.',
+        },
+        {
+            icon: Building,
+            title: 'Physical Visitation',
+            description: 'Schedule and manage on-site visits through a streamlined approval process.',
+        },
+        {
+            icon: Phone,
+            title: 'e-Burol Services',
+            description: 'Request and participate in supervised virtual wake sessions for eligible family members.',
+        },
+        {
+            icon: Shield,
+            title: 'Secure Monitoring',
+            description: 'All virtual sessions are monitored and recorded to ensure compliance and accountability.',
+        },
+    ];
+
+    const steps = [
+        { 
+            number: 1, 
+            title: 'Register', 
+            description: 'Create your account',
+            icon: Users
+        },
+        { 
+            number: 2, 
+            title: 'Submit Request', 
+            description: 'Apply for visitation',
+            icon: MessageSquare
+        },
+        { 
+            number: 3, 
+            title: 'Await Approval', 
+            description: 'Wait for verification',
+            icon: Clock
+        },
+        { 
+            number: 4, 
+            title: 'Schedule', 
+            description: 'Receive confirmation',
+            icon: CalendarCheck
+        },
+        { 
+            number: 5, 
+            title: 'Join Session', 
+            description: 'Connect securely',
+            icon: Video
+        },
+    ];
+
+    const stats = [
+        { value: '10,000+', label: 'Total Visits', icon: Users },
+        { value: '7,500+', label: 'Virtual Sessions', icon: Video },
+        { value: '8,200+', label: 'Approved Requests', icon: CheckCircle },
+    ];
+
+    const faqPreview = [
+        {
+            question: 'Who can register?',
+            answer: 'Authorized visitors who meet visitation requirements can register for an account.',
+        },
+        {
+            question: 'Is the session monitored?',
+            answer: 'Yes. All virtual sessions are monitored and recorded for security and compliance.',
+        },
+        {
+            question: 'Do inmates need accounts?',
+            answer: 'No. The system does not create inmate accounts. Access is provided through secure tunnel codes.',
+        },
+    ];
+
+    return (
+        <PublicLayout title="e-Dalaw - Secure Visitation Management" description="Connecting Families Through Secure and Monitored Visitation">
+            {/* Privacy Modal */}
+            {!privacyAccepted && (
+                <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-sm z-[9999] flex items-center justify-center p-5 animate-fadeIn">
+                    <div className="bg-white rounded-2xl max-w-[560px] w-full shadow-2xl overflow-hidden animate-slideUp">
+                        <div className="bg-gradient-to-br from-orange-500 to-orange-400 p-7 flex items-start gap-4">
+                            <div className="w-12 h-12 min-w-[48px] bg-white/20 rounded-xl flex items-center justify-center">
+                                <ShieldCheck className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-white text-xl font-bold leading-tight">Privacy Notice & Consent</h2>
+                                <p className="text-white/85 text-xs mt-1">Your privacy matters to us</p>
+                            </div>
+                        </div>
+                        <div className="p-7">
+                            <p className="text-sm text-slate-600 mb-4 leading-relaxed">
+                                e-Dalaw collects and processes personal data in accordance with the Data Privacy Act. 
+                                By using this platform, you consent to:
+                            </p>
+                            <ul className="pl-5 mb-4 space-y-2">
+                                {[
+                                    'Collection of visitor identification details',
+                                    'Recording of virtual visitation sessions',
+                                    'Storage of visitation history and logs',
+                                    'Monitoring for security compliance'
+                                ].map((item, idx) => (
+                                    <li key={idx} className="text-sm text-slate-600 flex items-start gap-2">
+                                        <span className="text-orange-500 mt-1.5 min-w-[6px] h-1.5 rounded-full bg-orange-500 block"></span>
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                            <Link 
+                                href="/privacy" 
+                                className="inline-flex items-center gap-1.5 text-orange-500 text-sm font-semibold mb-5 hover:opacity-75 transition-opacity"
+                            >
+                                <ShieldCheck className="w-4 h-4" />
+                                Read Full Privacy Policy
+                            </Link>
+                        </div>
+                        <div className="px-7 pb-7">
+                            <button
+                                onClick={handlePrivacyAccept}
+                                className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-xl font-bold text-base hover:-translate-y-0.5 hover:shadow-lg transition-all shadow-lg shadow-orange-500/35"
+                            >
+                                I Understand
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Navigation */}
+            <nav className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-300 ${
+                scrolled 
+                    ? 'bg-white/95 backdrop-blur-md shadow-md border-b border-gray-200' 
+                    : 'bg-white/90 backdrop-blur-sm border-b border-gray-100'
+            }`}>
+                <div className="px-[5%] flex items-center justify-between h-17">
+                    <Link href="/" className="flex items-center gap-3 no-underline">
+                        <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-400 rounded-xl flex items-center justify-center text-white font-black text-sm">
+                            eD
+                        </div>
+                        <span className="font-extrabold text-xl text-slate-800">
+                            e-<span className="text-orange-500">Dalaw</span>
+                        </span>
+                    </Link>
+
+                    {/* Desktop Nav */}
+                    <div className="hidden lg:flex items-center gap-1.5">
+                        {['About', 'Services', 'How It Works', 'FAQ', 'Contact'].map((item) => (
+                            <Link
+                                key={item}
+                                href={`/${item.toLowerCase().replace(/\s+/g, '-')}`}
+                                className="no-underline text-sm font-medium text-slate-600 px-3.5 py-2 rounded-lg hover:bg-orange-50 hover:text-orange-500 transition-all"
+                            >
+                                {item}
+                            </Link>
+                        ))}
+                    </div>
+
+                    <div className="hidden lg:flex items-center gap-2.5">
+                        <Link
+                            href={login()}
+                            className="px-5 py-2 rounded-lg text-sm font-semibold border-2 border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white transition-all no-underline"
+                        >
+                            Login
+                        </Link>
+                        <Link
+                            href={register()}
+                            className="px-5 py-2 rounded-lg text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 transition-all shadow-md shadow-orange-500/30 no-underline"
+                        >
+                            Register
+                        </Link>
+                    </div>
+
+                    {/* Mobile Menu Button */}
+                    <button 
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className="lg:hidden p-2"
+                    >
+                        {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                    </button>
+                </div>
+
+                {/* Mobile Menu */}
+                {isMenuOpen && (
+                    <div className="lg:hidden bg-white border-t border-gray-200 py-4 px-[5%]">
+                        <div className="flex flex-col gap-2">
+                            {['About', 'Services', 'How It Works', 'FAQ', 'Contact'].map((item) => (
+                                <Link
+                                    key={item}
+                                    href={`/${item.toLowerCase().replace(/\s+/g, '-')}`}
+                                    className="no-underline text-sm font-medium text-slate-600 px-3 py-2.5 rounded-lg hover:bg-orange-50 hover:text-orange-500 transition-all"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    {item}
+                                </Link>
+                            ))}
+                            <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-200">
+                                <Link
+                                    href={login()}
+                                    className="px-5 py-2.5 rounded-lg text-sm font-semibold border-2 border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white transition-all text-center no-underline"
+                                >
+                                    Login
+                                </Link>
+                                <Link
+                                    href={register()}
+                                    className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 transition-all text-center shadow-md shadow-orange-500/30 no-underline"
+                                >
+                                    Register
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </nav>
+            {/* Hero Section */}
+            <section className="relative min-h-screen bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] flex items-center pt-20 pb-20 overflow-hidden">
+                {/* Background Elements */}
+                <div className="absolute w-[700px] h-[700px] -top-[200px] -right-[100px] rounded-full bg-[radial-gradient(circle,rgba(242,100,25,0.15),transparent_70%)]" />
+                <div className="absolute w-[400px] h-[400px] -bottom-[100px] left-[5%] rounded-full bg-[radial-gradient(circle,rgba(244,140,61,0.1),transparent_70%)]" />
+                <div 
+                    className="absolute inset-0 pointer-events-none opacity-30"
+                    style={{
+                        backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+                        backgroundSize: '60px 60px'
+                    }}
+                />
+
+                <div className="relative z-10 max-w-[1200px] mx-auto px-[5%] w-full grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+                    {/* Left Content */}
+                    <div>
+                        <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
+                            <Lock className="w-3.5 h-3.5" />
+                            SECURE PLATFORM
+                        </div>
+                        
+                        <h1 className="text-[clamp(2.2rem,4.5vw,3.4rem)] font-extrabold text-white leading-tight mb-6">
+                            Secure Visitation
+                            <br />
+                            Management <span className="text-orange-400">Portal</span>
+                        </h1>
+                        
+                        <p className="text-base text-white/70 max-w-[500px] mb-9 leading-relaxed">
+                            A digital visitation platform facilitating virtual and physical visitation scheduling, 
+                            supervised communication, and secure record management for correctional facilities.
+                        </p>
+                        
+                        <div className="flex flex-wrap gap-3.5 mb-5">
+                            <Link
+                                href={register()}
+                                className="px-8 py-3.5 bg-orange-500 text-white rounded-xl font-bold text-base inline-flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-xl transition-all shadow-lg shadow-orange-500/40 no-underline"
+                            >
+                                Get Started
+                                <ArrowRight className="w-5 h-5" />
+                            </Link>
+                            <Link
+                                href={howItWorks()}
+                                className="px-8 py-3.5 bg-white/8 text-white rounded-xl font-semibold border-[1.5px] border-white/25 hover:bg-white/14 hover:border-white/50 transition-all no-underline"
+                            >
+                                Learn More
+                            </Link>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 text-xs text-white/45">
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <span>Data privacy protected • End-to-end encrypted</span>
+                        </div>
+                    </div>
+
+                    {/* Right Visual - Hero Card */}
+                    <div className="flex justify-center">
+                        <div className="bg-white/6 border border-white/10 rounded-[20px] p-7 backdrop-blur-md w-full max-w-[380px] shadow-2xl">
+                            {/* Card Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)] animate-pulse" />
+                                    <span className="text-xs text-white/70 font-medium">System Online</span>
+                                </div>
+                                <div className="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide">
+                                    LIVE
+                                </div>
+                            </div>
+
+                            <div className="text-white/50 text-[10px] font-semibold tracking-widest uppercase mb-1.5">
+                                Next Session
+                            </div>
+                            <div className="text-white text-base font-bold mb-5">
+                                Virtual Visit - Room A12
+                            </div>
+
+                            <div className="h-px bg-white/8 my-4" />
+
+                            <div className="space-y-2.5 mb-4">
+                                <div className="flex justify-between">
+                                    <span className="text-xs text-white/45">Scheduled</span>
+                                    <span className="text-xs text-white/85 font-semibold">Today, 2:00 PM</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-xs text-white/45">Duration</span>
+                                    <span className="text-xs text-white/85 font-semibold">30 minutes</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-xs text-white/45">Status</span>
+                                    <span className="text-xs text-green-400 font-semibold">Confirmed</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-white/8 rounded-full h-1.5 mb-1.5 overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full w-[65%]" />
+                            </div>
+                            <div className="text-xs text-white/45 mb-4">65% slots filled today</div>
+
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="bg-white/5 rounded-xl p-3 text-center">
+                                    <div className="text-base font-extrabold text-orange-400">24</div>
+                                    <div className="text-[10px] text-white/45 mt-0.5">Active</div>
+                                </div>
+                                <div className="bg-white/5 rounded-xl p-3 text-center">
+                                    <div className="text-base font-extrabold text-orange-400">156</div>
+                                    <div className="text-[10px] text-white/45 mt-0.5">Today</div>
+                                </div>
+                                <div className="bg-white/5 rounded-xl p-3 text-center">
+                                    <div className="text-base font-extrabold text-orange-400">98%</div>
+                                    <div className="text-[10px] text-white/45 mt-0.5">Uptime</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Features Section */}
+            <section className="py-[90px] bg-white">
+                <div className="max-w-[1200px] mx-auto px-[5%]">
+                    <div className="text-center mb-16">
+                        <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-500 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
+                            <Shield className="w-3.5 h-3.5" />
+                            Core Features
+                        </div>
+                        <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 leading-tight mb-3.5">
+                            Key <span className="text-orange-500">Features</span>
+                        </h2>
+                        <p className="text-base text-slate-600 max-w-[580px] mx-auto leading-relaxed">
+                            Comprehensive visitation management tools designed for security, efficiency, and accessibility
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {features.map((feature) => {
+                            const Icon = feature.icon;
+                            return (
+                                <div
+                                    key={feature.title}
+                                    className="group p-8 bg-white border-2 border-gray-200 rounded-xl hover:border-orange-500 hover:shadow-xl transition-all duration-300 cursor-default"
+                                >
+                                    <div className="w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center mb-6 group-hover:bg-orange-500 transition-colors">
+                                        <Icon className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
+                                    </div>
+                                    <h3 className="text-xl font-semibold text-slate-800 mb-3">{feature.title}</h3>
+                                    <p className="text-slate-600 leading-relaxed text-sm">{feature.description}</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
+
+            {/* How It Works Section */}
+            <section className="py-[90px] bg-gray-50">
+                <div className="max-w-[1200px] mx-auto px-[5%]">
+                    <div className="text-center mb-16">
+                        <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-500 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
+                            <Radio className="w-3.5 h-3.5" />
+                            Process
+                        </div>
+                        <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 leading-tight mb-3.5">
+                            How It <span className="text-orange-500">Works</span>
+                        </h2>
+                        <p className="text-base text-slate-600 max-w-[580px] mx-auto leading-relaxed">
+                            Simple, secure, and streamlined process for managing visitations
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+                        {steps.map((step, index) => {
+                            const Icon = step.icon;
+                            return (
+                                <div key={step.number} className="relative">
+                                    <div className="bg-white p-6 rounded-xl shadow-md text-center relative z-10 hover:shadow-lg transition-shadow">
+                                        <div className="w-14 h-14 bg-orange-500 text-white rounded-xl flex items-center justify-center mx-auto mb-4">
+                                            <Icon className="w-6 h-6" />
+                                        </div>
+                                        <div className="text-xs font-bold text-orange-500 mb-1">STEP {step.number}</div>
+                                        <h3 className="text-base font-semibold text-slate-800 mb-2">{step.title}</h3>
+                                        <p className="text-xs text-slate-600">{step.description}</p>
+                                    </div>
+                                    {index < steps.length - 1 && (
+                                        <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-0">
+                                            <ChevronRight className="w-8 h-8 text-orange-300" />
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="text-center mt-12">
+                        <Link
+                            href={howItWorks()}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-all no-underline"
+                        >
+                            Learn More
+                            <ChevronRight className="w-5 h-5" />
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* Statistics Section */}
+            <section className="py-[90px] bg-gradient-to-r from-orange-500 to-orange-500">
+                <div className="max-w-[1200px] mx-auto px-[5%]">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {stats.map((stat) => {
+                            const Icon = stat.icon;
+                            return (
+                                <div key={stat.label} className="text-center text-white">
+                                    <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                                        <Icon className="w-8 h-8" />
+                                    </div>
+                                    <div className="text-4xl md:text-5xl font-extrabold mb-2">{stat.value}</div>
+                                    <div className="text-base opacity-90">{stat.label}</div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
+
+            {/* FAQ Preview Section */}
+            <section className="py-[90px] bg-white">
+                <div className="max-w-[1200px] mx-auto px-[5%]">
+                    <div className="text-center mb-16">
+                        <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-500 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            Support
+                        </div>
+                        <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 leading-tight mb-3.5">
+                            Frequently Asked <span className="text-orange-500">Questions</span>
+                        </h2>
+                        <p className="text-base text-slate-600 max-w-[580px] mx-auto leading-relaxed">
+                            Quick answers to common questions about e-Dalaw
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                        {faqPreview.map((item, index) => (
+                            <div
+                                key={index}
+                                className="p-6 bg-gray-50 rounded-xl border border-gray-200 hover:border-orange-300 transition-colors"
+                            >
+                                <h3 className="text-base font-semibold text-slate-800 mb-3">{item.question}</h3>
+                                <p className="text-slate-600 leading-relaxed text-sm">{item.answer}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="text-center mt-12">
+                        <Link
+                            href={faq()}
+                            className="inline-flex items-center gap-2 px-6 py-3 border-2 border-orange-500 text-orange-500 font-semibold rounded-lg hover:bg-orange-50 transition-all no-underline"
+                        >
+                            View All FAQs
+                            <ChevronRight className="w-5 h-5" />
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* Contact CTA Section */}
+            <section className="py-[90px] bg-gray-50">
+                <div className="max-w-[1200px] mx-auto px-[5%]">
+                    <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 border border-gray-200">
+                        <div className="text-center max-w-3xl mx-auto">
+                            <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-500 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20 mx-auto w-fit">
+                                <Phone className="w-3.5 h-3.5" />
+                                Support
+                            </div>
+                            <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 leading-tight mb-3.5">
+                                Need <span className="text-orange-500">Help?</span>
+                            </h2>
+                            <p className="text-base text-slate-600 mb-8 leading-relaxed">
+                                Our support team is here to assist you with any questions or concerns about e-Dalaw
+                            </p>
+                            <Link
+                                href={contact()}
+                                className="inline-flex items-center gap-2 px-8 py-4 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-all shadow-md hover:shadow-lg no-underline"
+                            >
+                                Contact Us
+                                <ChevronRight className="w-5 h-5" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Final CTA Section */}
+            <section className="py-[90px] bg-gradient-to-br from-slate-800 to-slate-700 text-white">
+                <div className="max-w-[1200px] mx-auto px-[5%]">
+                    <div className="text-center max-w-3xl mx-auto">
+                        <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold mb-6">
+                            Ready to Get <span className="text-orange-400">Started?</span>
+                        </h2>
+                        <p className="text-base text-white/70 mb-10 leading-relaxed">
+                            Join thousands of families who are already using e-Dalaw to stay connected with their loved ones
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <Link
+                                href={register()}
+                                className="px-8 py-4 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-all shadow-lg hover:shadow-xl no-underline"
+                            >
+                                Create Account
+                            </Link>
+                            <Link
+                                href={login()}
+                                className="px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-slate-800 transition-all no-underline"
+                            >
+                                Login to Account
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </PublicLayout>
+    );
+}

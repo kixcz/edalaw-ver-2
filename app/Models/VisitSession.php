@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use App\Traits\HasBranchScope;
 
 class VisitSession extends Model
 {
+    use HasBranchScope;
     /**
      * The attributes that are mass assignable.
      *
@@ -16,6 +19,7 @@ class VisitSession extends Model
     protected $fillable = [
         'visit_id',
         'eburol_id',
+        'jail_id',
         'room_id',
         'session_id',
         'monitor_id',
@@ -29,6 +33,8 @@ class VisitSession extends Model
         'started_at',
         'ended_at',
         'terms_accepted_at',
+        'session_consent_accepted',
+        'session_consent_timestamp',
         'join_reminder_sent_at',
         'chat_locked',
         'visitor_joined_at',
@@ -49,6 +55,8 @@ class VisitSession extends Model
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
             'terms_accepted_at' => 'datetime',
+            'session_consent_accepted' => 'boolean',
+            'session_consent_timestamp' => 'datetime',
             'join_reminder_sent_at' => 'datetime',
             'chat_locked' => 'boolean',
             'visitor_joined_at' => 'datetime',
@@ -60,6 +68,24 @@ class VisitSession extends Model
     public function visit(): BelongsTo
     {
         return $this->belongsTo(Visit::class);
+    }
+
+    /**
+     * Get the jail that this session is associated with.
+     *
+     * @return BelongsTo<Jail, VisitSession>
+     */
+    public function jail(): BelongsTo
+    {
+        return $this->belongsTo(Jail::class);
+    }
+
+    /**
+     * Get the branch through the jail.
+     */
+    public function branch(): HasOneThrough
+    {
+        return $this->hasOneThrough(Branch::class, Jail::class);
     }
 
     public function eburol(): BelongsTo

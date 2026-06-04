@@ -84,6 +84,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user ? [
                     ...$user->toArray(),
                     'role' => $user->role?->slug,
+                    'assigned_scopes' => $user->assignedScopes ? $user->assignedScopes()->with(['cell', 'dormitory', 'annex'])->get() : [],
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
