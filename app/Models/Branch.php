@@ -34,31 +34,27 @@ class Branch extends Model
     }
 
     /**
-     * Get the annexes for this branch.
+     * Get the jails for this branch.
      */
-    public function annexes(): HasMany
+    public function jails(): HasMany
     {
-        return $this->hasMany(Annex::class);
+        return $this->hasMany(Jail::class);
     }
 
     /**
-     * Get all dormitories through annexes.
+     * Get all dormitories through jails.
      */
     public function dormitories(): HasManyThrough
     {
-        return $this->hasManyThrough(Dormitory::class, Annex::class);
+        return $this->hasManyThrough(Dormitory::class, Jail::class);
     }
 
     /**
-     * Get all cells through annexes and dormitories.
+     * Get all annexes through jails and dormitories.
      */
-    public function cells()
+    public function annexes(): HasManyThrough
     {
-        // Get cells where the dormitory's annex belongs to this branch
-        return Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
-            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-            ->where('annexes.branch_id', $this->id)
-            ->select('cells.*');
+        return $this->hasManyThrough(Annex::class, Dormitory::class, 'jail_id', 'dormitory_id');
     }
 
     /**

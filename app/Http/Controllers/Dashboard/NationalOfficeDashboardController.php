@@ -81,8 +81,14 @@ class NationalOfficeDashboardController extends Controller
             'jails as total_jails',
             'dormitories as total_dormitories',
             'annexes as total_annexes',
-            'cells as total_cells',
         ])->get()->map(function ($branch) {
+            // Calculate cells count manually since it's not a direct relationship
+            $totalCells = Cell::join('annexes', 'cells.annex_id', '=', 'annexes.id')
+                ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $branch->id)
+                ->count();
+
             return [
                 'id' => $branch->id,
                 'code' => $branch->code,
@@ -101,7 +107,7 @@ class NationalOfficeDashboardController extends Controller
                 'total_jails' => $branch->total_jails,
                 'total_dormitories' => $branch->total_dormitories,
                 'total_annexes' => $branch->total_annexes,
-                'total_cells' => $branch->total_cells,
+                'total_cells' => $totalCells,
                 'total_pdls' => Inmate::join('cells', 'inmates.cell_id', '=', 'cells.id')
                     ->join('annexes', 'cells.annex_id', '=', 'annexes.id')
                     ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
@@ -257,11 +263,19 @@ class NationalOfficeDashboardController extends Controller
         // === ANALYTICS DATA ===
         
         // PDL count per branch
-        $pdlPerBranch = Branch::withCount(['cells as pdl_count' => function ($query) {
-            $query->join('inmates', 'cells.id', '=', 'inmates.cell_id');
-        }])
-        ->get()
-        ->map(fn($b) => ['name' => $b->name, 'count' => $b->pdls_count ?? 0]);
+        $pdlPerBranch = Branch::with(['jails.dormitories.annexes.cells.inmates'])
+            ->get()
+            ->map(function ($b) {
+                $count = 0;
+                foreach ($b->jails as $jail) {
+                    foreach ($jail->dormitories as $dorm) {
+                        foreach ($dorm->annexes as $annex) {
+                            $count += $annex->cells->sum('inmates_count');
+                        }
+                    }
+                }
+                return ['name' => $b->name, 'count' => $count];
+            });
 
         // Branch count per region
         $branchPerRegion = Region::withCount('branches')
@@ -269,9 +283,17 @@ class NationalOfficeDashboardController extends Controller
             ->map(fn($r) => ['name' => $r->name, 'count' => $r->branches_count]);
 
         // Cell count per branch
-        $cellPerBranch = Branch::withCount(['cells'])
+        $cellPerBranch = Branch::with(['jails.dormitories.annexes.cells'])
             ->get()
-            ->map(fn($b) => ['name' => $b->name, 'count' => $b->cells_count]);
+            ->map(function ($b) {
+                $count = 0;
+                foreach ($b->jails as $jail) {
+                    foreach ($jail->dormitories as $dorm) {
+                        $count += $dorm->annexes->sum(fn($annex) => $annex->cells->count());
+                    }
+                }
+                return ['name' => $b->name, 'count' => $count];
+            });
 
         // Visits per region
         $visitsPerRegion = Region::with(['branches.jails.visits'])

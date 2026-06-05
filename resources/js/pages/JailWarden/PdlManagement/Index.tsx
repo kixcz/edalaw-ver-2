@@ -148,16 +148,22 @@ export default function PdlManagement({ auth, inmates, cells }: any) {
                                 <span className="text-xs font-medium">📍 Cell:</span>
                                 <span className="text-xs">{location.cell_number}</span>
                             </div>
-                            {location.dormitory && (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-medium">🏢 Dorm:</span>
-                                    <span className="text-xs">{location.dormitory.name}</span>
-                                </div>
-                            )}
-                            {location.dormitory?.annex && (
+                            {location.annex && (
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-medium">🏛️ Annex:</span>
-                                    <span className="text-xs">{location.dormitory.annex.name}</span>
+                                    <span className="text-xs">{location.annex.name}</span>
+                                </div>
+                            )}
+                            {location.annex?.dormitory && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium">🏢 Dorm:</span>
+                                    <span className="text-xs">{location.annex.dormitory.name}</span>
+                                </div>
+                            )}
+                            {location.annex?.dormitory?.jail && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium">🏪 Jail:</span>
+                                    <span className="text-xs">{location.annex.dormitory.jail.name}</span>
                                 </div>
                             )}
                         </div>

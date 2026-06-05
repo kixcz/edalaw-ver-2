@@ -46,7 +46,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function CellManagement({ auth, cells, dormitories }: any) {
+export default function CellManagement({ auth, cells, annexes }: any) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedCell, setSelectedCell] = useState<any>(null);
@@ -55,11 +55,11 @@ export default function CellManagement({ auth, cells, dormitories }: any) {
         cell_number: '',
         capacity: '4',
         status: 'active',
-        dormitory_id: '',
+        annex_id: '',
     });
 
     const openCreateModal = () => {
-        form.setData({ cell_number: '', capacity: '4', status: 'active', dormitory_id: '' });
+        form.setData({ cell_number: '', capacity: '4', status: 'active', annex_id: '' });
         setIsCreateModalOpen(true);
     };
 
@@ -69,7 +69,7 @@ export default function CellManagement({ auth, cells, dormitories }: any) {
             cell_number: cell.cell_number,
             capacity: cell.capacity.toString(),
             status: cell.status,
-            dormitory_id: cell.dormitory.id.toString(),
+            annex_id: cell.annex?.id?.toString() || '',
         });
         setIsEditModalOpen(true);
     };
@@ -116,12 +116,14 @@ export default function CellManagement({ auth, cells, dormitories }: any) {
                 header: 'Capacity',
             },
             {
-                accessorKey: 'dormitory.name',
-                header: 'Dormitory',
+                accessorKey: 'annex.name',
+                header: 'Annex',
+                cell: ({ row }) => row.original.annex?.name || '-',
             },
             {
-                accessorKey: 'dormitory.annex.name',
-                header: 'Annex',
+                accessorKey: 'annex.dormitory.name',
+                header: 'Dormitory',
+                cell: ({ row }) => row.original.annex?.dormitory?.name || '-',
             },
             {
                 accessorKey: 'status',
@@ -207,7 +209,7 @@ export default function CellManagement({ auth, cells, dormitories }: any) {
                     <DialogHeader>
                         <DialogTitle>Create New Cell</DialogTitle>
                         <DialogDescription>
-                            Add a new cell to your branch. Select a dormitory to link it to.
+                            Add a new cell to your branch. Select an annex to link it to.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitCreate}>
@@ -239,24 +241,24 @@ export default function CellManagement({ auth, cells, dormitories }: any) {
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="dormitory_id">Dormitory</Label>
+                                <Label htmlFor="annex_id">Annex</Label>
                                 <Select
-                                    value={form.data.dormitory_id}
-                                    onValueChange={(value) => form.setData('dormitory_id', value)}
+                                    value={form.data.annex_id}
+                                    onValueChange={(value) => form.setData('annex_id', value)}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select dormitory" />
+                                        <SelectValue placeholder="Select annex" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {dormitories.map((dorm: any) => (
-                                            <SelectItem key={dorm.id} value={dorm.id.toString()}>
-                                                {dorm.name}
+                                        {annexes?.map((annex: any) => (
+                                            <SelectItem key={annex.id} value={annex.id.toString()}>
+                                                {annex.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {form.errors.dormitory_id && (
-                                    <p className="text-sm text-red-600">{form.errors.dormitory_id}</p>
+                                {form.errors.annex_id && (
+                                    <p className="text-sm text-red-600">{form.errors.annex_id}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
@@ -329,24 +331,24 @@ export default function CellManagement({ auth, cells, dormitories }: any) {
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-dormitory_id">Dormitory</Label>
+                                <Label htmlFor="edit-annex_id">Annex</Label>
                                 <Select
-                                    value={form.data.dormitory_id}
-                                    onValueChange={(value) => form.setData('dormitory_id', value)}
+                                    value={form.data.annex_id}
+                                    onValueChange={(value) => form.setData('annex_id', value)}
                                 >
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {dormitories.map((dorm: any) => (
-                                            <SelectItem key={dorm.id} value={dorm.id.toString()}>
-                                                {dorm.name}
+                                        {annexes?.map((annex: any) => (
+                                            <SelectItem key={annex.id} value={annex.id.toString()}>
+                                                {annex.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {form.errors.dormitory_id && (
-                                    <p className="text-sm text-red-600">{form.errors.dormitory_id}</p>
+                                {form.errors.annex_id && (
+                                    <p className="text-sm text-red-600">{form.errors.annex_id}</p>
                                 )}
                             </div>
                             <div className="space-y-2">

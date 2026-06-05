@@ -6,17 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Traits\HasBranchScopeThroughRelation;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Dormitory extends Model
 {
-    use HasFactory, HasBranchScopeThroughRelation;
-
-    /**
-     * The relationship path to resolve branch.
-     */
-    protected string $branchRelationshipPath = 'annex';
+    use HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -24,22 +18,12 @@ class Dormitory extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'annex_id',
+        'jail_id',
         'name',
         'type',
         'description',
         'status',
     ];
-
-    /**
-     * Get the annex that owns this dormitory.
-     *
-     * @return BelongsTo<Annex>
-     */
-    public function annex(): BelongsTo
-    {
-        return $this->belongsTo(Annex::class);
-    }
 
     /**
      * Get the jail that owns this dormitory.
@@ -52,19 +36,19 @@ class Dormitory extends Model
     }
 
     /**
-     * Get the branch through the annex.
+     * Get the annexes in this dormitory.
      */
-    public function branch(): HasOneThrough
+    public function annexes(): HasMany
     {
-        return $this->hasOneThrough(Branch::class, Annex::class);
+        return $this->hasMany(Annex::class);
     }
 
     /**
-     * Get the cells in this dormitory.
+     * Get all cells through annexes.
      */
-    public function cells(): HasMany
+    public function cells(): HasManyThrough
     {
-        return $this->hasMany(Cell::class);
+        return $this->hasManyThrough(Cell::class, Annex::class);
     }
 
     /**

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\JailWarden;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cell;
-use App\Models\Dormitory;
+use App\Models\Annex;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -21,23 +21,30 @@ class CellManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
-        $cells = Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
-            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-            ->where('annexes.branch_id', $user->branch_id)
-            ->with(['dormitory.annex'])
-            ->orderBy('cell_number')
+        $cells = Cell::query()
+            ->join('annexes', 'cells.annex_id', '=', 'annexes.id')
+            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
+            ->with(['annex', 'annex.dormitory', 'annex.dormitory.jail'])
+            ->select('cells.*')
+            ->orderBy('cells.cell_number')
             ->paginate(15)
             ->through(fn($cell) => [
                 'id' => $cell->id,
                 'cell_number' => $cell->cell_number,
                 'capacity' => $cell->capacity,
                 'status' => $cell->status,
-                'dormitory' => [
-                    'id' => $cell->dormitory->id,
-                    'name' => $cell->dormitory->name,
-                    'annex' => [
-                        'id' => $cell->dormitory->annex->id,
-                        'name' => $cell->dormitory->annex->name,
+                'annex' => [
+                    'id' => $cell->annex->id,
+                    'name' => $cell->annex->name,
+                    'dormitory' => [
+                        'id' => $cell->annex->dormitory->id,
+                        'name' => $cell->annex->dormitory->name,
+                        'jail' => [
+                            'id' => $cell->annex->dormitory->jail->id,
+                            'name' => $cell->annex->dormitory->jail->name,
+                        ],
                     ],
                 ],
                 'created_at' => $cell->created_at,
@@ -45,11 +52,13 @@ class CellManagementController extends Controller
 
         return Inertia::render('JailWarden/CellManagement/Index', [
             'cells' => $cells,
-            'dormitories' => Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-                ->where('annexes.branch_id', $user->branch_id)
-                ->where('dormitories.status', 'active')
-                ->orderBy('name')
-                ->get(['dormitories.id', 'dormitories.name']),
+            'annexes' => Annex::join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $user->branch_id)
+                ->where('annexes.status', 'active')
+                ->select('annexes.*')
+                ->orderBy('annexes.name')
+                ->get(['annexes.id', 'annexes.name']),
         ]);
     }
 
@@ -68,27 +77,29 @@ class CellManagementController extends Controller
             'cell_number' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1|max:100',
             'status' => 'required|in:active,inactive',
-            'dormitory_id' => 'required|exists:dormitories,id',
+            'annex_id' => 'required|exists:annexes,id',
         ]);
 
-        // Check if cell number already exists in this dormitory
+        // Check if cell number already exists in this annex
         $existingCell = Cell::where('cell_number', $validated['cell_number'])
-            ->where('dormitory_id', $validated['dormitory_id'])
+            ->where('annex_id', $validated['annex_id'])
             ->first();
 
         if ($existingCell) {
             return back()->withErrors([
-                'cell_number' => "Cell '{$validated['cell_number']}' already exists in this dormitory."
+                'cell_number' => "Cell '{$validated['cell_number']}' already exists in this annex."
             ])->withInput();
         }
 
-        // Verify dormitory belongs to warden's branch through annex
-        $dormitory = Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-            ->where('dormitories.id', $validated['dormitory_id'])
-            ->where('annexes.branch_id', $user->branch_id)
+        // Verify annex belongs to warden's branch through dormitory and jail
+        $annex = Annex::join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->where('annexes.id', $validated['annex_id'])
+            ->where('jails.branch_id', $user->branch_id)
+            ->select('annexes.*')
             ->firstOrFail();
 
-        $validated['dormitory_id'] = $dormitory->id;
+        $validated['annex_id'] = $annex->id;
 
         Cell::create($validated);
 
@@ -106,14 +117,15 @@ class CellManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
-        // Verify cell belongs to warden's branch through dormitory and annex
-        $dormitory = $cell->dormitory;
-        if (!$dormitory) {
-            abort(403, 'Unauthorized action.');
-        }
-        
-        $annex = $dormitory->annex;
-        if (!$annex || $annex->branch_id !== $user->branch_id) {
+        // Verify cell belongs to warden's branch through annex, dormitory, and jail
+        $belongsToBranch = $cell->annex()
+            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
+            ->where('annexes.id', $cell->annex_id)
+            ->exists();
+
+        if (!$belongsToBranch) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -121,13 +133,15 @@ class CellManagementController extends Controller
             'cell_number' => 'required|string|max:255|unique:cells,cell_number,' . $cell->id,
             'capacity' => 'required|integer|min:1|max:100',
             'status' => 'required|in:active,inactive',
-            'dormitory_id' => 'required|exists:dormitories,id',
+            'annex_id' => 'required|exists:annexes,id',
         ]);
 
-        // Verify new dormitory belongs to warden's branch
-        $newDormitory = Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-            ->where('dormitories.id', $validated['dormitory_id'])
-            ->where('annexes.branch_id', $user->branch_id)
+        // Verify new annex belongs to warden's branch
+        $newAnnex = Annex::join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->where('annexes.id', $validated['annex_id'])
+            ->where('jails.branch_id', $user->branch_id)
+            ->select('annexes.*')
             ->firstOrFail();
 
         $cell->update($validated);
@@ -146,14 +160,15 @@ class CellManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
-        // Verify cell belongs to warden's branch through dormitory and annex
-        $dormitory = $cell->dormitory;
-        if (!$dormitory) {
-            abort(403, 'Unauthorized action.');
-        }
-        
-        $annex = $dormitory->annex;
-        if (!$annex || $annex->branch_id !== $user->branch_id) {
+        // Verify cell belongs to warden's branch through annex, dormitory, and jail
+        $belongsToBranch = $cell->annex()
+            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
+            ->where('annexes.id', $cell->annex_id)
+            ->exists();
+
+        if (!$belongsToBranch) {
             abort(403, 'Unauthorized action.');
         }
 

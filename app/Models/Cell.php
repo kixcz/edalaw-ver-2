@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Cell extends Model
 {
@@ -17,7 +18,7 @@ class Cell extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'dormitory_id',
+        'annex_id',
         'cell_number',
         'capacity',
         'status',
@@ -36,21 +37,21 @@ class Cell extends Model
     }
 
     /**
-     * Get the dormitory that this cell belongs to.
+     * Get the annex that this cell belongs to.
      *
-     * @return BelongsTo<Dormitory>
+     * @return BelongsTo<Annex>
      */
-    public function dormitory(): BelongsTo
+    public function annex(): BelongsTo
     {
-        return $this->belongsTo(Dormitory::class);
+        return $this->belongsTo(Annex::class);
     }
 
     /**
-     * Get the annex through the dormitory.
+     * Get the dormitory through the annex.
      */
-    public function annex(): \Illuminate\Database\Eloquent\Relations\HasOneThrough
+    public function dormitory(): \Illuminate\Database\Eloquent\Relations\HasOneThrough
     {
-        return $this->hasOneThrough(Annex::class, Dormitory::class, 'id', 'dormitory_id', 'dormitory_id');
+        return $this->hasOneThrough(Dormitory::class, Annex::class, 'id', 'id', 'annex_id', 'dormitory_id');
     }
 
     /**
@@ -69,6 +70,14 @@ class Cell extends Model
     public function inmates(): HasMany
     {
         return $this->hasMany(Inmate::class);
+    }
+
+    /**
+     * Get the jail officer scopes for this cell.
+     */
+    public function jailOfficerScopes(): HasMany
+    {
+        return $this->hasMany(JailOfficerScope::class);
     }
 
     /**

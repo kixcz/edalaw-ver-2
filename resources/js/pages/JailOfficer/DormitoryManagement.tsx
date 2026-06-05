@@ -183,8 +183,8 @@ export default function DormitoryManagement({ dormitories, jails, filters }: Pro
                 header: 'Jail',
                 cell: ({ row }) => (
                     <div>
-                        <div>{row.original.jail.name}</div>
-                        <div className="text-sm text-muted-foreground">{row.original.jail.code}</div>
+                        <div>{row.original.jail?.name || 'N/A'}</div>
+                        <div className="text-sm text-muted-foreground">{row.original.jail?.code || ''}</div>
                     </div>
                 ),
             },

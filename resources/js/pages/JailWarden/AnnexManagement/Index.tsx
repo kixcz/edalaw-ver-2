@@ -46,25 +46,27 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function AnnexManagement({ auth, annexes, branch }: any) {
+export default function AnnexManagement({ auth, annexes, branch, dormitories }: any) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedAnnex, setSelectedAnnex] = useState<any>(null);
 
     const form = useForm({
+        dormitory_id: '',
         name: '',
         description: '',
         status: 'active',
     });
 
     const openCreateModal = () => {
-        form.setData({ name: '', description: '', status: 'active' });
+        form.setData({ dormitory_id: '', name: '', description: '', status: 'active' });
         setIsCreateModalOpen(true);
     };
 
     const openEditModal = (annex: any) => {
         setSelectedAnnex(annex);
         form.setData({
+            dormitory_id: annex.dormitory?.id?.toString() || '',
             name: annex.name,
             description: annex.description || '',
             status: annex.status,
@@ -128,8 +130,13 @@ export default function AnnexManagement({ auth, annexes, branch }: any) {
                 ),
             },
             {
-                accessorKey: 'dormitories_count',
-                header: 'Dormitories',
+                accessorKey: 'dormitory',
+                header: 'Dormitory',
+                cell: ({ row }) => row.original.dormitory?.name || '-',
+            },
+            {
+                accessorKey: 'cells_count',
+                header: 'Cells',
             },
             {
                 id: 'actions',
@@ -212,6 +219,27 @@ export default function AnnexManagement({ auth, annexes, branch }: any) {
                     <form onSubmit={submitCreate}>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
+                                <Label htmlFor="dormitory">Dormitory</Label>
+                                <Select
+                                    value={form.data.dormitory_id}
+                                    onValueChange={(value) => form.setData('dormitory_id', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select dormitory" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {dormitories?.map((dorm: any) => (
+                                            <SelectItem key={dorm.id} value={dorm.id.toString()}>
+                                                {dorm.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {form.errors.dormitory_id && (
+                                    <p className="text-sm text-red-600">{form.errors.dormitory_id}</p>
+                                )}
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="name">Name</Label>
                                 <Input
                                     id="name"
@@ -279,6 +307,27 @@ export default function AnnexManagement({ auth, annexes, branch }: any) {
                     </DialogHeader>
                     <form onSubmit={submitUpdate}>
                         <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-dormitory">Dormitory</Label>
+                                <Select
+                                    value={form.data.dormitory_id}
+                                    onValueChange={(value) => form.setData('dormitory_id', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select dormitory" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {dormitories?.map((dorm: any) => (
+                                            <SelectItem key={dorm.id} value={dorm.id.toString()}>
+                                                {dorm.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {form.errors.dormitory_id && (
+                                    <p className="text-sm text-red-600">{form.errors.dormitory_id}</p>
+                                )}
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="edit-name">Name</Label>
                                 <Input

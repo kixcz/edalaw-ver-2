@@ -8,16 +8,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
-use App\Traits\HasBranchScopeThroughRelation;
 
 class Annex extends Model
 {
-    use HasFactory, HasBranchScopeThroughRelation;
-
-    /**
-     * The relationship path to resolve branch.
-     */
-    protected string $branchRelationshipPath = 'branch';
+    use HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -25,7 +19,7 @@ class Annex extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'branch_id',
+        'dormitory_id',
         'name',
         'description',
         'status',
@@ -42,16 +36,6 @@ class Annex extends Model
     }
 
     /**
-     * Get the branch that owns this annex.
-     *
-     * @return BelongsTo<Branch>
-     */
-    public function branch(): BelongsTo
-    {
-        return $this->belongsTo(Branch::class);
-    }
-
-    /**
      * Get the dormitories in this annex.
      */
     public function dormitories(): HasMany
@@ -60,11 +44,19 @@ class Annex extends Model
     }
 
     /**
-     * Get all cells through dormitories.
+     * Get the cells in this annex.
      */
-    public function cells(): HasManyThrough
+    public function cells(): HasMany
     {
-        return $this->hasManyThrough(Cell::class, Dormitory::class);
+        return $this->hasMany(Cell::class);
+    }
+
+    /**
+     * Get the jail officer scopes for this annex.
+     */
+    public function jailOfficerScopes(): HasMany
+    {
+        return $this->hasMany(JailOfficerScope::class);
     }
 
     /**

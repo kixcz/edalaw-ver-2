@@ -60,28 +60,32 @@ class JailOfficerManagementController extends Controller
 
         // Get facilities for dropdown
         $facilities = [
-            'annexes' => Annex::where('branch_id', $user->branch_id)
-                ->where('status', 'active')
-                ->orderBy('name')
-                ->get(['id', 'name']),
-            
-            'dormitories' => Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-                ->where('annexes.branch_id', $user->branch_id)
-                ->where('dormitories.status', 'active')
-                ->orderBy('dormitories.name')
-                ->select('dormitories.id', 'dormitories.name', 'annexes.name as annex_name')
+            'annexes' => Annex::join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $user->branch_id)
+                ->where('annexes.status', 'active')
+                ->orderBy('annexes.name')
+                ->select('annexes.id', 'annexes.name')
                 ->get(),
             
-            'cells' => Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
-                ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-                ->where('annexes.branch_id', $user->branch_id)
+            'dormitories' => Dormitory::join('jails', 'dormitories.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $user->branch_id)
+                ->where('dormitories.status', 'active')
+                ->orderBy('dormitories.name')
+                ->select('dormitories.id', 'dormitories.name')
+                ->get(),
+            
+            'cells' => Cell::join('annexes', 'cells.annex_id', '=', 'annexes.id')
+                ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $user->branch_id)
                 ->where('cells.status', 'active')
                 ->orderBy('cells.cell_number')
                 ->select(
                     'cells.id',
                     'cells.cell_number',
-                    'dormitories.name as dormitory_name',
-                    'annexes.name as annex_name'
+                    'annexes.name as annex_name',
+                    'dormitories.name as dormitory_name'
                 )
                 ->get(),
         ];

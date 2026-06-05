@@ -21,15 +21,18 @@ class PdlManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
-        // Get all inmates in the branch through cell → dormitory → annex → branch hierarchy
+        // Get all inmates in the branch through cell → annex → dormitory → jail → branch hierarchy
         $inmates = Inmate::join('cells', 'inmates.cell_id', '=', 'cells.id')
-            ->join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
-            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-            ->where('annexes.branch_id', $user->branch_id)
+            ->join('annexes', 'cells.annex_id', '=', 'annexes.id')
+            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
             ->select('inmates.*')
             ->with(['cell' => function ($query) {
-                $query->with(['dormitory' => function ($q) {
-                    $q->with('annex');
+                $query->with(['annex' => function ($q) {
+                    $q->with(['dormitory' => function ($qr) {
+                        $qr->with('jail');
+                    }]);
                 }]);
             }])
             ->orderBy('last_name')
@@ -47,35 +50,40 @@ class PdlManagementController extends Controller
                 'cell' => $inmate->cell ? [
                     'id' => $inmate->cell->id,
                     'cell_number' => $inmate->cell->cell_number,
-                    'dormitory' => $inmate->cell->dormitory ? [
-                        'id' => $inmate->cell->dormitory->id,
-                        'name' => $inmate->cell->dormitory->name,
-                        'annex' => [
-                            'id' => $inmate->cell->dormitory->annex->id,
-                            'name' => $inmate->cell->dormitory->annex->name,
-                        ],
+                    'annex' => $inmate->cell->annex ? [
+                        'id' => $inmate->cell->annex->id,
+                        'name' => $inmate->cell->annex->name,
+                        'dormitory' => $inmate->cell->annex->dormitory ? [
+                            'id' => $inmate->cell->annex->dormitory->id,
+                            'name' => $inmate->cell->annex->dormitory->name,
+                            'jail' => $inmate->cell->annex->dormitory->jail ? [
+                                'id' => $inmate->cell->annex->dormitory->jail->id,
+                                'name' => $inmate->cell->annex->dormitory->jail->name,
+                            ] : null,
+                        ] : null,
                     ] : null,
                 ] : null,
                 'created_at' => $inmate->created_at,
             ]);
 
         // Get cells for dropdown
-        $cells = Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
-            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-            ->where('annexes.branch_id', $user->branch_id)
+        $cells = Cell::join('annexes', 'cells.annex_id', '=', 'annexes.id')
+            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
             ->where('cells.status', 'active')
-            ->orderBy('dormitories.name')
+            ->orderBy('annexes.name')
             ->orderBy('cells.cell_number')
             ->select(
                 'cells.id',
                 'cells.cell_number',
-                'dormitories.name as dormitory_name',
-                'annexes.name as annex_name'
+                'annexes.name as annex_name',
+                'dormitories.name as dormitory_name'
             )
             ->get()
             ->map(fn($cell) => [
                 'id' => $cell->id,
-                'label' => "Cell {$cell->cell_number} - {$cell->dormitory_name} ({$cell->annex_name})",
+                'label' => "Cell {$cell->cell_number} - {$cell->annex_name} ({$cell->dormitory_name})",
                 'value' => (string) $cell->id,
             ]);
 
@@ -106,10 +114,12 @@ class PdlManagementController extends Controller
         ]);
 
         // Verify cell belongs to warden's branch
-        $cell = Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
-            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-            ->where('annexes.branch_id', $user->branch_id)
+        $cell = Cell::join('annexes', 'cells.annex_id', '=', 'annexes.id')
+            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
             ->where('cells.id', $validated['cell_id'])
+            ->select('cells.*')
             ->first();
 
         if (!$cell) {

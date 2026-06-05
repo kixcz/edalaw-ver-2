@@ -21,10 +21,10 @@ class DormitoryManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
-        $dormitories = Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-            ->where('annexes.branch_id', $user->branch_id)
-            ->with(['annex'])
-            ->withCount('cells')
+        $dormitories = Dormitory::join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
+            ->with(['jail'])
+            ->withCount(['annexes', 'cells'])
             ->orderBy('name')
             ->paginate(10)
             ->through(fn($dorm) => [
@@ -33,17 +33,18 @@ class DormitoryManagementController extends Controller
                 'type' => $dorm->type,
                 'description' => $dorm->description,
                 'status' => $dorm->status,
-                'annex' => [
-                    'id' => $dorm->annex->id,
-                    'name' => $dorm->annex->name,
+                'jail' => [
+                    'id' => $dorm->jail->id,
+                    'name' => $dorm->jail->name,
                 ],
+                'annexes_count' => $dorm->annexes_count,
                 'cells_count' => $dorm->cells_count,
                 'created_at' => $dorm->created_at,
             ]);
 
         return Inertia::render('JailWarden/DormitoryManagement/Index', [
             'dormitories' => $dormitories,
-            'annexes' => Annex::where('branch_id', $user->branch_id)
+            'jails' => \App\Models\Jail::where('branch_id', $user->branch_id)
                 ->where('status', 'active')
                 ->orderBy('name')
                 ->get(['id', 'name']),
@@ -66,15 +67,15 @@ class DormitoryManagementController extends Controller
             'type' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
-            'annex_id' => 'required|exists:annexes,id',
+            'jail_id' => 'required|exists:jails,id',
         ]);
 
-        // Verify annex belongs to warden's branch
-        $annex = Annex::where('id', $validated['annex_id'])
+        // Verify jail belongs to warden's branch
+        $jail = \App\Models\Jail::where('id', $validated['jail_id'])
             ->where('branch_id', $user->branch_id)
             ->firstOrFail();
 
-        $validated['annex_id'] = $annex->id;
+        $validated['jail_id'] = $jail->id;
 
         Dormitory::create($validated);
 
@@ -92,9 +93,13 @@ class DormitoryManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
-        // Verify dormitory belongs to warden's branch through annex
-        $annex = $dormitory->annex;
-        if (!$annex || $annex->branch_id !== $user->branch_id) {
+        // Verify dormitory belongs to warden's branch through jail
+        $belongsToBranch = $dormitory->jail()
+            ->where('branch_id', $user->branch_id)
+            ->where('id', $dormitory->jail_id)
+            ->exists();
+
+        if (!$belongsToBranch) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -103,11 +108,11 @@ class DormitoryManagementController extends Controller
             'type' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
-            'annex_id' => 'required|exists:annexes,id',
+            'jail_id' => 'required|exists:jails,id',
         ]);
 
-        // Verify new annex belongs to warden's branch
-        $newAnnex = Annex::where('id', $validated['annex_id'])
+        // Verify new jail belongs to warden's branch
+        $newJail = \App\Models\Jail::where('id', $validated['jail_id'])
             ->where('branch_id', $user->branch_id)
             ->firstOrFail();
 
@@ -127,13 +132,21 @@ class DormitoryManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
-        // Verify dormitory belongs to warden's branch through annex
-        $annex = $dormitory->annex;
-        if (!$annex || $annex->branch_id !== $user->branch_id) {
+        // Verify dormitory belongs to warden's branch through jail
+        $belongsToBranch = $dormitory->jail()
+            ->where('branch_id', $user->branch_id)
+            ->where('id', $dormitory->jail_id)
+            ->exists();
+
+        if (!$belongsToBranch) {
             abort(403, 'Unauthorized action.');
         }
 
-        // Check if dormitory has cells
+        // Check if dormitory has annexes or cells
+        if ($dormitory->annexes()->count() > 0) {
+            return redirect()->back()->with('error', 'Cannot delete dormitory with existing annexes.');
+        }
+
         if ($dormitory->cells()->count() > 0) {
             return redirect()->back()->with('error', 'Cannot delete dormitory with existing cells.');
         }
