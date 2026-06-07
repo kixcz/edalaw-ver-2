@@ -14,8 +14,6 @@ import {
     Phone,
     Clock,
     MessageSquare,
-    Menu,
-    X,
     Eye,
     Radio
 } from 'lucide-react';
@@ -23,19 +21,11 @@ import PublicLayout from '@/layouts/public-layout';
 import { register, login, faq, contact, howItWorks } from '@/routes/public-routes';
 
 export default function Home() {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
     const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
     useEffect(() => {
         // Always show privacy modal on page load
         setPrivacyAccepted(false);
-
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 20);
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     const handlePrivacyAccept = () => {
@@ -172,93 +162,8 @@ export default function Home() {
                 </div>
             )}
 
-            {/* Navigation */}
-            <nav className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-300 ${
-                scrolled 
-                    ? 'bg-white/95 backdrop-blur-md shadow-md border-b border-gray-200' 
-                    : 'bg-white/90 backdrop-blur-sm border-b border-gray-100'
-            }`}>
-                <div className="px-[5%] flex items-center justify-between h-17">
-                    <Link href="/" className="flex items-center gap-3 no-underline">
-                        <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-400 rounded-xl flex items-center justify-center text-white font-black text-sm">
-                            eD
-                        </div>
-                        <span className="font-extrabold text-xl text-slate-800">
-                            e-<span className="text-orange-500">Dalaw</span>
-                        </span>
-                    </Link>
-
-                    {/* Desktop Nav */}
-                    <div className="hidden lg:flex items-center gap-1.5">
-                        {['About', 'Services', 'How It Works', 'FAQ', 'Contact'].map((item) => (
-                            <Link
-                                key={item}
-                                href={`/${item.toLowerCase().replace(/\s+/g, '-')}`}
-                                className="no-underline text-sm font-medium text-slate-600 px-3.5 py-2 rounded-lg hover:bg-orange-50 hover:text-orange-500 transition-all"
-                            >
-                                {item}
-                            </Link>
-                        ))}
-                    </div>
-
-                    <div className="hidden lg:flex items-center gap-2.5">
-                        <Link
-                            href={login()}
-                            className="px-5 py-2 rounded-lg text-sm font-semibold border-2 border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white transition-all no-underline"
-                        >
-                            Login
-                        </Link>
-                        <Link
-                            href={register()}
-                            className="px-5 py-2 rounded-lg text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 transition-all shadow-md shadow-orange-500/30 no-underline"
-                        >
-                            Register
-                        </Link>
-                    </div>
-
-                    {/* Mobile Menu Button */}
-                    <button 
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="lg:hidden p-2"
-                    >
-                        {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                    </button>
-                </div>
-
-                {/* Mobile Menu */}
-                {isMenuOpen && (
-                    <div className="lg:hidden bg-white border-t border-gray-200 py-4 px-[5%]">
-                        <div className="flex flex-col gap-2">
-                            {['About', 'Services', 'How It Works', 'FAQ', 'Contact'].map((item) => (
-                                <Link
-                                    key={item}
-                                    href={`/${item.toLowerCase().replace(/\s+/g, '-')}`}
-                                    className="no-underline text-sm font-medium text-slate-600 px-3 py-2.5 rounded-lg hover:bg-orange-50 hover:text-orange-500 transition-all"
-                                    onClick={() => setIsMenuOpen(false)}
-                                >
-                                    {item}
-                                </Link>
-                            ))}
-                            <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-200">
-                                <Link
-                                    href={login()}
-                                    className="px-5 py-2.5 rounded-lg text-sm font-semibold border-2 border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white transition-all text-center no-underline"
-                                >
-                                    Login
-                                </Link>
-                                <Link
-                                    href={register()}
-                                    className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-orange-500 text-white hover:bg-orange-600 transition-all text-center shadow-md shadow-orange-500/30 no-underline"
-                                >
-                                    Register
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </nav>
             {/* Hero Section */}
-            <section className="relative min-h-screen bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] flex items-center pt-20 pb-20 overflow-hidden">
+            <section className="relative min-h-screen bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] flex items-center pt-24 pb-20 overflow-hidden">
                 {/* Background Elements */}
                 <div className="absolute w-[700px] h-[700px] -top-[200px] -right-[100px] rounded-full bg-[radial-gradient(circle,rgba(242,100,25,0.15),transparent_70%)]" />
                 <div className="absolute w-[400px] h-[400px] -bottom-[100px] left-[5%] rounded-full bg-[radial-gradient(circle,rgba(244,140,61,0.1),transparent_70%)]" />

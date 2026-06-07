@@ -88,7 +88,7 @@
         <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-8">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <p class="text-xs text-gray-600 dark:text-gray-400 text-center leading-relaxed">
-                    <strong>Privacy Notice:</strong> Personal information collected through this system is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the e-Dalaw system.
+                    Personal information collected through this system is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the e-Dalaw system.
                 </p>
             </div>
         </footer>

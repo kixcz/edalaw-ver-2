@@ -57,36 +57,32 @@ export default function Login({
                         </Link>
                     </div>
 
+                    {/* Heading - Above Form Container */}
+                    <div className="space-y-2 text-center">
+                        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+                        <p className="text-sm text-muted-foreground">
+                            Enter your email or contact number and password to log in
+                        </p>
+                    </div>
+
                     {/* Form Container */}
                     <div className="flex flex-1 items-center justify-center">
                         <div className="w-full max-w-md">
-                            {/* Privacy Notice - Top */}
-                            <div className="mb-6 bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-4">
-                                <div className="flex items-start gap-3">
-                                    <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-orange-900 dark:text-orange-100 mb-1">
-                                            Privacy Notice
-                                        </h3>
-                                        <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
-                                            Personal information collected through this form is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the e-Dalaw system.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2 text-center mb-8">
-                                <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-                                <p className="text-sm text-muted-foreground">
-                                    Enter your email or contact number and password to log in
-                                </p>
-                            </div>
-
                             {status && (
                                 <div className="mb-6 rounded-lg bg-green-50 p-4 text-sm text-green-800 dark:bg-green-950/20 dark:text-green-400 border border-green-200 dark:border-green-900">
                                     {status}
                                 </div>
                             )}
+
+                            {/* Privacy Notice - Top of Form Container */}
+                            <div className="mb-6 bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-4">
+                                <div className="flex items-start gap-3">
+                                    <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                                        Personal information collected through this form is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the e-Dalaw system.
+                                    </p>
+                                </div>
+                            </div>
 
                             <form method="POST" action={loginUrl || '/login'} onSubmit={handleSubmit} className="space-y-6">
                                 <input type="hidden" name="_token" value={csrfToken} />

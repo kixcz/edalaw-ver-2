@@ -43,7 +43,6 @@ export default function Register({ visitor_role_id }: Props) {
         id_document_1: null as File | null,
         id_document_2: null as File | null,
         consent_accepted: false,
-        privacy_policy_acknowledgment: false,
     });
     const formRef = useRef<HTMLFormElement>(null);
     const [preview1, setPreview1] = React.useState<string | null>(null);
@@ -194,41 +193,102 @@ export default function Register({ visitor_role_id }: Props) {
         <>
             <Head title="Register" />
             <div className="grid min-h-svh lg:grid-cols-2">
-                {/* Left Column - Form (Scrollable) */}
+                {/* Left Column - Cover Image (Fixed) */}
+                <div className="relative hidden lg:block">
+                    <div className="sticky top-0 h-svh">
+                    {/* Orange gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700" />
+                    
+                    {/* Decorative elements */}
+                    <div className="absolute inset-0 opacity-10">
+                        <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl" />
+                        <div className="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl" />
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-white rounded-full blur-2xl" />
+                    </div>
+                    
+                    {/* Center content */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                        {/* Register Icon */}
+                        <div className="mb-8 p-6 bg-white/10 backdrop-blur-sm rounded-3xl border-2 border-white/20">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="w-24 h-24"
+                            >
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <line x1="19" x2="19" y1="8" y2="14" />
+                                <line x1="16" x2="22" y1="11" y2="11" />
+                            </svg>
+                        </div>
+                        
+                        {/* Text */}
+                        <h2 className="text-4xl font-bold mb-4 text-center">Join e-Dalaw</h2>
+                        <p className="text-lg text-white/90 text-center max-w-md px-8 leading-relaxed">
+                            Create your account to start connecting with your loved ones securely
+                        </p>
+                        
+                        {/* Feature highlights */}
+                        <div className="mt-12 space-y-3">
+                            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span className="text-sm font-medium">Free Account Setup</span>
+                            </div>
+                            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span className="text-sm font-medium">Identity Verification</span>
+                            </div>
+                            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span className="text-sm font-medium">Quick Approval Process</span>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
+                {/* Right Column - Form (Scrollable) */}
                 <div className="flex flex-col gap-4 p-6 md:p-10 overflow-y-auto">
                     {/* Logo */}
-                    <div className="flex justify-center gap-2 md:justify-start">
+                    <div className="flex justify-center gap-2 md:justify-end">
                         <Link href={home()} className="flex items-center gap-3 font-medium">
                             <img src="/edalaw_logo.png" alt="e-Dalaw Logo" className="h-10 w-auto" />
                             <span className="text-xl font-semibold text-foreground">e-Dalaw</span>
                         </Link>
                     </div>
 
+                    {/* Heading - Above Form Container */}
+                    <div className="space-y-2 text-center">
+                        <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
+                        <p className="text-sm text-muted-foreground">
+                            Enter your details below to create your account
+                        </p>
+                    </div>
+
                     {/* Form Container */}
                     <div className="flex flex-1 items-center justify-center">
                         <div className="w-full max-w-2xl">
-                            {/* Privacy Notice - Top */}
+                            {/* Privacy Notice - Top of Form Container */}
                             <div className="mb-6 bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-4">
                                 <div className="flex items-start gap-3">
                                     <svg className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
                                     </svg>
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-orange-900 dark:text-orange-100 mb-1">
-                                            Privacy Notice
-                                        </h3>
-                                        <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
-                                            Personal information collected through this form is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the e-Dalaw system.
-                                        </p>
-                                    </div>
+                                    <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                                        Personal information collected through this form is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the e-Dalaw system.
+                                    </p>
                                 </div>
-                            </div>
-
-                            <div className="space-y-2 text-center mb-8">
-                                <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
-                                <p className="text-sm text-muted-foreground">
-                                    Enter your details below to create your account
-                                </p>
                             </div>
 
                             <form
@@ -510,7 +570,7 @@ export default function Register({ visitor_role_id }: Props) {
                         </div>
                     </div>
 
-                    <div className="rounded-lg border-l-4 border-l-orange-500 bg-muted/40 p-5 space-y-4">
+                    <div className="rounded-lg border-l-4 border-l-orange-500 bg-muted/40 p-5 space-y-3">
                         <div className="flex items-start gap-3">
                             <Checkbox
                                 id="consent_accepted"
@@ -520,40 +580,21 @@ export default function Register({ visitor_role_id }: Props) {
                                 tabIndex={15}
                                 className="mt-1 h-5 w-5"
                             />
-                            <div className="flex-1 space-y-2">
-                                <Label
-                                    htmlFor="consent_accepted"
-                                    className="text-sm font-normal leading-relaxed cursor-pointer"
-                                >
-                                    <span className="font-medium text-foreground">Informed Consent:</span>{" "}
-                                    <span className="text-muted-foreground">By creating an e-Dalaw account, I voluntarily provide my personal information and consent to its collection, processing, storage, and use for account registration, identity verification, visitation management, security monitoring, communication, and other legitimate system operations. I understand that my personal data will be processed in accordance with Republic Act No. 10173, otherwise known as the Data Privacy Act of 2012, and applicable institutional policies. I certify that the information I provide is true, accurate, and complete, and I acknowledge that any falsification, misrepresentation, or omission of material information may result in the denial, suspension, or termination of my access to the system and may subject me to applicable administrative, civil, or criminal liabilities.</span>
-                                </Label>
-                                <InputError message={form.errors.consent_accepted} />
-                            </div>
+                            <Label
+                                htmlFor="consent_accepted"
+                                className="text-sm font-normal leading-relaxed cursor-pointer"
+                            >
+                                <span className="text-muted-foreground">I have read, understood, and agree to the </span>
+                                <Link href="/privacy-policy" className="text-orange-600 dark:text-orange-400 hover:underline font-medium">
+                                    Data Privacy Policy and Terms of Use
+                                </Link>
+                                <span className="text-muted-foreground">. By creating an e-Dalaw account, I voluntarily provide my personal information and consent to its collection, processing, storage, and use for account registration, identity verification, visitation management, security monitoring, communication, and other legitimate system operations. I understand that my personal data will be processed in accordance with Republic Act No. 10173, otherwise known as the Data Privacy Act of 2012, and applicable institutional policies. I certify that the information I provide is true, accurate, and complete, and I acknowledge that any falsification, misrepresentation, or omission of material information may result in the denial, suspension, or termination of my access to the system and may subject me to applicable administrative, civil, or criminal liabilities.</span>
+                            </Label>
                         </div>
                         
-                        <div className="flex items-start gap-3">
-                            <Checkbox
-                                id="privacy_policy_acknowledgment"
-                                checked={form.data.privacy_policy_acknowledgment}
-                                onCheckedChange={(checked) => form.setData('privacy_policy_acknowledgment', Boolean(checked))}
-                                required
-                                tabIndex={16}
-                                className="mt-1 h-5 w-5"
-                            />
-                            <div className="flex-1 space-y-2">
-                                <Label
-                                    htmlFor="privacy_policy_acknowledgment"
-                                    className="text-sm font-normal leading-relaxed cursor-pointer"
-                                >
-                                    <span className="font-medium text-foreground">Data Privacy Policy Acknowledgment:</span>{" "}
-                                    <span className="text-muted-foreground">I have read, understood, and agree to the Data Privacy Policy and Terms of Use.</span>
-                                </Label>
-                                <InputError message={form.errors.privacy_policy_acknowledgment} />
-                            </div>
-                        </div>
+                        <InputError message={form.errors.consent_accepted} />
                         
-                        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 24 24"
@@ -567,15 +608,15 @@ export default function Register({ visitor_role_id }: Props) {
                                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                             </svg>
-                            Your consent and acknowledgment are required to proceed with registration
+                            Your consent is required to proceed with registration
                         </div>
                     </div>
 
                     <Button
                         type="submit"
                         className="mt-2 w-full"
-                        tabIndex={17}
-                        disabled={form.processing || !form.data.consent_accepted || !form.data.privacy_policy_acknowledgment}
+                        tabIndex={16}
+                        disabled={form.processing || !form.data.consent_accepted}
                         data-test="register-user-button"
                     >
                         {form.processing && <Spinner />}
@@ -593,71 +634,6 @@ export default function Register({ visitor_role_id }: Props) {
         </div>
     </div>
 </div>
-
-                {/* Right Column - Cover Image (Fixed) */}
-                <div className="relative hidden lg:block">
-                    <div className="sticky top-0 h-svh">
-                    {/* Orange gradient background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700" />
-                    
-                    {/* Decorative elements */}
-                    <div className="absolute inset-0 opacity-10">
-                        <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl" />
-                        <div className="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl" />
-                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-white rounded-full blur-2xl" />
-                    </div>
-                    
-                    {/* Center content */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                        {/* Register Icon */}
-                        <div className="mb-8 p-6 bg-white/10 backdrop-blur-sm rounded-3xl border-2 border-white/20">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="w-24 h-24"
-                            >
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                                <circle cx="9" cy="7" r="4" />
-                                <line x1="19" x2="19" y1="8" y2="14" />
-                                <line x1="16" x2="22" y1="11" y2="11" />
-                            </svg>
-                        </div>
-                        
-                        {/* Text */}
-                        <h2 className="text-4xl font-bold mb-4 text-center">Join e-Dalaw</h2>
-                        <p className="text-lg text-white/90 text-center max-w-md px-8 leading-relaxed">
-                            Create your account to start connecting with your loved ones securely
-                        </p>
-                        
-                        {/* Feature highlights */}
-                        <div className="mt-12 space-y-3">
-                            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
-                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                                <span className="text-sm font-medium">Free Account Setup</span>
-                            </div>
-                            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
-                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                                <span className="text-sm font-medium">Identity Verification</span>
-                            </div>
-                            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
-                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                                <span className="text-sm font-medium">Quick Approval Process</span>
-                            </div>
-                        </div>
-                    </div>
-                    </div>
-                </div>
             </div>
         </>
     );

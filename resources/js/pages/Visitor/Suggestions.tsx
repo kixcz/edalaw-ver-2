@@ -282,8 +282,7 @@ export default function Suggestions({ suggestions }: Props) {
                                             htmlFor="feedback-privacy-acknowledged"
                                             className="text-sm font-normal leading-relaxed cursor-pointer text-muted-foreground"
                                         >
-                                            <span className="font-semibold text-foreground">Feedback and Complaint Form Privacy Notice:</span>{" "}
-                                            Information submitted through this form will be used solely for service evaluation, complaint investigation, issue resolution, quality improvement, and administrative review. Personal information shall be processed only by authorized personnel in accordance with Republic Act No. 10173 and applicable privacy policies.
+                                                                                        Information submitted through this form will be used solely for service evaluation, complaint investigation, issue resolution, quality improvement, and administrative review. Personal information shall be processed only by authorized personnel in accordance with Republic Act No. 10173 and applicable privacy policies.
                                         </label>
                                     </div>
                                 </div>

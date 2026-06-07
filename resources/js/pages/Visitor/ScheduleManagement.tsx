@@ -1822,8 +1822,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                                                     htmlFor="privacy_acknowledged"
                                                     className="text-sm font-normal leading-relaxed cursor-pointer"
                                                 >
-                                                    <span className="font-semibold text-foreground">Privacy Notice:</span>{" "}
-                                                    <span className="text-muted-foreground">
+                                                                                                        <span className="text-muted-foreground">
                                                         {form.data.visit_type === 'virtual' ? (
                                                             <>The information provided in this visitation request will be collected and processed solely for identity verification, visitation scheduling, approval processing, security monitoring, record management, and other legitimate operational purposes. All information shall be handled in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.</>
                                                         ) : (

@@ -720,8 +720,7 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols }: 
                                             htmlFor="appeal-privacy-acknowledged"
                                             className="text-sm font-normal leading-relaxed cursor-pointer text-muted-foreground"
                                         >
-                                            <span className="font-semibold text-foreground">Appeal Form Privacy Notice:</span>{" "}
-                                            Information provided in this appeal shall be used exclusively for the review, evaluation, and resolution of the appealed visitation or e-Burol request. All submitted information will be processed only by authorized personnel and handled in accordance with the Data Privacy Act of 2012.
+                                                                                        Information provided in this appeal shall be used exclusively for the review, evaluation, and resolution of the appealed visitation or e-Burol request. All submitted information will be processed only by authorized personnel and handled in accordance with the Data Privacy Act of 2012.
                                         </label>
                                     </div>
                                 </div>

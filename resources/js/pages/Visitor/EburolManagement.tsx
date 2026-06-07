@@ -1225,8 +1225,7 @@ export default function EburolManagement({ eburols }: Props) {
                                             htmlFor="eburol-privacy-acknowledged"
                                             className="text-sm font-normal leading-relaxed cursor-pointer"
                                         >
-                                            <span className="font-semibold text-foreground">E-Burol Application Privacy Notice:</span>{" "}
-                                            <span className="text-muted-foreground">Information submitted through this application will be collected, processed, and reviewed solely for the evaluation, verification, approval, scheduling, and administration of e-Burol requests. Submitted information and supporting documents shall be accessed only by authorized personnel and processed in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.</span>
+                                                                                        <span className="text-muted-foreground">Information submitted through this application will be collected, processed, and reviewed solely for the evaluation, verification, approval, scheduling, and administration of e-Burol requests. Submitted information and supporting documents shall be accessed only by authorized personnel and processed in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.</span>
                                         </Label>
                                     </div>
                                 </div>

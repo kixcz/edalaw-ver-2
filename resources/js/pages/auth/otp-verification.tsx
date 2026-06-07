@@ -104,7 +104,7 @@ export default function OtpVerification({
             <Head title="OTP Verification" />
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                <div className="grid gap-6 rounded-lg border p-6">
+                <div className="grid gap-6 rounded-lg border p-6 max-w-sm mx-auto">
                     {warning && (
                         <Alert variant="destructive">
                             <AlertTitle>OTP delivery issue</AlertTitle>
@@ -153,14 +153,16 @@ export default function OtpVerification({
                         <InputError message={form.errors.otp} />
                     </div>
 
-                    <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={form.processing || form.data.otp.length !== 6}
-                    >
-                        {form.processing && <Spinner />}
-                        Verify OTP
-                    </Button>
+                    <div className="flex justify-center">
+                        <Button
+                            type="submit"
+                            className="w-full max-w-xs"
+                            disabled={form.processing || form.data.otp.length !== 6}
+                        >
+                            {form.processing && <Spinner />}
+                            Verify OTP
+                        </Button>
+                    </div>
 
                     <div className="text-center">
                         <Button
