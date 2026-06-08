@@ -33,7 +33,7 @@ export default function Objectives() {
     ];
 
     return (
-        <PublicLayout title="System Objectives - e-Dalaw" description="Learn about the goals and objectives of the e-Dalaw platform">
+        <PublicLayout title="System Objectives - eDalaw" description="Learn about the goals and objectives of the eDalaw platform">
             {/* Hero Section */}
             <section className="relative bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] py-20 md:py-28 overflow-hidden">
                 {/* Background Elements */}
@@ -103,7 +103,7 @@ export default function Objectives() {
                     <div className="max-w-4xl mx-auto text-center">
                         <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Our Impact</h2>
                         <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                            Through these objectives, e-Dalaw aims to transform the visitation experience for all stakeholders—
+                            Through these objectives, eDalaw aims to transform the visitation experience for all stakeholders—
                             from families and visitors to facility staff and administrators. By leveraging technology and
                             innovative processes, we're building a more accessible, secure, and efficient visitation system.
                         </p>

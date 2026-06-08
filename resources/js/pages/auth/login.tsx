@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, ShieldCheck, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { register, home } from '@/routes';
+import { useAppearance } from '@/hooks/use-appearance';
 
 type Props = {
     status?: string;
@@ -34,6 +35,12 @@ export default function Login({
     const [email, setEmail] = useState(oldEmail);
     const [password, setPassword] = useState('');
     const [remember, setRemember] = useState(false);
+    
+    const { resolvedAppearance, updateAppearance } = useAppearance();
+    
+    const toggleTheme = () => {
+        updateAppearance(resolvedAppearance === 'dark' ? 'light' : 'dark');
+    };
 
     const { props } = usePage();
     const errors = (props.errors as Record<string, string> | undefined) ?? {};
@@ -49,12 +56,25 @@ export default function Login({
             <div className="grid min-h-svh lg:grid-cols-2">
                 {/* Left Column - Form (Scrollable) */}
                 <div className="flex flex-col gap-4 p-6 md:p-10 overflow-y-auto">
-                    {/* Logo */}
-                    <div className="flex justify-center gap-2 md:justify-start">
+                    {/* Top Bar with Logo and Theme Toggle */}
+                    <div className="flex justify-between items-center gap-2 md:justify-between">
                         <Link href={home()} className="flex items-center gap-3 font-medium">
-                            <img src="/edalaw_logo.png" alt="e-Dalaw Logo" className="h-10 w-auto" />
-                            <span className="text-xl font-semibold text-foreground">e-Dalaw</span>
+                            <img src="/edalaw_logo.png" alt="eDalaw Logo" className="h-10 w-auto" />
+                            <span className="text-xl font-semibold text-foreground">eDalaw</span>
                         </Link>
+                        
+                        {/* Theme Toggle */}
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 rounded-lg border border-border hover:bg-accent transition-colors"
+                            aria-label="Toggle theme"
+                        >
+                            {resolvedAppearance === 'dark' ? (
+                                <Sun className="w-5 h-5" />
+                            ) : (
+                                <Moon className="w-5 h-5" />
+                            )}
+                        </button>
                     </div>
 
                     {/* Heading - Above Form Container */}
@@ -79,7 +99,7 @@ export default function Login({
                                 <div className="flex items-start gap-3">
                                     <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
                                     <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
-                                        Personal information collected through this form is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the e-Dalaw system.
+                                        Login activities are recorded for security, audit, and compliance purposes. Access logs may be retained and reviewed by authorized personnel to protect the integrity and security of the eDalaw system.
                                     </p>
                                 </div>
                             </div>
@@ -186,6 +206,12 @@ export default function Login({
                                         </TextLink>
                                     )}
                                 </div>
+
+                                <div className="text-center text-sm">
+                                    <TextLink href="/inmate-tunnel">
+                                        Join through secure tunnel
+                                    </TextLink>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -225,7 +251,7 @@ export default function Login({
                         </div>
                         
                         {/* Text */}
-                        <h2 className="text-4xl font-bold mb-4 text-center">Welcome to e-Dalaw</h2>
+                        <h2 className="text-4xl font-bold mb-4 text-center">Welcome to eDalaw</h2>
                         <p className="text-lg text-white/90 text-center max-w-md px-8 leading-relaxed">
                             Secure visitation management platform connecting families with their loved ones
                         </p>

@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import * as React from 'react';
 import { useRef } from 'react';
+import { Moon, Sun } from 'lucide-react';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -18,6 +19,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { login, home } from '@/routes';
 import { store } from '@/routes/register';
+import { useAppearance } from '@/hooks/use-appearance';
 
 type Props = {
     visitor_role_id: number;
@@ -47,6 +49,12 @@ export default function Register({ visitor_role_id }: Props) {
     const formRef = useRef<HTMLFormElement>(null);
     const [preview1, setPreview1] = React.useState<string | null>(null);
     const [preview2, setPreview2] = React.useState<string | null>(null);
+    
+    const { resolvedAppearance, updateAppearance } = useAppearance();
+    
+    const toggleTheme = () => {
+        updateAppearance(resolvedAppearance === 'dark' ? 'light' : 'dark');
+    };
 
     const handleFileChange = (
         field: 'id_document_1' | 'id_document_2',
@@ -228,7 +236,7 @@ export default function Register({ visitor_role_id }: Props) {
                         </div>
                         
                         {/* Text */}
-                        <h2 className="text-4xl font-bold mb-4 text-center">Join e-Dalaw</h2>
+                        <h2 className="text-4xl font-bold mb-4 text-center">Join eDalaw</h2>
                         <p className="text-lg text-white/90 text-center max-w-md px-8 leading-relaxed">
                             Create your account to start connecting with your loved ones securely
                         </p>
@@ -260,12 +268,25 @@ export default function Register({ visitor_role_id }: Props) {
 
                 {/* Right Column - Form (Scrollable) */}
                 <div className="flex flex-col gap-4 p-6 md:p-10 overflow-y-auto">
-                    {/* Logo */}
-                    <div className="flex justify-center gap-2 md:justify-end">
+                    {/* Top Bar with Logo and Theme Toggle */}
+                    <div className="flex justify-between items-center gap-2 md:justify-between">
                         <Link href={home()} className="flex items-center gap-3 font-medium">
-                            <img src="/edalaw_logo.png" alt="e-Dalaw Logo" className="h-10 w-auto" />
-                            <span className="text-xl font-semibold text-foreground">e-Dalaw</span>
+                            <img src="/edalaw_logo.png" alt="eDalaw Logo" className="h-10 w-auto" />
+                            <span className="text-xl font-semibold text-foreground">eDalaw</span>
                         </Link>
+                        
+                        {/* Theme Toggle */}
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 rounded-lg border border-border hover:bg-accent transition-colors"
+                            aria-label="Toggle theme"
+                        >
+                            {resolvedAppearance === 'dark' ? (
+                                <Sun className="w-5 h-5" />
+                            ) : (
+                                <Moon className="w-5 h-5" />
+                            )}
+                        </button>
                     </div>
 
                     {/* Heading - Above Form Container */}
@@ -286,7 +307,7 @@ export default function Register({ visitor_role_id }: Props) {
                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
                                     </svg>
                                     <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
-                                        Personal information collected through this form is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the e-Dalaw system.
+                                        The personal information collected through this registration form will be used solely for account creation, identity verification, visitation management, communication, security monitoring, and other legitimate operational purposes of the eDalaw system. Your information will be processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and applicable institutional privacy policies. Only authorized personnel shall have access to your information, and it will be retained only for as long as necessary to fulfill legitimate purposes and legal obligations.
                                     </p>
                                 </div>
                             </div>
@@ -588,7 +609,7 @@ export default function Register({ visitor_role_id }: Props) {
                                 <Link href="/privacy-policy" className="text-orange-600 dark:text-orange-400 hover:underline font-medium">
                                     Data Privacy Policy and Terms of Use
                                 </Link>
-                                <span className="text-muted-foreground">. By creating an e-Dalaw account, I voluntarily provide my personal information and consent to its collection, processing, storage, and use for account registration, identity verification, visitation management, security monitoring, communication, and other legitimate system operations. I understand that my personal data will be processed in accordance with Republic Act No. 10173, otherwise known as the Data Privacy Act of 2012, and applicable institutional policies. I certify that the information I provide is true, accurate, and complete, and I acknowledge that any falsification, misrepresentation, or omission of material information may result in the denial, suspension, or termination of my access to the system and may subject me to applicable administrative, civil, or criminal liabilities.</span>
+                                <span className="text-muted-foreground">. By creating an eDalaw account, I voluntarily provide my personal information and consent to its collection, processing, storage, and use for account registration, identity verification, visitation management, security monitoring, communication, and other legitimate system operations. I understand that my personal data will be processed in accordance with Republic Act No. 10173, otherwise known as the Data Privacy Act of 2012, and applicable institutional policies. I certify that the information I provide is true, accurate, and complete, and I acknowledge that any falsification, misrepresentation, or omission of material information may result in the denial, suspension, or termination of my access to the system and may subject me to applicable administrative, civil, or criminal liabilities.</span>
                             </Label>
                         </div>
                         

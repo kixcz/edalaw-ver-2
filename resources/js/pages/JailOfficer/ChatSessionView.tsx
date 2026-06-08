@@ -60,7 +60,8 @@ function getSenderLabel(sender: string): string {
         case 'visitor':
             return 'Visitor';
         case 'inmate':
-            return 'Inmate';
+        case 'pdl':
+            return 'PDL';
         case 'monitor':
             return 'Officer';
         default:
@@ -109,7 +110,7 @@ export default function ChatSessionView({ session, chatLogs }: Props) {
                                 <p className="font-medium">{session.visitor_name ?? '—'}</p>
                             </div>
                             <div>
-                                <p className="text-muted-foreground">Inmate</p>
+                                <p className="text-muted-foreground">PDL</p>
                                 <p className="font-medium">{session.inmate_name}</p>
                             </div>
                             <div>

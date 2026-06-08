@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { FileText, Filter, Search } from 'lucide-react';
+import { FileText, Filter, Search, ShieldCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { DataTable } from '@/components/data-table';
@@ -134,7 +134,7 @@ export default function History({ audit_logs, stats }: Props) {
                         {row.original.metadata && Object.keys(row.original.metadata).length > 0 && (
                             <div className="text-xs text-muted-foreground mt-1">
                                 {row.original.metadata.inmate_name && (
-                                    <div>Inmate: {String(row.original.metadata.inmate_name)}</div>
+                                    <div>PDL: {String(row.original.metadata.inmate_name)}</div>
                                 )}
                                 {row.original.metadata.deceased_name && (
                                     <div>Deceased: {String(row.original.metadata.deceased_name)}</div>
@@ -205,6 +205,16 @@ export default function History({ audit_logs, stats }: Props) {
                     <div>
                         <h1 className="text-2xl font-semibold">Transaction History</h1>
                         <p className="text-muted-foreground">View all your transaction history and activities</p>
+                    </div>
+                </div>
+
+                {/* Privacy Notice */}
+                <div className="bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                        <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                            The records displayed in this module are provided to promote transparency and allow you to review your visitation activities, requests, consents, notifications, and interactions within the eDalaw system. These records are visible only to you and authorized personnel in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and applicable privacy policies.
+                        </p>
                     </div>
                 </div>
 

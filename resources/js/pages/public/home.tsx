@@ -104,13 +104,13 @@ export default function Home() {
             answer: 'Yes. All virtual sessions are monitored and recorded for security and compliance.',
         },
         {
-            question: 'Do inmates need accounts?',
-            answer: 'No. The system does not create inmate accounts. Access is provided through secure tunnel codes.',
+            question: 'Do PDLs need accounts?',
+            answer: 'No. The system does not create PDL accounts. Access is provided through secure tunnel codes.',
         },
     ];
 
     return (
-        <PublicLayout title="e-Dalaw - Secure Visitation Management" description="Connecting Families Through Secure and Monitored Visitation">
+        <PublicLayout title="eDalaw - Secure Visitation Management" description="Connecting Families Through Secure and Monitored Visitation">
             {/* Privacy Modal */}
             {!privacyAccepted && (
                 <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-sm z-[9999] flex items-center justify-center p-5 animate-fadeIn">
@@ -126,7 +126,7 @@ export default function Home() {
                         </div>
                         <div className="p-7">
                             <p className="text-sm text-slate-600 mb-4 leading-relaxed">
-                                e-Dalaw collects and processes personal data in accordance with the Data Privacy Act. 
+                                eDalaw collects and processes personal data in accordance with the Data Privacy Act. 
                                 By using this platform, you consent to:
                             </p>
                             <ul className="pl-5 mb-4 space-y-2">
@@ -401,7 +401,7 @@ export default function Home() {
                             Frequently Asked <span className="text-orange-500">Questions</span>
                         </h2>
                         <p className="text-base text-slate-600 dark:text-gray-400 max-w-[580px] mx-auto leading-relaxed">
-                            Quick answers to common questions about e-Dalaw
+                            Quick answers to common questions about eDalaw
                         </p>
                     </div>
 
@@ -442,7 +442,7 @@ export default function Home() {
                                 Need <span className="text-orange-500">Help?</span>
                             </h2>
                             <p className="text-base text-slate-600 dark:text-gray-400 mb-8 leading-relaxed">
-                                Our support team is here to assist you with any questions or concerns about e-Dalaw
+                                Our support team is here to assist you with any questions or concerns about eDalaw
                             </p>
                             <Link
                                 href={contact()}
@@ -464,7 +464,7 @@ export default function Home() {
                             Ready to Get <span className="text-orange-400">Started?</span>
                         </h2>
                         <p className="text-base text-white/70 mb-10 leading-relaxed">
-                            Join thousands of families who are already using e-Dalaw to stay connected with their loved ones
+                            Join thousands of families who are already using eDalaw to stay connected with their loved ones
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link

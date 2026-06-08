@@ -133,7 +133,7 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
         },
         {
             accessorKey: 'inmate_name',
-            header: 'Inmate/PDL',
+            header: 'PDL',
             cell: ({ row }) => (
                 <div>
                     <div className="font-medium">{row.original.inmate_name}</div>
@@ -278,7 +278,7 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
             <div className="flex flex-col gap-4 p-4">
                 <div>
                     <h1 className="text-2xl font-semibold">Assigned Visit Sessions</h1>
-                    <p className="text-muted-foreground">Review and manage virtual visit schedules for inmates in your assigned area.</p>
+                    <p className="text-muted-foreground">Review and manage virtual visit schedules for PDLs in your assigned area.</p>
                 </div>
 
                 <Card>
@@ -295,7 +295,7 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
                             columns={columns}
                             data={filteredVisits}
                             searchKey="visit_search"
-                            searchPlaceholder="Search by visitor or inmate..."
+                            searchPlaceholder="Search by visitor or PDL..."
                             initialSorting={[{ id: 'scheduled_date', desc: true }]}
                             headerActions={
                                 <div className="flex gap-2">
@@ -346,7 +346,7 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
                                         <div className="font-medium">{selectedVisit.visitor_name}</div>
                                     </div>
                                     <div>
-                                        <span className="text-muted-foreground">Inmate:</span>
+                                        <span className="text-muted-foreground">PDL:</span>
                                         <div className="font-medium">{selectedVisit.inmate_name}</div>
                                     </div>
                                     <div>
@@ -395,7 +395,7 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
                                         <div className="font-medium">{selectedVisit.visitor_name}</div>
                                     </div>
                                     <div>
-                                        <span className="text-muted-foreground">Inmate:</span>
+                                        <span className="text-muted-foreground">PDL:</span>
                                         <div className="font-medium">{selectedVisit.inmate_name}</div>
                                     </div>
                                 </div>

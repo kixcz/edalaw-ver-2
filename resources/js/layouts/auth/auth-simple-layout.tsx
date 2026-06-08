@@ -77,7 +77,7 @@ export default function AuthSimpleLayout({
                                             Privacy Notice
                                         </h3>
                                         <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
-                                            Personal information collected through this form is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the e-Dalaw system.
+                                            Personal information collected through this form is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and will be used only for legitimate, authorized, and proportionate purposes related to the operation of the eDalaw system.
                                         </p>
                                     </div>
                                 </div>

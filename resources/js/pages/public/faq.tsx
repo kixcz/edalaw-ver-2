@@ -7,20 +7,20 @@ export default function FAQ() {
 
     const faqs = [
         {
-            question: 'Who can register for e-Dalaw?',
-            answer: 'Any authorized visitor who meets the visitation requirements can register for an e-Dalaw account. This includes family members, friends, and legal representatives of persons deprived of liberty (PDLs). You must provide valid identification and meet the facility\'s visitation criteria.',
+            question: 'Who can register for eDalaw?',
+            answer: 'Any authorized visitor who meets the visitation requirements can register for an eDalaw account. This includes family members, friends, and legal representatives of persons deprived of liberty (PDLs). You must provide valid identification and meet the facility\'s visitation criteria.',
         },
         {
             question: 'Is the virtual session monitored?',
             answer: 'Yes. All virtual visitation sessions are monitored and recorded by authorized facility staff to ensure compliance with security protocols and regulations. This monitoring helps maintain safety and accountability for all participants.',
         },
         {
-            question: 'Do inmates need to create accounts?',
-            answer: 'No. The e-Dalaw system does not create accounts for inmates or persons deprived of liberty (PDLs). Instead, they access the system through secure tunnel codes provided during scheduled sessions. This ensures security while maintaining simplicity.',
+            question: 'Do PDLs need to create accounts?',
+            answer: 'No. The eDalaw system does not create accounts for PDLs (Persons Deprived of Liberty). Instead, they access the system through secure tunnel codes provided during scheduled sessions. This ensures security while maintaining simplicity.',
         },
         {
             question: 'Can I appeal a rejected visitation request?',
-            answer: 'Yes. If your visitation request is rejected, you can submit an appeal through the e-Dalaw system. The appeal will be reviewed by the appropriate facility authorities, and you will receive notification of the decision.',
+            answer: 'Yes. If your visitation request is rejected, you can submit an appeal through the eDalaw system. The appeal will be reviewed by the appropriate facility authorities, and you will receive notification of the decision.',
         },
         {
             question: 'What is e-Burol?',
@@ -36,24 +36,24 @@ export default function FAQ() {
         },
         {
             question: 'Can I reschedule or cancel a visit?',
-            answer: 'Yes. You can reschedule or cancel your visitation request through the e-Dalaw platform, subject to facility policies and availability. It\'s recommended to make changes at least 24-48 hours before the scheduled visit.',
+            answer: 'Yes. You can reschedule or cancel your visitation request through the eDalaw platform, subject to facility policies and availability. It\'s recommended to make changes at least 24-48 hours before the scheduled visit.',
         },
         {
             question: 'Is my personal information secure?',
-            answer: 'Yes. e-Dalaw complies with the Data Privacy Act of 2012 (Republic Act No. 10173) and implements industry-standard security measures to protect your personal information. All data is encrypted and stored securely, with access limited to authorized personnel only.',
+            answer: 'Yes. eDalaw complies with the Data Privacy Act of 2012 (Republic Act No. 10173) and implements industry-standard security measures to protect your personal information. All data is encrypted and stored securely, with access limited to authorized personnel only.',
         },
         {
             question: 'What if I experience technical difficulties during a session?',
             answer: 'If you encounter technical issues during a virtual session, contact the facility\'s technical support team immediately. Common issues like connectivity problems can often be resolved quickly. The monitoring officer can also assist you during the session.',
         },
         {
-            question: 'Are there any fees for using e-Dalaw?',
-            answer: 'Basic visitation services through e-Dalaw are provided free of charge. However, certain services or features may have associated fees as determined by facility policies. Any applicable fees will be clearly communicated before you proceed with the service.',
+            question: 'Are there any fees for using eDalaw?',
+            answer: 'Basic visitation services through eDalaw are provided free of charge. However, certain services or features may have associated fees as determined by facility policies. Any applicable fees will be clearly communicated before you proceed with the service.',
         },
     ];
 
     return (
-        <PublicLayout title="Frequently Asked Questions - e-Dalaw" description="Find answers to common questions about e-Dalaw visitation services">
+        <PublicLayout title="Frequently Asked Questions - eDalaw" description="Find answers to common questions about eDalaw visitation services">
             {/* Hero */}
             <section className="relative bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] py-20 md:py-28 overflow-hidden">
                 {/* Background Elements */}
@@ -77,7 +77,7 @@ export default function FAQ() {
                             Frequently Asked <span className="text-orange-400">Questions</span>
                         </h1>
                         <p className="text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
-                            Find answers to common questions about e-Dalaw services
+                            Find answers to common questions about eDalaw services
                         </p>
                     </div>
                 </div>

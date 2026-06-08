@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Computer, Globe, MapPin, Monitor, Smartphone, Tablet, Trash2, X } from 'lucide-react';
+import { Computer, Globe, MapPin, Monitor, ShieldCheck, Smartphone, Tablet, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -125,6 +125,16 @@ export default function Sessions({ sessions }: Props) {
                             )}
                         </Button>
                     )}
+                </div>
+
+                {/* Privacy Notice */}
+                <div className="bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                        <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                            For security, compliance, and audit purposes, the system records session metadata including login timestamps, IP addresses, device information, and connection activity. Such information is accessible only to authorized personnel and is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and applicable privacy policies.
+                        </p>
+                    </div>
                 </div>
 
                 {/* Sessions Table */}

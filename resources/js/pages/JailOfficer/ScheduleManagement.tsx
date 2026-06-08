@@ -390,7 +390,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
         },
         {
             accessorKey: 'inmate_name',
-            header: 'Inmate',
+            header: 'PDL',
             cell: ({ row }) => (
                 <div className="font-medium w-[200px]">{row.original.inmate_name}</div>
             ),
@@ -695,7 +695,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
                                 columns={columns}
                                 data={filteredVisits}
                                 searchKey="visit_search"
-                                searchPlaceholder="Search by visitor, inmate, date..."
+                                searchPlaceholder="Search by visitor, PDL, date..."
                                 initialSorting={[{ id: 'scheduled_date', desc: true }, { id: 'created_at', desc: true }]}
                                 enableGlobalFilter={true}
                                 headerActions={headerActions}
@@ -728,7 +728,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
                                     <div className="pt-2">{getStatusBadge(selectedVisit.status)}</div>
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-muted-foreground">Inmate name</Label>
+                                    <Label className="text-muted-foreground">PDL name</Label>
                                     <Input readOnly value={selectedVisit.inmate_name ?? 'â€”'} className="bg-muted" />
                                 </div>
                                 <div className="space-y-1">

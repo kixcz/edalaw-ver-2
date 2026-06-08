@@ -11,7 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { RelationshipPicker } from '@/components/RelationshipPicker';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Clock, Plus, Scale, User, Video, X, CalendarClock, FileText, MoreVertical, FileOutput, VideoIcon, Search, Building, AlertCircle, CheckCircle2, Upload, Eye } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Scale, User, Video, X, CalendarClock, FileText, MoreVertical, FileOutput, VideoIcon, Search, Building, AlertCircle, CheckCircle2, Upload, Eye, ShieldCheck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table';
@@ -1180,7 +1180,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground">Inmate Name</h4>
+                                        <h4 className="text-sm font-semibold text-muted-foreground">PDL Name</h4>
                                         <p className="text-sm">
                                             {selectedVisitForDetails.inmate_first_name}
                                             {selectedVisitForDetails.inmate_middle_name && ` ${selectedVisitForDetails.inmate_middle_name}`}
@@ -1258,6 +1258,17 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                                 Fill in all the details to submit a visit schedule request
                             </DialogDescription>
                         </DialogHeader>
+                        
+                        {/* Privacy Notice */}
+                        <div className="bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-4">
+                            <div className="flex items-start gap-3">
+                                <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                                    The information provided in this visitation request will be collected and processed solely for identity verification, visitation scheduling, approval processing, security monitoring, record management, and other legitimate operational purposes. All information shall be handled in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.
+                                </p>
+                            </div>
+                        </div>
+
                         <form onSubmit={handleSubmit}>
                             <div className="flex flex-col gap-4">
                                 <div className="flex flex-col gap-2">
@@ -1293,12 +1304,12 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                                  <div className="space-y-4">
                                     <h3 className="text-sm font-semibold flex items-center gap-2">
                                         <User className="size-4" />
-                                        Inmate Information
+                                        PDL Information
                                     </h3>
 
                                     <div className="flex flex-col gap-2">
                                         <Label htmlFor="inmate_first_name">
-                                            Inmate First Name <span className="text-destructive">*</span>
+                                            PDL First Name <span className="text-destructive">*</span>
                                         </Label>
                                         <Input
                                             id="inmate_first_name"
@@ -1317,7 +1328,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                                     </div>
 
                                     <div className="flex flex-col gap-2">
-                                        <Label htmlFor="inmate_middle_name">Inmate Middle Name</Label>
+                                        <Label htmlFor="inmate_middle_name">PDL Middle Name</Label>
                                         <Input
                                             id="inmate_middle_name"
                                             type="text"
@@ -1335,7 +1346,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
 
                                     <div className="flex flex-col gap-2">
                                         <Label htmlFor="inmate_last_name">
-                                            Inmate Last Name <span className="text-destructive">*</span>
+                                            PDL Last Name <span className="text-destructive">*</span>
                                         </Label>
                                         <Input
                                             id="inmate_last_name"
@@ -1368,7 +1379,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                                         ) : (
                                             <>
                                                 <Search className="mr-2 h-4 w-4" />
-                                                Search Inmate
+                                                Search PDL
                                             </>
                                         )}
                                     </Button>
@@ -1805,41 +1816,12 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                                     />
                                     <InputError message={form.errors.notes} />
                                 </div>
-
-                                {/* Privacy Notice - Conditional based on visit type */}
-                                {form.data.visit_type && (
-                                    <div className="rounded-lg border-l-4 border-l-blue-500 bg-blue-500/10 p-4 mt-2">
-                                        <div className="flex items-start gap-3">
-                                            <Checkbox
-                                                id="privacy_acknowledged"
-                                                checked={form.data.privacy_acknowledged}
-                                                onCheckedChange={(checked) => form.setData('privacy_acknowledged', Boolean(checked))}
-                                                required
-                                                className="mt-1 h-5 w-5"
-                                            />
-                                            <div className="flex-1 space-y-2">
-                                                <Label
-                                                    htmlFor="privacy_acknowledged"
-                                                    className="text-sm font-normal leading-relaxed cursor-pointer"
-                                                >
-                                                                                                        <span className="text-muted-foreground">
-                                                        {form.data.visit_type === 'virtual' ? (
-                                                            <>The information provided in this visitation request will be collected and processed solely for identity verification, visitation scheduling, approval processing, security monitoring, record management, and other legitimate operational purposes. All information shall be handled in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.</>
-                                                        ) : (
-                                                            <>The information collected through this request will be used exclusively for visitor verification, schedule management, facility access validation, security monitoring, and compliance with visitation procedures. Personal data shall be processed in accordance with Republic Act No. 10173 and applicable institutional regulations.</>
-                                                        )}
-                                                    </span>
-                                                </Label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                             <DialogFooter className="mt-6">
                                 <Button type="button" variant="outline" onClick={handleModalClose}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing || !form.data.privacy_acknowledged}>
+                                <Button type="submit" disabled={form.processing}>
                                     {form.processing && <Spinner className="mr-2 size-4" />}
                                     Submit Visit Request
                                 </Button>

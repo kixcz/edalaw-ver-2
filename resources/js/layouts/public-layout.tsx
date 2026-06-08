@@ -36,8 +36,8 @@ export default function PublicLayout({ children, title, description }: PublicLay
                         <div className="flex items-center justify-between h-16 md:h-20">
                             {/* Logo */}
                             <Link href={home()} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                                <img src="/edalaw_logo.png" alt="e-Dalaw Logo" className="h-10 md:h-12" />
-                                <span className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white">e-Dalaw</span>
+                                <img src="/edalaw_logo.png" alt="eDalaw Logo" className="h-10 md:h-12" />
+                                <span className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white">eDalaw</span>
                             </Link>
 
                             {/* Desktop Navigation */}
@@ -151,8 +151,8 @@ export default function PublicLayout({ children, title, description }: PublicLay
                             {/* Brand */}
                             <div>
                                 <div className="flex items-center gap-3 mb-4">
-                                    <img src="/edalaw_logo.png" alt="e-Dalaw" className="h-10" />
-                                    <span className="text-xl font-semibold text-white">e-Dalaw</span>
+                                    <img src="/edalaw_logo.png" alt="eDalaw" className="h-10" />
+                                    <span className="text-xl font-semibold text-white">eDalaw</span>
                                 </div>
                                 <p className="text-sm text-gray-400 leading-relaxed">
                                     Connecting families through secure and monitored visitation services.
@@ -165,7 +165,7 @@ export default function PublicLayout({ children, title, description }: PublicLay
                                 <ul className="space-y-2">
                                     <li>
                                         <Link href={about.index()} className="text-sm hover:text-orange-400 transition-colors">
-                                            About e-Dalaw
+                                            About eDalaw
                                         </Link>
                                     </li>
                                     <li>
@@ -232,7 +232,7 @@ export default function PublicLayout({ children, title, description }: PublicLay
                         <div className="mt-12 pt-8 border-t border-gray-800">
                             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                                 <p className="text-sm text-gray-400">
-                                    © {new Date().getFullYear()} e-Dalaw. All rights reserved.
+                                    © {new Date().getFullYear()} eDalaw. All rights reserved.
                                 </p>
                                 <p className="text-sm text-gray-400">
                                     Bureau of Jail Management and Penology (BJMP)

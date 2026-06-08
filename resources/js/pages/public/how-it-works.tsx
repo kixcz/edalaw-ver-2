@@ -53,7 +53,7 @@ export default function HowItWorks() {
     };
 
     return (
-        <PublicLayout title="How e-Dalaw Works" description="Step-by-step guide to using e-Dalaw visitation services">
+        <PublicLayout title="How eDalaw Works" description="Step-by-step guide to using eDalaw visitation services">
             {/* Hero */}
             <section className="relative bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] py-20 md:py-28 overflow-hidden">
                 {/* Background Elements */}
@@ -74,7 +74,7 @@ export default function HowItWorks() {
                             PROCESS
                         </div>
                         <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
-                            How <span className="text-orange-400">e-Dalaw</span> Works
+                            How <span className="text-orange-400">eDalaw</span> Works
                         </h1>
                         <p className="text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
                             Simple, secure, and streamlined processes for all visitation types

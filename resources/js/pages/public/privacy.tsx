@@ -3,7 +3,7 @@ import PublicLayout from '@/layouts/public-layout';
 
 export default function Privacy() {
     return (
-        <PublicLayout title="Data Privacy Policy - e-Dalaw" description="Learn how e-Dalaw protects your personal information">
+        <PublicLayout title="Data Privacy Policy - eDalaw" description="Learn how eDalaw protects your personal information">
             <section className="relative bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] py-20 md:py-28 overflow-hidden">
                 {/* Background Elements */}
                 <div className="absolute w-[600px] h-[600px] -top-[150px] -right-[100px] rounded-full bg-[radial-gradient(circle,rgba(242,100,25,0.12),transparent_70%)]" />
@@ -38,10 +38,10 @@ export default function Privacy() {
                         <div className="mb-12">
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Privacy Policy Overview</h2>
                             <p className="text-gray-700 leading-relaxed mb-4">
-                                e-Dalaw is committed to protecting the privacy and personal information of all users in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). This policy outlines how we collect, use, store, and protect your personal data.
+                                eDalaw is committed to protecting the privacy and personal information of all users in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). This policy outlines how we collect, use, store, and protect your personal data.
                             </p>
                             <p className="text-gray-700 leading-relaxed">
-                                By using e-Dalaw services, you consent to the data practices described in this policy. We regularly review our privacy practices to ensure compliance with current regulations and industry standards.
+                                By using eDalaw services, you consent to the data practices described in this policy. We regularly review our privacy practices to ensure compliance with current regulations and industry standards.
                             </p>
                         </div>
 
@@ -81,7 +81,7 @@ export default function Privacy() {
                         <div className="mb-12">
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Consent Information</h2>
                             <p className="text-gray-700 leading-relaxed mb-4">
-                                By registering for and using e-Dalaw services, you provide explicit consent for:
+                                By registering for and using eDalaw services, you provide explicit consent for:
                             </p>
                             <ul className="list-disc pl-6 space-y-2 text-gray-700 mb-4">
                                 <li>Collection and processing of your personal information</li>

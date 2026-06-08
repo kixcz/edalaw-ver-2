@@ -128,7 +128,7 @@ export default function ChatRecordings({ sessions, filters }: Props) {
             cell: ({ row }) => <code className="text-xs">{row.original.room_id}</code> 
         },
         { accessorKey: 'visitor_name', header: 'Visitor', cell: ({ row }) => row.original.visitor_name ?? '—' },
-        { accessorKey: 'inmate_name', header: 'Inmate' },
+        { accessorKey: 'inmate_name', header: 'PDL' },
         { 
             accessorKey: 'session_type', 
             header: 'Type', 
@@ -216,7 +216,7 @@ export default function ChatRecordings({ sessions, filters }: Props) {
                             columns={columns}
                             data={sessions}
                             searchKey="chat_search"
-                            searchPlaceholder="Search by room ID, visitor, inmate..."
+                            searchPlaceholder="Search by room ID, visitor, PDL..."
                             initialSorting={[{ id: 'scheduled_start', desc: true }]}
                         />
                     </CardContent>
@@ -274,7 +274,7 @@ export default function ChatRecordings({ sessions, filters }: Props) {
                                                             <Badge 
                                                                 variant={
                                                                     ['visitor', 'guest'].includes(log.sender.toLowerCase()) ? 'default' :
-                                                                    log.sender.toLowerCase() === 'inmate' ? 'secondary' :
+                                                                    log.sender.toLowerCase() === 'inmate' || log.sender.toLowerCase() === 'pdl' ? 'secondary' :
                                                                     'outline'
                                                                 }
                                                                 className="text-xs"

@@ -8,7 +8,7 @@ export default function Services() {
         {
             icon: Video,
             title: 'Virtual Visitation',
-            description: 'Schedule and participate in supervised video visits with approved inmates through our secure platform.',
+            description: 'Schedule and participate in supervised video visits with approved PDLs through our secure platform.',
             features: [
                 'Secure video conferencing technology',
                 'Real-time monitoring by facility staff',
@@ -56,7 +56,7 @@ export default function Services() {
     ];
 
     return (
-        <PublicLayout title="Services - e-Dalaw" description="Explore the comprehensive visitation services offered by e-Dalaw">
+        <PublicLayout title="Services - eDalaw" description="Explore the comprehensive visitation services offered by eDalaw">
             {/* Hero Section */}
             <section className="relative bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] py-20 md:py-28 overflow-hidden">
                 {/* Background Elements */}

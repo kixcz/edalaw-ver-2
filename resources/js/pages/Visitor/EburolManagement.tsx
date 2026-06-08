@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Calendar, Clock, FileText, MapPin, Scale, User, Users, MoreVertical, Eye, Edit, CalendarClock, Trash2, Filter, Video, Search, AlertCircle, CheckCircle2, Building, Upload } from 'lucide-react';
+import { Calendar, Clock, FileText, MapPin, Scale, User, Users, MoreVertical, Eye, Edit, CalendarClock, Trash2, Filter, Video, Search, AlertCircle, CheckCircle2, Building, Upload, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -867,10 +867,21 @@ export default function EburolManagement({ eburols }: Props) {
                                 Fill in the details below. All fields are arranged in order. Please ensure all required documents are provided.
                             </DialogDescription>
                         </DialogHeader>
+                        
+                        {/* Privacy Notice */}
+                        <div className="bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-4">
+                            <div className="flex items-start gap-3">
+                                <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                                    Information provided in this application, including supporting details and documents, will be processed solely for evaluating, verifying, approving, scheduling, and administering e-Burol requests. Access to submitted information shall be restricted to authorized personnel only.
+                                </p>
+                            </div>
+                        </div>
+
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Inmate Search Section */}
                             <div className="space-y-2">
-                                <Label>Inmate Information *</Label>
+                                <Label>PDL Information *</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         id="modal_inmate_first_name"
@@ -987,7 +998,7 @@ export default function EburolManagement({ eburols }: Props) {
                                     value={form.data.relationship_to_inmate}
                                     onChange={(v) => form.setData('relationship_to_inmate', v)}
                                     error={form.errors.relationship_to_inmate}
-                                    label="Relationship to Inmate *"
+                                    label="Relationship to PDL *"
                                     required
                                 />
                             </div>
@@ -1210,26 +1221,7 @@ export default function EburolManagement({ eburols }: Props) {
                                 <InputError message={form.errors.additional_details} />
                             </div>
 
-                            {/* E-Burol Privacy Notice */}
-                            <div className="rounded-lg border-l-4 border-l-purple-500 bg-purple-500/10 p-4">
-                                <div className="flex items-start gap-3">
-                                    <Checkbox
-                                        id="eburol-privacy-acknowledged"
-                                        checked={form.data.privacy_acknowledged}
-                                        onCheckedChange={(checked) => form.setData('privacy_acknowledged', Boolean(checked))}
-                                        required
-                                        className="mt-1 h-5 w-5"
-                                    />
-                                    <div className="flex-1 space-y-2">
-                                        <Label
-                                            htmlFor="eburol-privacy-acknowledged"
-                                            className="text-sm font-normal leading-relaxed cursor-pointer"
-                                        >
-                                                                                        <span className="text-muted-foreground">Information submitted through this application will be collected, processed, and reviewed solely for the evaluation, verification, approval, scheduling, and administration of e-Burol requests. Submitted information and supporting documents shall be accessed only by authorized personnel and processed in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.</span>
-                                        </Label>
-                                    </div>
-                                </div>
-                            </div>
+                            
 
                             <DialogFooter className="gap-2 sm:gap-0">
                                 <Button
@@ -1242,7 +1234,7 @@ export default function EburolManagement({ eburols }: Props) {
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing || !form.data.privacy_acknowledged}>
+                                <Button type="submit" disabled={form.processing}>
                                     {form.processing && <Spinner />}
                                     Submit Application
                                 </Button>
@@ -1386,15 +1378,15 @@ export default function EburolManagement({ eburols }: Props) {
                                         <Input readOnly value={new Date(selectedEburol.created_at).toLocaleString()} className="bg-muted" />
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-muted-foreground">Inmate first name</Label>
+                                        <Label className="text-muted-foreground">PDL first name</Label>
                                         <Input readOnly value={selectedEburol.inmate_first_name} className="bg-muted" />
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-muted-foreground">Inmate middle name</Label>
+                                        <Label className="text-muted-foreground">PDL middle name</Label>
                                         <Input readOnly value={selectedEburol.inmate_middle_name || '—'} className="bg-muted" />
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-muted-foreground">Inmate last name</Label>
+                                        <Label className="text-muted-foreground">PDL last name</Label>
                                         <Input readOnly value={selectedEburol.inmate_last_name} className="bg-muted" />
                                     </div>
                                     <div className="space-y-1">
@@ -1499,7 +1491,7 @@ export default function EburolManagement({ eburols }: Props) {
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold flex items-center gap-2">
                                         <User className="h-5 w-5" />
-                                        Inmate Information
+                                        PDL Information
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div className="space-y-2">
@@ -1589,7 +1581,7 @@ export default function EburolManagement({ eburols }: Props) {
                                                 value={editForm.data.relationship_to_inmate}
                                                 onChange={(v) => editForm.setData('relationship_to_inmate', v)}
                                                 error={editForm.errors.relationship_to_inmate}
-                                                label="Relationship to Inmate"
+                                                label="Relationship to PDL"
                                                 required
                                             />
                                         </div>
@@ -1809,7 +1801,7 @@ export default function EburolManagement({ eburols }: Props) {
                         {selectedEburol && (
                             <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
                                 <p className="text-sm font-medium">Application you are appealing (read-only)</p>
-                                <p className="text-sm text-muted-foreground">Inmate: {getInmateFullName(selectedEburol)}</p>
+                                <p className="text-sm text-muted-foreground">PDL: {getInmateFullName(selectedEburol)}</p>
                                 <p className="text-sm text-muted-foreground">Deceased: {getDeceasedFullName(selectedEburol)}</p>
                                 <p className="text-sm text-muted-foreground">Date of death: {selectedEburol.deceased_date_of_death}</p>
                                 <p className="text-sm text-muted-foreground">Wake: {selectedEburol.wake_start_date} to {selectedEburol.wake_end_date}</p>
@@ -1880,7 +1872,7 @@ export default function EburolManagement({ eburols }: Props) {
                                 <div className="rounded-lg border p-4 bg-muted/50">
                                     <p className="text-sm font-medium">Application Details:</p>
                                     <p className="text-sm text-muted-foreground mt-1">
-                                        Inmate: {`${selectedEburol.inmate_first_name} ${selectedEburol.inmate_last_name}`}
+                                        PDL: {`${selectedEburol.inmate_first_name} ${selectedEburol.inmate_last_name}`}
                                     </p>
                                     <p className="text-sm text-muted-foreground">
                                         Deceased: {`${selectedEburol.deceased_first_name} ${selectedEburol.deceased_last_name}`}

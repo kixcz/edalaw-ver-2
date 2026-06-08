@@ -20,7 +20,7 @@ export default function Contact() {
     };
 
     return (
-        <PublicLayout title="Contact Us - e-Dalaw" description="Get in touch with the e-Dalaw support team">
+        <PublicLayout title="Contact Us - eDalaw" description="Get in touch with the eDalaw support team">
             {/* Hero */}
             <section className="relative bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] py-20 md:py-28 overflow-hidden">
                 {/* Background Elements */}

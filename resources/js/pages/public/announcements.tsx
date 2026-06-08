@@ -9,7 +9,7 @@ export default function Announcements() {
             date: 'June 10, 2026',
             category: 'Maintenance',
             categoryColor: 'bg-blue-100 text-blue-700',
-            excerpt: 'e-Dalaw will undergo scheduled maintenance on June 15, 2026 from 2:00 AM to 6:00 AM. Services may be temporarily unavailable during this period.',
+            excerpt: 'eDalaw will undergo scheduled maintenance on June 15, 2026 from 2:00 AM to 6:00 AM. Services may be temporarily unavailable during this period.',
             content: 'We will be performing system upgrades to improve performance and security. Please plan your visitation requests accordingly.',
         },
         {
@@ -18,7 +18,7 @@ export default function Announcements() {
             date: 'June 5, 2026',
             category: 'New Features',
             categoryColor: 'bg-green-100 text-green-700',
-            excerpt: 'We are excited to announce the launch of the e-Dalaw mobile application for iOS and Android devices.',
+            excerpt: 'We are excited to announce the launch of the eDalaw mobile application for iOS and Android devices.',
             content: 'Download the app from the App Store or Google Play to access visitation services on the go.',
         },
         {
@@ -51,7 +51,7 @@ export default function Announcements() {
     ];
 
     return (
-        <PublicLayout title="Announcements - e-Dalaw" description="Stay updated with the latest e-Dalaw news and announcements">
+        <PublicLayout title="Announcements - eDalaw" description="Stay updated with the latest eDalaw news and announcements">
             {/* Hero */}
             <section className="relative bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] py-20 md:py-28 overflow-hidden">
                 {/* Background Elements */}

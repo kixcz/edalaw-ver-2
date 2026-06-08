@@ -119,7 +119,7 @@ export default function AssignedSessions({ sessions, filters: initialFilters }: 
             ),
         },
         { accessorKey: 'visitor_name', header: 'Visitor', cell: ({ row }) => <span className="font-medium">{row.original.visitor_name ?? '—'}</span> },
-        { accessorKey: 'inmate_name', header: 'Inmate' },
+        { accessorKey: 'inmate_name', header: 'PDL' },
         { accessorKey: 'type', header: 'Type', cell: ({ row }) => row.original.type === 'visit' ? 'Visit' : 'E-Burol' },
         {
             accessorKey: 'scheduled_start',
@@ -321,7 +321,7 @@ export default function AssignedSessions({ sessions, filters: initialFilters }: 
             <div className="flex flex-col gap-4 p-4">
                 <div>
                     <h1 className="text-2xl font-semibold">Visit Monitoring</h1>
-                    <p className="text-muted-foreground">Monitor virtual visits for inmates in your assigned facility areas.</p>
+                    <p className="text-muted-foreground">Monitor virtual visits for PDLs in your assigned facility areas.</p>
                 </div>
                 <Card>
                     <CardHeader>

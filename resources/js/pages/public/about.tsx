@@ -5,7 +5,7 @@ import { about } from '@/routes/public-routes';
 
 export default function About() {
     return (
-        <PublicLayout title="About e-Dalaw" description="Learn more about the e-Dalaw visitation management platform">
+        <PublicLayout title="About eDalaw" description="Learn more about the eDalaw visitation management platform">
             {/* Hero Section */}
             <section className="relative bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] py-20 md:py-28 overflow-hidden">
                 {/* Background Elements */}
@@ -26,7 +26,7 @@ export default function About() {
                             ABOUT US
                         </div>
                         <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
-                            About <span className="text-orange-400">e-Dalaw</span>
+                            About <span className="text-orange-400">eDalaw</span>
                         </h1>
                         <p className="text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
                             Understanding our mission to connect families through secure technology
@@ -35,17 +35,17 @@ export default function About() {
                 </div>
             </section>
 
-            {/* What is e-Dalaw */}
+            {/* What is eDalaw */}
             <section className="py-20 bg-white">
                 <div className="container mx-auto px-4 max-w-7xl">
                     <div className="max-w-4xl mx-auto">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6">What is e-Dalaw?</h2>
+                        <h2 className="text-3xl font-bold text-gray-900 mb-6">What is eDalaw?</h2>
                         <p className="text-lg text-gray-700 leading-relaxed mb-6">
-                            e-Dalaw is a secure visitation management platform designed to facilitate approved virtual and physical
+                            eDalaw is a secure visitation management platform designed to facilitate approved virtual and physical
                             visitation activities through structured scheduling, supervision, and documentation mechanisms.
                         </p>
                         <p className="text-lg text-gray-700 leading-relaxed">
-                            Developed in partnership with the Bureau of Jail Management and Penology (BJMP), e-Dalaw represents
+                            Developed in partnership with the Bureau of Jail Management and Penology (BJMP), eDalaw represents
                             a modern approach to maintaining family connections while ensuring security, compliance, and
                             accountability in all visitation activities.
                         </p>
@@ -133,7 +133,7 @@ export default function About() {
                     <div className="text-center text-white">
                         <h2 className="text-3xl md:text-4xl font-bold mb-6">Learn More About Our Services</h2>
                         <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">
-                            Discover how e-Dalaw can help you stay connected with your loved ones
+                            Discover how eDalaw can help you stay connected with your loved ones
                         </p>
                         <Link
                             href={about.objectives()}

@@ -93,7 +93,7 @@ export default function SessionMonitoring({ sessions }: Props) {
                 if (details.type === 'visit') {
                     return (
                         <div className="text-sm">
-                            <div className="font-medium">Inmate: {details.inmate_name}</div>
+                            <div className="font-medium">PDL: {details.inmate_name}</div>
                             <div className="text-muted-foreground">
                                 {details.scheduled_date} {details.scheduled_time && `at ${details.scheduled_time}`}
                             </div>
@@ -103,7 +103,7 @@ export default function SessionMonitoring({ sessions }: Props) {
                 return (
                     <div className="text-sm">
                         <div className="font-medium">Deceased: {details.deceased_name}</div>
-                        <div className="text-muted-foreground">Inmate: {details.inmate_name}</div>
+                        <div className="text-muted-foreground">PDL: {details.inmate_name}</div>
                     </div>
                 );
             },

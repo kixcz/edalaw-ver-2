@@ -44,7 +44,7 @@ export default function VideoRecordings({ recordings, filters }: Props) {
     const columns: ColumnDef<Recording>[] = useMemo(() => [
         { accessorKey: 'visit_session_id', header: 'Session ID', cell: ({ row }) => `#${row.original.visit_session_id}` },
         { accessorKey: 'visitor_name', header: 'Visitor', cell: ({ row }) => row.original.visitor_name ?? '—' },
-        { accessorKey: 'inmate_name', header: 'Inmate' },
+        { accessorKey: 'inmate_name', header: 'PDL' },
         { accessorKey: 'session_type', header: 'Type', cell: ({ row }) => row.original.session_type === 'visit' ? 'Visit' : 'E-Burol' },
         { accessorKey: 'duration_seconds', header: 'Duration', cell: ({ row }) => formatDuration(row.original.duration_seconds) },
         {
@@ -107,7 +107,7 @@ export default function VideoRecordings({ recordings, filters }: Props) {
                             columns={columns}
                             data={recordings}
                             searchKey="video_search"
-                            searchPlaceholder="Search by session, visitor, inmate..."
+                            searchPlaceholder="Search by session, visitor, PDL..."
                             initialSorting={[{ id: 'ended_at', desc: true }]}
                         />
                     </CardContent>

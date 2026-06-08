@@ -259,7 +259,7 @@ export default function Analytics({
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{overviewCards.tunnels_generated_today}</div>
-                            <p className="text-xs text-muted-foreground">Inmate links generated</p>
+                            <p className="text-xs text-muted-foreground">PDL links generated</p>
                         </CardContent>
                     </Card>
                 </div>

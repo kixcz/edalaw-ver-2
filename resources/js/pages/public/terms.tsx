@@ -3,7 +3,7 @@ import PublicLayout from '@/layouts/public-layout';
 
 export default function Terms() {
     return (
-        <PublicLayout title="Terms and Conditions - e-Dalaw" description="Read the terms and conditions for using e-Dalaw services">
+        <PublicLayout title="Terms and Conditions - eDalaw" description="Read the terms and conditions for using eDalaw services">
             <section className="relative bg-gradient-to-br from-slate-800 via-[#2A3550] to-[#1A2240] py-20 md:py-28 overflow-hidden">
                 {/* Background Elements */}
                 <div className="absolute w-[600px] h-[600px] -top-[150px] -right-[100px] rounded-full bg-[radial-gradient(circle,rgba(242,100,25,0.12),transparent_70%)]" />
@@ -26,7 +26,7 @@ export default function Terms() {
                             Terms and <span className="text-orange-400">Conditions</span>
                         </h1>
                         <p className="text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
-                            Please read these terms carefully before using e-Dalaw
+                            Please read these terms carefully before using eDalaw
                         </p>
                     </div>
                 </div>
@@ -38,14 +38,14 @@ export default function Terms() {
                         <div className="mb-12">
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h2>
                             <p className="text-gray-700 leading-relaxed">
-                                By accessing or using e-Dalaw services, you agree to be bound by these Terms and Conditions. If you do not agree to these terms, you may not use our services. We reserve the right to modify these terms at any time, and continued use of the service constitutes acceptance of such modifications.
+                                By accessing or using eDalaw services, you agree to be bound by these Terms and Conditions. If you do not agree to these terms, you may not use our services. We reserve the right to modify these terms at any time, and continued use of the service constitutes acceptance of such modifications.
                             </p>
                         </div>
 
                         <div className="mb-12">
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">2. User Responsibilities</h2>
                             <p className="text-gray-700 leading-relaxed mb-4">
-                                As a user of e-Dalaw, you are responsible for:
+                                As a user of eDalaw, you are responsible for:
                             </p>
                             <ul className="list-disc pl-6 space-y-2 text-gray-700 mb-4">
                                 <li>Providing accurate and complete information during registration</li>
@@ -79,7 +79,7 @@ export default function Terms() {
                         <div className="mb-12">
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Monitoring and Recording Disclosures</h2>
                             <p className="text-gray-700 leading-relaxed mb-4">
-                                By using e-Dalaw, you acknowledge and consent to the following:
+                                By using eDalaw, you acknowledge and consent to the following:
                             </p>
                             <ul className="list-disc pl-6 space-y-2 text-gray-700 mb-4">
                                 <li><strong>All virtual sessions are monitored</strong> by authorized facility staff in real-time</li>
@@ -104,28 +104,28 @@ export default function Terms() {
                                 <li>Account suspension or termination</li>
                                 <li>Reporting to law enforcement authorities</li>
                                 <li>Legal action under applicable laws</li>
-                                <li>Permanent ban from using e-Dalaw services</li>
+                                <li>Permanent ban from using eDalaw services</li>
                             </ul>
                         </div>
 
                         <div className="mb-12">
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Service Availability</h2>
                             <p className="text-gray-700 leading-relaxed">
-                                e-Dalaw services are subject to availability and may be temporarily suspended for maintenance, updates, or security reasons. We strive to maintain high service availability but do not guarantee uninterrupted access. Scheduled maintenance will be announced in advance when possible.
+                                eDalaw services are subject to availability and may be temporarily suspended for maintenance, updates, or security reasons. We strive to maintain high service availability but do not guarantee uninterrupted access. Scheduled maintenance will be announced in advance when possible.
                             </p>
                         </div>
 
                         <div className="mb-12">
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Limitation of Liability</h2>
                             <p className="text-gray-700 leading-relaxed">
-                                e-Dalaw and the BJMP shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of or inability to use the service, including but not limited to technical failures, security breaches, or service interruptions.
+                                eDalaw and the BJMP shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of or inability to use the service, including but not limited to technical failures, security breaches, or service interruptions.
                             </p>
                         </div>
 
                         <div className="mb-12">
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">8. Governing Law</h2>
                             <p className="text-gray-700 leading-relaxed">
-                                These terms shall be governed by and construed in accordance with the laws of the Republic of the Philippines. Any disputes arising from these terms or the use of e-Dalaw services shall be subject to the exclusive jurisdiction of the appropriate courts in the Philippines.
+                                These terms shall be governed by and construed in accordance with the laws of the Republic of the Philippines. Any disputes arising from these terms or the use of eDalaw services shall be subject to the exclusive jurisdiction of the appropriate courts in the Philippines.
                             </p>
                         </div>
 
