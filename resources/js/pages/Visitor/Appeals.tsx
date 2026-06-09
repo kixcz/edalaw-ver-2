@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { FileText, Scale, Plus, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Scale, Plus, Clock, CheckCircle, XCircle, ShieldCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -647,6 +647,25 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols }: 
                                 Appeals must be submitted within 24-48 hours after rejection.
                             </DialogDescription>
                         </DialogHeader>
+                        
+                        {/* Privacy Notice - Top of Form */}
+                        <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                            <ShieldCheck style={{ width: '14px', height: '14px', color: '#6B7280', flexShrink: 0, marginTop: '1px' }} />
+                            <div>
+                                <div style={{ fontSize: '9px', fontWeight: 700, color: '#374151', marginBottom: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                                    Data Privacy Notice
+                                </div>
+                                <div style={{ fontSize: '9px', lineHeight: '1.5', color: '#4B5563' }}>
+                                    Information provided in this appeal shall be used exclusively for the review, evaluation, and resolution of the appealed visitation or e-Burol request. 
+                                    All submitted information will be processed only by authorized personnel and handled in accordance with the Data Privacy Act of 2012.
+                                    <br />
+                                    <span style={{ fontStyle: 'italic' }}>
+                                        (Ang impormasyon nga gihatag niini nga apela gamiton lamang alang sa pagsusi, pagtimbang-timbang, ug pagresolba sa giapela nga pagbisita o e-Burol nga hangyo. 
+                                        Ang tanan nga gipasa nga impormasyon giproseso lamang sa mga awtorisadong personel ug gipangdumala sumala sa Data Privacy Act of 2012.)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                         <form onSubmit={handleSubmit}>
                             <div className="space-y-4">
                                 {selectedItem && (
@@ -704,32 +723,12 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols }: 
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Appeal Privacy Notice */}
-                                <div className="rounded-lg border-l-4 border-l-amber-500 bg-amber-500/10 p-4">
-                                    <div className="flex items-start gap-3">
-                                        <input
-                                            type="checkbox"
-                                            id="appeal-privacy-acknowledged"
-                                            checked={form.data.privacy_acknowledged}
-                                            onChange={(e) => form.setData('privacy_acknowledged', e.target.checked)}
-                                            required
-                                            className="mt-1 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                                        />
-                                        <label
-                                            htmlFor="appeal-privacy-acknowledged"
-                                            className="text-sm font-normal leading-relaxed cursor-pointer text-muted-foreground"
-                                        >
-                                                                                        Information provided in this appeal shall be used exclusively for the review, evaluation, and resolution of the appealed visitation or e-Burol request. All submitted information will be processed only by authorized personnel and handled in accordance with the Data Privacy Act of 2012.
-                                        </label>
-                                    </div>
-                                </div>
                             </div>
                             <DialogFooter className="mt-6">
                                 <Button type="button" variant="outline" onClick={handleModalClose}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing || !form.data.privacy_acknowledged}>
+                                <Button type="submit" disabled={form.processing}>
                                     {form.processing ? 'Submitting...' : 'Submit Appeal'}
                                 </Button>
                             </DialogFooter>

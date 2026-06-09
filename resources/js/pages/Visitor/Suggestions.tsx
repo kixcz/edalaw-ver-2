@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { MessageSquare, Plus } from 'lucide-react';
+import { MessageSquare, Plus, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -101,7 +101,6 @@ export default function Suggestions({ suggestions }: Props) {
         type: '',
         subject: '',
         message: '',
-        privacy_acknowledged: false,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -213,6 +212,25 @@ export default function Suggestions({ suggestions }: Props) {
                                 Share your experience, suggestions for improvement, or file a complaint
                             </DialogDescription>
                         </DialogHeader>
+
+                        {/* Privacy Notice - Top of Form */}
+                        <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                            <ShieldCheck style={{ width: '14px', height: '14px', color: '#6B7280', flexShrink: 0, marginTop: '1px' }} />
+                            <div>
+                                <div style={{ fontSize: '9px', fontWeight: 700, color: '#374151', marginBottom: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                                    Data Privacy Notice
+                                </div>
+                                <div style={{ fontSize: '9px', lineHeight: '1.5', color: '#4B5563' }}>
+                                    Information submitted through this form will be used solely for service evaluation, complaint investigation, issue resolution, quality improvement, and administrative review. 
+                                    Personal information shall be processed only by authorized personnel in accordance with Republic Act No. 10173 and applicable privacy policies.
+                                    <br />
+                                    <span style={{ fontStyle: 'italic' }}>
+                                        (Ang impormasyon nga gipasa pinaagi niini nga form gamiton lamang alang sa pagsusi sa serbisyo, pagsuhid sa reklamo, resolusyon sa isyu, pagpaayo sa kalidad, ug pagsusi sa administrasyon. 
+                                        Ang personal nga impormasyon giproseso lamang sa mga awtorisadong personel sumala sa Republic Act No. 10173 ug mga nahisgutan nga privacy policies.)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                         <form onSubmit={handleSubmit}>
                             <div className="space-y-4">
                                 <div className="grid gap-2">
@@ -266,32 +284,12 @@ export default function Suggestions({ suggestions }: Props) {
                                         Minimum 20 characters, maximum 5000 characters
                                     </p>
                                 </div>
-
-                                {/* Feedback/Complaint Privacy Notice */}
-                                <div className="rounded-lg border-l-4 border-l-teal-500 bg-teal-500/10 p-4">
-                                    <div className="flex items-start gap-3">
-                                        <input
-                                            type="checkbox"
-                                            id="feedback-privacy-acknowledged"
-                                            checked={form.data.privacy_acknowledged}
-                                            onChange={(e) => form.setData('privacy_acknowledged', e.target.checked)}
-                                            required
-                                            className="mt-1 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                                        />
-                                        <label
-                                            htmlFor="feedback-privacy-acknowledged"
-                                            className="text-sm font-normal leading-relaxed cursor-pointer text-muted-foreground"
-                                        >
-                                                                                        Information submitted through this form will be used solely for service evaluation, complaint investigation, issue resolution, quality improvement, and administrative review. Personal information shall be processed only by authorized personnel in accordance with Republic Act No. 10173 and applicable privacy policies.
-                                        </label>
-                                    </div>
-                                </div>
                             </div>
                             <DialogFooter className="mt-6">
                                 <Button type="button" variant="outline" onClick={handleModalClose}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing || !form.data.privacy_acknowledged}>
+                                <Button type="submit" disabled={form.processing}>
                                     {form.processing ? 'Submitting...' : 'Submit Feedback'}
                                 </Button>
                             </DialogFooter>

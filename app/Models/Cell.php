@@ -47,9 +47,19 @@ class Cell extends Model
     }
 
     /**
-     * Get the dormitory through the annex.
+     * Get the dormitory that this cell belongs to.
+     *
+     * @return BelongsTo<Dormitory>
      */
-    public function dormitory(): \Illuminate\Database\Eloquent\Relations\HasOneThrough
+    public function dormitory(): BelongsTo
+    {
+        return $this->belongsTo(Dormitory::class);
+    }
+
+    /**
+     * Get the dormitory through the annex (if cell is assigned to annex).
+     */
+    public function dormitoryThroughAnnex(): \Illuminate\Database\Eloquent\Relations\HasOneThrough
     {
         return $this->hasOneThrough(Dormitory::class, Annex::class, 'id', 'id', 'annex_id', 'dormitory_id');
     }

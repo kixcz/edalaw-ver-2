@@ -645,6 +645,14 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('inmates.hierarchical-destroy');
         Route::post('inmates-hierarchical/{inmate}/transfer', [\App\Http\Controllers\JailOfficer\InmateManagementController::class, 'transfer'])
             ->name('inmates.hierarchical-transfer');
+
+        // Cell Schedule Templates
+        Route::get('cell-schedules', [\App\Http\Controllers\JailOfficer\CellScheduleTemplateController::class, 'index'])
+            ->name('cell-schedules.index');
+        Route::put('cell-schedules/{cell}', [\App\Http\Controllers\JailOfficer\CellScheduleTemplateController::class, 'update'])
+            ->name('cell-schedules.update');
+        Route::post('cell-schedules/bulk-update', [\App\Http\Controllers\JailOfficer\CellScheduleTemplateController::class, 'bulkUpdate'])
+            ->name('cell-schedules.bulk-update');
     });
 
     Route::middleware(['role:bjmp_officer'])->prefix('bjmp-officer')->name('bjmp-officer.')->group(function () {

@@ -16,9 +16,67 @@ class CellScheduleTemplateController extends Controller
      */
     public function index(Request $request): Response
     {
-        $cells = Cell::with(['scheduleTemplates'])
-            ->orderBy('cell_number')
-            ->get();
+        $user = $request->user();
+        
+        // Get JO's active scope IDs
+        $scopeIds = $user->jailOfficerScopes()->where('is_active', true);
+        
+        // Build list of cell IDs that match JO's scopes
+        $cellIds = [];
+        
+        // Get cells from direct cell assignments
+        $cellScopeIds = $scopeIds->clone()
+            ->where('scope_type', 'cell')
+            ->pluck('cell_id');
+        $cellIds = array_merge($cellIds, $cellScopeIds->toArray());
+        
+        // Get cells from dormitory assignments
+        $dormScopeIds = $scopeIds->clone()
+            ->where('scope_type', 'dormitory')
+            ->pluck('dormitory_id');
+        if ($dormScopeIds->isNotEmpty()) {
+            $cellsFromDorms = Cell::whereIn('dormitory_id', $dormScopeIds)->pluck('id');
+            $cellIds = array_merge($cellIds, $cellsFromDorms->toArray());
+        }
+        
+        // Get cells from annex assignments
+        $annexScopeIds = $scopeIds->clone()
+            ->where('scope_type', 'annex')
+            ->pluck('annex_id');
+        if ($annexScopeIds->isNotEmpty()) {
+            $cellsFromAnnexes = Cell::where(function($q) use ($annexScopeIds) {
+                    $q->whereIn('annex_id', $annexScopeIds)
+                      ->orWhereHas('dormitory', function($dq) use ($annexScopeIds) {
+                          $dq->whereIn('annex_id', $annexScopeIds);
+                      });
+                })->pluck('id');
+            $cellIds = array_merge($cellIds, $cellsFromAnnexes->toArray());
+        }
+        
+        // Remove duplicates
+        $cellIds = array_unique($cellIds);
+        
+        // Query cells based on scope
+        $cellsQuery = Cell::with(['scheduleTemplates', 'dormitory', 'annex'])
+            ->whereIn('id', $cellIds);
+        
+        // Apply additional filters if provided
+        if ($request->filled('cell')) {
+            $cellsQuery->where('id', $request->input('cell'));
+        }
+        
+        if ($request->filled('dormitory')) {
+            $cellsQuery->where('dormitory_id', $request->input('dormitory'));
+        }
+        
+        if ($request->filled('annex')) {
+            $cellsQuery->where('annex_id', $request->input('annex'))
+                       ->orWhereHas('dormitory', function($q) use ($request) {
+                           $q->where('annex_id', $request->input('annex'));
+                       });
+        }
+        
+        $cells = $cellsQuery->orderBy('cell_number')->get();
 
         // Format cells with their schedule data
         $formattedCells = $cells->map(function ($cell) {
@@ -34,6 +92,8 @@ class CellScheduleTemplateController extends Controller
                 'id' => $cell->id,
                 'cell_number' => $cell->cell_number,
                 'status' => $cell->status,
+                'dormitory_name' => $cell->dormitory?->name,
+                'annex_name' => $cell->annex?->name ?? $cell->dormitory?->annex?->name,
                 'schedules' => $schedules,
             ];
         });
@@ -49,7 +109,7 @@ class CellScheduleTemplateController extends Controller
             6 => 'Saturday',
         ];
 
-        return Inertia::render('BjmpOfficer/CellScheduleTemplate', [
+        return Inertia::render('JailOfficer/CellScheduleTemplate', [
             'cells' => $formattedCells,
             'dayNames' => $dayNames,
         ]);

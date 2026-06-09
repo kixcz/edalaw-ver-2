@@ -51,6 +51,10 @@ class CellScheduleTemplateController extends Controller
         ]);
     }
 
+    /**
+     * Update schedule templates for a cell.
+     */
+    public function update(Request $request, Cell $cell)
     {
         $validated = $request->validate([
             'schedules' => 'required|array',

@@ -36,6 +36,16 @@ class Dormitory extends Model
     }
 
     /**
+     * Get the annex that this dormitory belongs to.
+     *
+     * @return BelongsTo<Annex>
+     */
+    public function annex(): BelongsTo
+    {
+        return $this->belongsTo(Annex::class);
+    }
+
+    /**
      * Get the annexes in this dormitory.
      */
     public function annexes(): HasMany

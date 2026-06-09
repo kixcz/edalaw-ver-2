@@ -54,9 +54,13 @@ class AssignedVisitSessionsController extends Controller
             ->where('scope_type', 'annex')
             ->pluck('annex_id');
         if ($annexScopeIds->isNotEmpty()) {
-            $cellsFromAnnexes = \App\Models\Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
-                ->whereIn('dormitories.annex_id', $annexScopeIds)
-                ->pluck('cells.id');
+            // Get cells that have this annex_id directly OR cells in dormitories that belong to this annex
+            $cellsFromAnnexes = \App\Models\Cell::where(function($q) use ($annexScopeIds) {
+                    $q->whereIn('annex_id', $annexScopeIds)
+                      ->orWhereHas('dormitory', function($dq) use ($annexScopeIds) {
+                          $dq->whereIn('annex_id', $annexScopeIds);
+                      });
+                })->pluck('id');
             $cellIds = array_merge($cellIds, $cellsFromAnnexes->toArray());
         }
         
@@ -64,7 +68,7 @@ class AssignedVisitSessionsController extends Controller
         $cellIds = array_unique($cellIds);
 
         // Get all visits assigned to this JO based on scope OR direct assignment
-        $visitsQuery = Visit::with(['user', 'inmate.cell.dormitory.annex', 'jailOfficer'])
+        $visitsQuery = Visit::with(['user', 'inmate.cell.dormitory', 'inmate.cell.annex', 'jailOfficer'])
             ->where(function ($q) use ($user, $cellIds) {
                 // Direct assignment by jail_officer_id
                 $q->where('jail_officer_id', $user->id)
@@ -100,9 +104,9 @@ class AssignedVisitSessionsController extends Controller
                 'inmate_id' => $visit->inmate_id,
                 'cell_info' => $visit->inmate?->cell ? [
                     'cell_number' => $visit->inmate->cell->cell_number,
-                    'floor' => $visit->inmate->cell->floor,
+                    'floor' => $visit->inmate->cell->floor ?? null,
                     'dormitory_name' => $visit->inmate->cell->dormitory?->name,
-                    'annex_name' => $visit->inmate->cell->dormitory?->annex?->name,
+                    'annex_name' => $visit->inmate->cell->annex?->name ?? $visit->inmate->cell->dormitory?->annex?->name,
                 ] : null,
                 'scheduled_date' => $visit->scheduled_date->format('Y-m-d'),
                 'scheduled_time' => $visit->scheduled_time,
@@ -325,12 +329,15 @@ class AssignedVisitSessionsController extends Controller
                 return true;
             }
 
-            // Check annex
-            if ($visit->inmate->cell?->dormitory?->annex && $scopeIds->clone()
-                ->where('scope_type', 'annex')
-                ->pluck('annex_id')
-                ->contains($visit->inmate->cell->dormitory->annex->id)) {
-                return true;
+            // Check annex (via cell's direct annex or through dormitory)
+            if ($visit->inmate->cell) {
+                $cellAnnexId = $visit->inmate->cell->annex_id ?? $visit->inmate->cell->dormitory?->annex_id;
+                if ($cellAnnexId && $scopeIds->clone()
+                    ->where('scope_type', 'annex')
+                    ->pluck('annex_id')
+                    ->contains($cellAnnexId)) {
+                    return true;
+                }
             }
         }
 
