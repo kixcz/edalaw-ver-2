@@ -31,29 +31,29 @@ test('visitor registration redirects to registration otp verification and does n
         'dob' => '1995-01-01',
         'gender' => 'male',
         'street' => '123 Main St',
+        'region' => 'Region IV-A',
         'brgy' => 'Brgy 1',
         'municipality' => 'Test City',
         'province' => 'Test Province',
         'postal_code' => '1234',
         'password' => 'password',
         'password_confirmation' => 'password',
-        'id_document_1' => UploadedFile::fake()->create('id1.pdf', 100, 'application/pdf'),
-        'id_document_2' => UploadedFile::fake()->create('id2.pdf', 100, 'application/pdf'),
+        'consent_accepted' => true,
     ]);
 
     $response->assertRedirect(route('registration-otp.show'));
     $this->assertGuest();
 
     $user = User::where('email', 'test.visitor@example.com')->firstOrFail();
-    expect($user->approval_status)->toBe(ApprovalStatus::Pending);
+    expect($user->approval_status)->toBe(ApprovalStatus::Approved);
     expect($user->role?->slug)->toBe('visitor');
 
     $response->assertSessionHas('registration.user_id', $user->id);
 });
 
-test('registration otp verification logs the user in and redirects to account pending', function () {
+test('registration otp verification logs the user in and redirects to visitor dashboard', function () {
     $user = User::factory()->visitor()->create([
-        'approval_status' => ApprovalStatus::Pending,
+        'approval_status' => ApprovalStatus::Approved,
         'email_verified_at' => null,
     ]);
 
@@ -71,7 +71,8 @@ test('registration otp verification logs the user in and redirects to account pe
         'otp' => $otp->otp,
     ]);
 
-    $response->assertRedirect(route('account-pending'));
+    // Auto-approved visitors should go to their dashboard (home)
+    $response->assertRedirect(route('home'));
     $this->assertAuthenticatedAs($user);
     expect($user->fresh()->email_verified_at)->not->toBeNull();
 });

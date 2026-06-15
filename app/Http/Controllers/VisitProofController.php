@@ -36,7 +36,7 @@ class VisitProofController extends Controller
         $visitorName = trim("{$visit->user->first_name} {$visit->user->middle_name} {$visit->user->last_name}");
         $inmateName = trim("{$visit->inmate_first_name} {$visit->inmate_middle_name} {$visit->inmate_last_name}");
 
-        return Inertia::render('VisitProof', [
+        return Inertia::render('Visitor/VisitProof', [
             'visit' => [
                 'id' => $visit->id,
                 'visitor_name' => $visitorName,

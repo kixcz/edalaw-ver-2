@@ -11,7 +11,7 @@ Route::get('/', function () {
         $user = Auth::user();
         $user->load('role');
 
-        if ($user->role?->slug !== 'super_admin') {
+        if ($user->role?->slug !== 'jail_warden') {
             if ($user->approval_status === ApprovalStatus::Pending) {
                 return redirect()->route('account-pending');
             }
@@ -27,17 +27,14 @@ Route::get('/', function () {
         }
 
         $role = $user->role?->slug;
-        if ($role === 'super_admin') {
-            return redirect()->route('dashboard.super-admin');
-        }
-        if ($role === 'bjmp_officer') {
-            return redirect()->route('dashboard.bjmp-officer');
-        }
-        if ($role === 'visitor') {
-            return redirect()->route('dashboard.visitor');
+        if ($role === 'jail_warden') {
+            return redirect()->route('dashboard.jail-warden');
         }
         if ($role === 'jail_officer') {
             return redirect()->route('dashboard.jail-officer');
+        }
+        if ($role === 'visitor') {
+            return redirect()->route('dashboard.visitor');
         }
 
         return redirect()->route('dashboard');
@@ -227,20 +224,14 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         if ($role === 'national') {
             return redirect()->route('dashboard.national-office');
         }
-        if ($role === 'super_admin') {
-            return redirect()->route('dashboard.super-admin');
-        }
-        if ($role === 'bjmp_officer') {
-            return redirect()->route('dashboard.bjmp-officer');
-        }
-        if ($role === 'visitor') {
-            return redirect()->route('dashboard.visitor');
-        }
-        if ($role === 'monitoring_officer') {
-            return redirect()->route('dashboard.monitoring-officer');
+        if ($role === 'jail_warden') {
+            return redirect()->route('dashboard.jail-warden');
         }
         if ($role === 'jail_officer') {
             return redirect()->route('dashboard.jail-officer');
+        }
+        if ($role === 'visitor') {
+            return redirect()->route('dashboard.visitor');
         }
 
         return Inertia::render('dashboard');
@@ -249,9 +240,6 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     Route::middleware(['role:visitor'])->get('dashboard/visitor', \App\Http\Controllers\Dashboard\VisitorDashboardController::class)
         ->name('dashboard.visitor');
-
-    Route::middleware(['role:super_admin'])->get('dashboard/super-admin', \App\Http\Controllers\Dashboard\SuperAdminDashboardController::class)
-        ->name('dashboard.super-admin');
 
     Route::middleware(['role:national'])->get('dashboard/national-office', \App\Http\Controllers\Dashboard\NationalOfficeDashboardController::class)
         ->name('dashboard.national-office');
@@ -335,19 +323,19 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::middleware(['role:jail_officer'])->get('dashboard/jail-officer', [\App\Http\Controllers\JailOfficer\AnalyticsController::class, 'index'])
         ->name('dashboard.jail-officer');
 
-    Route::middleware(['role:super_admin,monitoring_officer'])->prefix('monitoring')->name('monitoring.')->group(function () {
+    Route::middleware(['role:jail_warden,jail_officer'])->prefix('monitoring')->name('monitoring.')->group(function () {
         Route::get('video-recordings', [\App\Http\Controllers\MonitoringOfficer\VideoRecordingsController::class, 'index'])
             ->name('video-recordings.index');
         Route::get('chat-recordings', [\App\Http\Controllers\MonitoringOfficer\ChatRecordingsController::class, 'index'])
             ->name('chat-recordings.index');
     });
 
-    Route::middleware(['role:monitoring_officer'])->get('monitoring-officer/visit-monitoring', \App\Http\Controllers\MonitoringOfficer\VisitMonitoringController::class)
+    Route::middleware(['role:jail_officer'])->get('monitoring-officer/visit-monitoring', \App\Http\Controllers\MonitoringOfficer\VisitMonitoringController::class)
         ->name('monitoring-officer.visit-monitoring');
-    Route::middleware(['role:monitoring_officer'])->get('monitoring-officer/eburol-monitoring', \App\Http\Controllers\MonitoringOfficer\EburolMonitoringController::class)
+    Route::middleware(['role:jail_officer'])->get('monitoring-officer/eburol-monitoring', \App\Http\Controllers\MonitoringOfficer\EburolMonitoringController::class)
         ->name('monitoring-officer.eburol-monitoring');
 
-    Route::middleware(['role:monitoring_officer,super_admin'])->prefix('monitoring-officer')->name('monitoring-officer.')->group(function () {
+    Route::middleware(['role:jail_officer,jail_warden'])->prefix('monitoring-officer')->name('monitoring-officer.')->group(function () {
         Route::get('assigned-sessions', [\App\Http\Controllers\MonitoringOfficer\AssignedSessionsController::class, 'index'])
             ->name('assigned-sessions.index');
         Route::post('assigned-sessions/{session}/generate-tunnel', [\App\Http\Controllers\MonitoringOfficer\AssignedSessionsController::class, 'generateTunnel'])
@@ -391,8 +379,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('notifications.read-all');
     });
 
-    // Join as observer: monitoring officer or super admin (same privileges)
-    Route::middleware(['role:monitoring_officer,super_admin'])->get('monitoring-officer/assigned-sessions/{session}/join', [\App\Http\Controllers\MonitoringOfficer\AssignedSessionsController::class, 'joinAsObserver'])
+    // Join as observer: jail officer or jail warden (same privileges)
+    Route::middleware(['role:jail_officer,jail_warden'])->get('monitoring-officer/assigned-sessions/{session}/join', [\App\Http\Controllers\MonitoringOfficer\AssignedSessionsController::class, 'joinAsObserver'])
         ->name('monitoring-officer.assigned-sessions.join');
 
     Route::get('visit/session/{session}/chat', [\App\Http\Controllers\VisitSessionChatController::class, 'index'])
@@ -409,7 +397,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('visits/{visit}/proof', [\App\Http\Controllers\VisitProofController::class, 'show'])
         ->name('visits.proof');
 
-    Route::middleware(['role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(['role:jail_warden'])->prefix('admin')->name('admin.')->group(function () {
         Route::resource('users', \App\Http\Controllers\Admin\UserManagementController::class)
             ->only(['index', 'store', 'update', 'destroy']);
         Route::post('users/{user}/approve', [\App\Http\Controllers\Admin\UserManagementController::class, 'approve'])
@@ -557,8 +545,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('visit-session.time-ended');
     });
 
-    // Cell, Inmate, and Cell Schedule Management (accessible by both BJMP Officer and Jail Officer)
-    Route::middleware(['role:bjmp_officer,jail_officer'])->prefix('bjmp-officer')->name('bjmp-officer.')->group(function () {
+    // Cell, Inmate, and Cell Schedule Management (accessible by Jail Officer)
+    Route::middleware(['role:jail_officer'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
         // Cell Management
         Route::get('cells', [\App\Http\Controllers\BjmpOfficer\CellManagementController::class, 'index'])
             ->name('cells.index');
@@ -655,7 +643,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('cell-schedules.bulk-update');
     });
 
-    Route::middleware(['role:bjmp_officer'])->prefix('bjmp-officer')->name('bjmp-officer.')->group(function () {
+    Route::middleware(['role:jail_officer'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
         Route::get('notifications', [\App\Http\Controllers\BjmpOfficer\NotificationController::class, 'index'])
             ->name('notifications.index');
         Route::post('notifications/{notification}/read', [\App\Http\Controllers\BjmpOfficer\NotificationController::class, 'markAsRead'])
@@ -844,7 +832,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('chat-logs.session');
     });
 
-    Route::middleware(['role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(['role:jail_warden'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('appeals', [\App\Http\Controllers\Admin\AppealsOversightController::class, 'index'])
             ->name('appeals.index');
         Route::post('appeals/{appeal}/review', [\App\Http\Controllers\Admin\AppealsOversightController::class, 'review'])

@@ -58,6 +58,21 @@ class Branch extends Model
     }
 
     /**
+     * Get all cells through jails, dormitories, and annexes.
+     * Note: This uses a query builder approach since HasManyThrough
+     * doesn't support more than 2 levels directly.
+     */
+    public function cells()
+    {
+        return Cell::query()
+            ->join('annexes', 'cells.annex_id', '=', 'annexes.id')
+            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $this->id)
+            ->select('cells.*');
+    }
+
+    /**
      * Get the jail warden for this branch.
      */
     public function jailWarden()
@@ -72,6 +87,14 @@ class Branch extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    /**
+     * Get all visits through jails.
+     */
+    public function visits(): HasManyThrough
+    {
+        return $this->hasManyThrough(Visit::class, Jail::class);
     }
 
     /**

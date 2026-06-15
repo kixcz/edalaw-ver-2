@@ -12,16 +12,13 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
-        // Define all roles in order
+        // Define all roles in order (consolidated from 8 to 5 roles)
         $roles = [
             ['slug' => 'national', 'name' => 'National Office'],
             ['slug' => 'regional_supervisor', 'name' => 'Regional Supervisor'],
-            ['slug' => 'super_admin', 'name' => 'Super Admin'],
             ['slug' => 'jail_warden', 'name' => 'Jail Warden'],
             ['slug' => 'jail_officer', 'name' => 'Jail Officer'],
-            ['slug' => 'bjmp_officer', 'name' => 'BJMP Officer'],
             ['slug' => 'visitor', 'name' => 'Visitor'],
-            ['slug' => 'monitoring_officer', 'name' => 'Monitoring Officer'],
         ];
 
         foreach ($roles as $roleData) {

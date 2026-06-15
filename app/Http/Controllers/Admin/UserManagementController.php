@@ -20,8 +20,15 @@ class UserManagementController extends Controller
      */
     public function index(): Response
     {
-        $users = User::with('role')
-            ->orderBy('created_at', 'desc')
+        $user = auth()->user();
+        $query = User::with('role');
+
+        // Jail Wardens can only see users in their branch
+        if ($user->role->slug === 'jail_warden' && $user->branch_id) {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        $users = $query->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($user) {
                 // Check if user has an active session
@@ -56,8 +63,10 @@ class UserManagementController extends Controller
                 ];
             });
 
-        // Get unique roles for filter
-        $roles = \App\Models\Role::orderBy('name')->get(['id', 'name', 'slug']);
+        // Get unique roles for filter (exclude removed roles)
+        $roles = \App\Models\Role::whereIn('slug', ['national', 'regional_supervisor', 'jail_warden', 'jail_officer', 'visitor'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
 
         return Inertia::render('Admin/UserManagement', [
             'users' => $users,
@@ -203,7 +212,7 @@ class UserManagementController extends Controller
             'contact_number.unique' => 'This contact number is already in use by another account.',
         ]);
 
-        $user = User::create([
+        $createData = [
             'first_name' => $request->first_name,
             'middle_name' => $request->middle_name,
             'last_name' => $request->last_name,
@@ -220,7 +229,14 @@ class UserManagementController extends Controller
             'role_id' => $request->role_id,
             'approval_status' => ApprovalStatus::Approved,
             'email_verified_at' => now(),
-        ]);
+        ];
+
+        // Jail wardens create users in their branch
+        if (auth()->user()->role->slug === 'jail_warden' && auth()->user()->branch_id) {
+            $createData['branch_id'] = auth()->user()->branch_id;
+        }
+
+        $user = User::create($createData);
 
         // Log the action
         $role = \App\Models\Role::find($request->role_id);

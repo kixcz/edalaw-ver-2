@@ -19,6 +19,8 @@ class EnsureRole
             abort(403);
         }
 
+        // Ensure role is loaded
+        $request->user()->loadMissing('role');
         $userRole = $request->user()->role;
 
         $allowedSlugs = [];

@@ -400,6 +400,9 @@ class ScheduleController extends Controller
             $additionalProofPath = $request->file('additional_proof')->store('visits/additional_proofs', 'public');
         }
 
+        // Auto-assign jail officer based on inmate's cell and jail_officer_scopes
+        $assignedJailOfficerId = $this->assignJailOfficerToInmate($inmate->id);
+
         $visit = Visit::create([
             'user_id' => auth()->id(),
             'scheduled_date' => $request->scheduled_date,
@@ -408,6 +411,8 @@ class ScheduleController extends Controller
             'inmate_first_name' => $request->inmate_first_name,
             'inmate_middle_name' => $request->inmate_middle_name,
             'inmate_last_name' => $request->inmate_last_name,
+            'inmate_id' => $inmate->id,
+            'jail_officer_id' => $assignedJailOfficerId,
             'status' => VisitStatus::Pending,
             'notes' => $request->notes,
             'relationship_proof_path' => $relationshipProofPath,
@@ -738,5 +743,41 @@ class ScheduleController extends Controller
                 ? null
                 : "This cell ({$inmate->cell->cell_number}) is not available for {$visitType} visits on {$dayNames[$dayOfWeek]}s. Please select a different date.",
         ]);
+    }
+
+    /**
+     * Auto-assign a jail officer to an inmate based on jail_officer_scopes.
+     * Finds an active jail officer whose scope matches the inmate's cell.
+     */
+    private function assignJailOfficerToInmate(int $inmateId): ?int
+    {
+        $inmate = \App\Models\Inmate::with('cell')->find($inmateId);
+        
+        if (!$inmate || !$inmate->cell) {
+            return null;
+        }
+
+        $cell = $inmate->cell;
+        
+        // Find active jail officer scopes that match this cell
+        $matchingScope = \App\Models\JailOfficerScope::where('is_active', true)
+            ->where(function($query) use ($cell) {
+                // Direct cell assignment
+                $query->where('scope_type', 'cell')
+                      ->where('cell_id', $cell->id)
+                      // Dormitory assignment
+                      ->orWhere(function($q) use ($cell) {
+                          $q->where('scope_type', 'dormitory')
+                            ->where('dormitory_id', $cell->dormitory_id);
+                      })
+                      // Annex assignment
+                      ->orWhere(function($q) use ($cell) {
+                          $q->where('scope_type', 'annex')
+                            ->where('annex_id', $cell->annex_id);
+                      });
+            })
+            ->first();
+
+        return $matchingScope ? $matchingScope->jail_officer_id : null;
     }
 }

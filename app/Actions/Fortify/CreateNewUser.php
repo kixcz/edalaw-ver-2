@@ -33,15 +33,6 @@ class CreateNewUser implements CreatesNewUsers
                 ->validate();
         }
 
-        // Validate ID documents for visitor (at least 2 proofs of identity)
-        Validator::make($request->all(), [
-            'id_document_1' => ['required', 'file', 'mimes:jpeg,jpg,png,pdf', 'max:5120'],
-            'id_document_2' => ['required', 'file', 'mimes:jpeg,jpg,png,pdf', 'max:5120'],
-        ], [
-            'id_document_1.required' => 'Please upload at least two proofs of identity (e.g. valid ID, birth certificate).',
-            'id_document_2.required' => 'Please upload a second proof of identity.',
-        ])->validate();
-
         // Validate informed consent acceptance
         Validator::make($input, [
             'consent_accepted' => ['required', 'accepted'],
@@ -54,15 +45,6 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
-        // Store ID documents for visitor, BJMP officer, and monitoring officer
-        $idDocument1Path = null;
-        $idDocument2Path = null;
-
-        if ($request->hasFile('id_document_1') && $request->hasFile('id_document_2')) {
-            $idDocument1Path = $request->file('id_document_1')->store('users/id_documents', 'public');
-            $idDocument2Path = $request->file('id_document_2')->store('users/id_documents', 'public');
-        }
-
         $user = User::create([
             'first_name' => $input['first_name'],
             'middle_name' => $input['middle_name'] ?? null,
@@ -73,14 +55,13 @@ class CreateNewUser implements CreatesNewUsers
             'dob' => $input['dob'],
             'gender' => $input['gender'],
             'street' => $input['street'],
+            'region' => $input['region'] ?? null,
             'brgy' => $input['brgy'],
             'municipality' => $input['municipality'],
             'province' => $input['province'],
             'postal_code' => $input['postal_code'],
             'role_id' => $role->id,
-            'approval_status' => ApprovalStatus::Pending,
-            'id_document_1_path' => $idDocument1Path,
-            'id_document_2_path' => $idDocument2Path,
+            'approval_status' => ApprovalStatus::Approved,
             'consent_accepted' => true,
             'consent_timestamp' => now(),
         ]);

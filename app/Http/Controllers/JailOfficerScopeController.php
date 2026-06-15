@@ -55,14 +55,42 @@ class JailOfficerScopeController extends Controller
             return back()->withErrors(['cell_id' => 'Cell selection required for cell-level scope.']);
         }
 
-        // For annex-level scope, verify it belongs to branch
+        // For annex-level scope, verify it belongs to branch via dormitory -> jail -> branch
         if ($validated['annex_id']) {
-            $annexBelongsToBranch = \App\Models\Annex::where('branch_id', $user->branch_id)
-                ->where('id', $validated['annex_id'])
+            $annexBelongsToBranch = \App\Models\Annex::join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $user->branch_id)
+                ->where('annexes.id', $validated['annex_id'])
                 ->exists();
             
             if (!$annexBelongsToBranch) {
                 abort(403, 'Annex does not belong to your branch.');
+            }
+        }
+
+        // For dormitory-level scope, verify it belongs to branch
+        if ($validated['dormitory_id']) {
+            $dormitoryBelongsToBranch = \App\Models\Dormitory::join('jails', 'dormitories.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $user->branch_id)
+                ->where('dormitories.id', $validated['dormitory_id'])
+                ->exists();
+            
+            if (!$dormitoryBelongsToBranch) {
+                abort(403, 'Dormitory does not belong to your branch.');
+            }
+        }
+
+        // For cell-level scope, verify it belongs to branch
+        if ($validated['cell_id']) {
+            $cellBelongsToBranch = \App\Models\Cell::join('annexes', 'cells.annex_id', '=', 'annexes.id')
+                ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
+                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $user->branch_id)
+                ->where('cells.id', $validated['cell_id'])
+                ->exists();
+            
+            if (!$cellBelongsToBranch) {
+                abort(403, 'Cell does not belong to your branch.');
             }
         }
 

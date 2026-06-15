@@ -39,10 +39,27 @@ class LoginResponse implements LoginResponseContract
             }
         }
 
-        // For jail officers and other roles, use intended URL or default dashboard
-        $url = Redirect::intended(route('dashboard'))->getTargetUrl();
+        // Redirect to role-specific dashboard (ignore intended URL to avoid 403 from wrong role routes)
+        $url = $this->getDashboardUrl($user);
 
         return $this->redirectResponse($request, $url);
+    }
+
+    /**
+     * Get the appropriate dashboard URL based on user role.
+     */
+    private function getDashboardUrl($user): string
+    {
+        $role = $user->role?->slug;
+
+        return match ($role) {
+            'jail_warden' => route('dashboard.jail-warden'),
+            'jail_officer' => route('dashboard.jail-officer'),
+            'regional_supervisor' => route('dashboard.regional-supervisor'),
+            'national' => route('dashboard.national-office'),
+            'visitor' => route('dashboard.visitor'),
+            default => route('dashboard'),
+        };
     }
 
     /**

@@ -30,6 +30,7 @@ class User extends Authenticatable
         'dob',
         'gender',
         'street',
+        'region',
         'brgy',
         'municipality',
         'province',
@@ -131,6 +132,15 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the full name of the user.
+     */
+    public function getFullNameAttribute(): string
+    {
+        $name = trim($this->first_name . ' ' . ($this->middle_name ?? '') . ' ' . $this->last_name);
+        return trim(preg_replace('/\s+/', ' ', $name));
+    }
+
+    /**
      * Check if the user is a national office user (no branch restriction).
      */
     public function isNationalOffice(): bool
@@ -140,16 +150,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if the user is a super admin.
-     */
-    public function isSuperAdmin(): bool
-    {
-        return $this->role && 
-               ($this->role->slug === 'super-admin' || $this->role->name === 'Super Admin');
-    }
-
-    /**
-     * Check if the user is a jail warden.
+     * Check if the user is a jail warden (merged with super_admin).
      */
     public function isJailWarden(): bool
     {
@@ -171,7 +172,7 @@ class User extends Authenticatable
      */
     public function hasBranchAccess(): bool
     {
-        return $this->isSuperAdmin() || $this->isJailWarden() || $this->isJailOfficer();
+        return $this->isJailWarden() || $this->isJailOfficer();
     }
 
     /**

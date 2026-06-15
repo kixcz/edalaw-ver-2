@@ -85,7 +85,8 @@ class RegistrationOtpController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route('account-pending');
+        // Redirect to visitor dashboard (home) since visitors are auto-approved
+        return redirect()->route('home');
     }
 
     /**

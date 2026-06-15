@@ -20,20 +20,25 @@ class SampleUsersSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * Minimal seeding: One user per role, Jail Officer assigned to one annex.
      */
     public function run(): void
     {
-        $this->command->info('🌱 Seeding minimal sample data...');
+        $this->command->info('🌱 Seeding minimal RBAC data (1 user per role)...');
 
-        // Get or create roles
-        $nationalRole = Role::firstOrCreate(['slug' => 'national'], ['name' => 'National Office']);
-        $regionalRole = Role::firstOrCreate(['slug' => 'regional_supervisor'], ['name' => 'Regional Supervisor']);
-        $jailWardenRole = Role::firstOrCreate(['slug' => 'jail_warden'], ['name' => 'Jail Warden']);
-        $jailOfficerRole = Role::firstOrCreate(['slug' => 'jail_officer'], ['name' => 'Jail Officer']);
-        $visitorRole = Role::firstOrCreate(['slug' => 'visitor'], ['name' => 'Visitor']);
+        // Get roles (already seeded by RoleSeeder)
+        $nationalRole = Role::where('slug', 'national')->first();
+        $regionalRole = Role::where('slug', 'regional_supervisor')->first();
+        $jailWardenRole = Role::where('slug', 'jail_warden')->first();
+        $jailOfficerRole = Role::where('slug', 'jail_officer')->first();
+        $visitorRole = Role::where('slug', 'visitor')->first();
+
+        if (!$nationalRole || !$regionalRole || !$jailWardenRole || !$jailOfficerRole || !$visitorRole) {
+            $this->command->error('❌ Roles not found! Run: php artisan db:seed --class=RoleSeeder');
+            return;
+        }
 
         $password = Hash::make('asdf1234');
-        $phone = '09676979568';
 
         // ==========================================
         // 1. Create Region & Branch
@@ -148,7 +153,7 @@ class SampleUsersSeeder extends Seeder
         // ==========================================
         $this->command->info('👥 Creating user accounts...');
 
-        // National Office Account
+        // National Office Account (no branch assignment)
         $nationalUser = User::updateOrCreate(
             ['email' => 'national@edalaw.gov.ph'],
             [
@@ -156,7 +161,7 @@ class SampleUsersSeeder extends Seeder
                 'middle_name' => null,
                 'last_name' => 'Supervisor',
                 'email' => 'national@edalaw.gov.ph',
-                'phone_number' => $phone,
+
                 'password' => $password,
                 'dob' => '1980-01-01',
                 'gender' => 'male',
@@ -166,14 +171,14 @@ class SampleUsersSeeder extends Seeder
                 'province' => 'Metro Manila',
                 'postal_code' => '1000',
                 'role_id' => $nationalRole->id,
+                'branch_id' => null, // National office has no branch
                 'approval_status' => ApprovalStatus::Approved,
-                'status' => 'active',
                 'email_verified_at' => now(),
             ]
         );
         $this->command->info("  ✓ National: national@edalaw.gov.ph");
 
-        // Regional Supervisor Account
+        // Regional Supervisor Account (assigned to region, not branch)
         $regionalUser = User::updateOrCreate(
             ['email' => 'regional@edalaw.gov.ph'],
             [
@@ -181,7 +186,7 @@ class SampleUsersSeeder extends Seeder
                 'middle_name' => null,
                 'last_name' => 'Supervisor',
                 'email' => 'regional@edalaw.gov.ph',
-                'phone_number' => $phone,
+
                 'password' => $password,
                 'dob' => '1982-05-10',
                 'gender' => 'female',
@@ -191,15 +196,14 @@ class SampleUsersSeeder extends Seeder
                 'province' => 'Metro Manila',
                 'postal_code' => '1000',
                 'role_id' => $regionalRole->id,
-                'region_id' => $region->id,
+                'branch_id' => null, // Regional supervisor oversees region, not specific branch
                 'approval_status' => ApprovalStatus::Approved,
-                'status' => 'active',
                 'email_verified_at' => now(),
             ]
         );
         $this->command->info("  ✓ Regional: regional@edalaw.gov.ph");
 
-        // Jail Warden Account
+        // Jail Warden Account (assigned to ONE branch)
         $jailWardenUser = User::updateOrCreate(
             ['email' => 'warden@edalaw.gov.ph'],
             [
@@ -207,25 +211,25 @@ class SampleUsersSeeder extends Seeder
                 'middle_name' => null,
                 'last_name' => 'Warden',
                 'email' => 'warden@edalaw.gov.ph',
-                'phone_number' => $phone,
+                'contact_number' => '09171234567',
                 'password' => $password,
                 'dob' => '1978-08-20',
                 'gender' => 'male',
                 'street' => '789 Jail Road',
+                'region' => 'NCR',
                 'brgy' => 'Central',
                 'municipality' => 'Manila',
                 'province' => 'Metro Manila',
                 'postal_code' => '1000',
                 'role_id' => $jailWardenRole->id,
-                'branch_id' => $branch->id,
+                'branch_id' => $branch->id, // Assigned to ONE branch
                 'approval_status' => ApprovalStatus::Approved,
-                'status' => 'active',
                 'email_verified_at' => now(),
             ]
         );
-        $this->command->info("  ✓ Jail Warden: warden@edalaw.gov.ph");
+        $this->command->info("  ✓ Jail Warden: warden@edalaw.gov.ph (Branch: {$branch->name})");
 
-        // Jail Officer Account
+        // Jail Officer Account (assigned to branch)
         $jailOfficerUser = User::updateOrCreate(
             ['email' => 'officer@edalaw.gov.ph'],
             [
@@ -233,11 +237,12 @@ class SampleUsersSeeder extends Seeder
                 'middle_name' => null,
                 'last_name' => 'Officer',
                 'email' => 'officer@edalaw.gov.ph',
-                'phone_number' => $phone,
+                'contact_number' => '09181234567',
                 'password' => $password,
                 'dob' => '1990-03-15',
                 'gender' => 'female',
                 'street' => '321 Officer Lane',
+                'region' => 'NCR',
                 'brgy' => 'Zone 2',
                 'municipality' => 'Manila',
                 'province' => 'Metro Manila',
@@ -245,29 +250,28 @@ class SampleUsersSeeder extends Seeder
                 'role_id' => $jailOfficerRole->id,
                 'branch_id' => $branch->id,
                 'approval_status' => ApprovalStatus::Approved,
-                'status' => 'active',
                 'email_verified_at' => now(),
             ]
         );
         $this->command->info("  ✓ Jail Officer: officer@edalaw.gov.ph");
 
-        // Assign Jail Officer scope to the cell
-        JailOfficerScope::firstOrCreate(
+        // Assign Jail Officer scope to the ANNEX (not cell)
+        JailOfficerScope::updateOrCreate(
             [
                 'jail_officer_id' => $jailOfficerUser->id,
-                'scope_type' => 'cell',
-                'cell_id' => $cell->id,
-                'is_active' => true,
+                'scope_type' => 'annex',
+                'annex_id' => $annex->id,
             ],
             [
-                'annex_id' => null,
                 'dormitory_id' => null,
+                'cell_id' => null,
                 'assigned_by' => $jailWardenUser->id,
+                'is_active' => true,
             ]
         );
-        $this->command->info("  ✓ Assigned officer scope to Cell-101");
+        $this->command->info("  ✓ Assigned officer scope to Annex: {$annex->name}");
 
-        // Visitor Account
+        // Visitor Account (no branch assignment)
         $visitorUser = User::updateOrCreate(
             ['email' => 'visitor@edalaw.gov.ph'],
             [
@@ -275,7 +279,7 @@ class SampleUsersSeeder extends Seeder
                 'middle_name' => null,
                 'last_name' => 'Visitor',
                 'email' => 'visitor@edalaw.gov.ph',
-                'phone_number' => $phone,
+
                 'password' => $password,
                 'dob' => '1995-12-01',
                 'gender' => 'male',
@@ -285,8 +289,8 @@ class SampleUsersSeeder extends Seeder
                 'province' => 'Metro Manila',
                 'postal_code' => '1000',
                 'role_id' => $visitorRole->id,
+                'branch_id' => null, // Visitors have no branch
                 'approval_status' => ApprovalStatus::Approved,
-                'status' => 'active',
                 'email_verified_at' => now(),
             ]
         );
@@ -296,24 +300,24 @@ class SampleUsersSeeder extends Seeder
         // 5. Summary
         // ==========================================
         $this->command->info('');
-        $this->command->info('═══════════════════════════════════════════');
-        $this->command->info('✅ Seeding Complete!');
-        $this->command->info('═══════════════════════════════════════════');
+        $this->command->info('═══════════════════════════════════════════════════════');
+        $this->command->info('✅ Minimal RBAC Seeding Complete!');
+        $this->command->info('═══════════════════════════════════════════════════════');
         $this->command->info('📋 Facility Structure:');
-        $this->command->info("   Region: {$region->name}");
-        $this->command->info("   Branch: {$branch->name}");
+        $this->command->info("   Region: {$region->name} ({$region->code})");
+        $this->command->info("   Branch: {$branch->name} ({$branch->code})");
         $this->command->info("   Jail: {$jail->name}");
         $this->command->info("   Dormitory: {$dormitory->name}");
         $this->command->info("   Annex: {$annex->name}");
         $this->command->info("   Cell: {$cell->cell_number} (Capacity: {$cell->capacity})");
-        $this->command->info("   PDLs: 5 inmates assigned to Cell-101");
+        $this->command->info("   PDLs: 5 inmates in {$cell->cell_number}");
         $this->command->info('');
-        $this->command->info('👥 User Accounts (All passwords: asdf1234):');
-        $this->command->info("   National:     national@edalaw.gov.ph");
-        $this->command->info("   Regional:     regional@edalaw.gov.ph");
-        $this->command->info("   Jail Warden:  warden@edalaw.gov.ph");
-        $this->command->info("   Jail Officer: officer@edalaw.gov.ph");
-        $this->command->info("   Visitor:      visitor@edalaw.gov.ph");
-        $this->command->info('═══════════════════════════════════════════');
+        $this->command->info('👥 User Accounts (Password: asdf1234):');
+        $this->command->info("   1. National:      national@edalaw.gov.ph (No branch)");
+        $this->command->info("   2. Regional:      regional@edalaw.gov.ph (Region: {$region->code})");
+        $this->command->info("   3. Jail Warden:   warden@edalaw.gov.ph (Branch: {$branch->name})");
+        $this->command->info("   4. Jail Officer:  officer@edalaw.gov.ph (Annex: {$annex->name})");
+        $this->command->info("   5. Visitor:       visitor@edalaw.gov.ph (No branch)");
+        $this->command->info('═══════════════════════════════════════════════════════');
     }
 }

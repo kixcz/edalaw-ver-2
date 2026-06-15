@@ -78,6 +78,22 @@ class AssignedVisitSessionsController extends Controller
                   });
             });
 
+        // DEBUG: Check raw SQL
+        $sql = $visitsQuery->toSql();
+        $bindings = $visitsQuery->getBindings();
+        \Log::info('Visit Query SQL', ['sql' => $sql, 'bindings' => $bindings]);
+        
+        // DEBUG: Check visits without the inmate filter
+        $directVisits = Visit::where('jail_officer_id', $user->id)->count();
+        $cellVisits = Visit::whereHas('inmate', function ($q) use ($cellIds) {
+            $q->whereIn('cell_id', $cellIds);
+        })->count();
+        \Log::info('Visit counts', [
+            'direct_assignment' => $directVisits,
+            'via_cell_scope' => $cellVisits,
+            'cell_ids' => $cellIds,
+        ]);
+
         // Filter by status if requested
         $statusFilter = $request->input('status');
         if ($statusFilter) {
@@ -94,9 +110,17 @@ class AssignedVisitSessionsController extends Controller
             ->orderBy('scheduled_time', 'desc')
             ->paginate(20);
 
+        // DEBUG: Log query results
+        \Log::info('Jail Officer Visit Sessions Query', [
+            'user_id' => $user->id,
+            'cell_ids' => $cellIds,
+            'total_visits' => $visits->total(),
+            'current_page_visits' => $visits->count(),
+        ]);
+
         // Transform visits for frontend
         $visitsData = $visits->map(function ($visit) {
-            return [
+            $data = [
                 'id' => $visit->id,
                 'visitor_name' => trim("{$visit->user->first_name} {$visit->user->middle_name} {$visit->user->last_name}"),
                 'visitor_email' => $visit->user->email,
@@ -116,6 +140,10 @@ class AssignedVisitSessionsController extends Controller
                 'created_at' => $visit->created_at?->toIso8601String(),
                 'has_session' => $visit->visitSessions()->exists(),
             ];
+            
+            \Log::info('Visit transformed', ['visit_id' => $visit->id, 'data' => $data]);
+            
+            return $data;
         });
 
         return Inertia::render('JailOfficer/AssignedVisitSessions', [
