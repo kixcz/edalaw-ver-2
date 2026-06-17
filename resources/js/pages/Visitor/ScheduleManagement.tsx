@@ -11,7 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { RelationshipPicker } from '@/components/RelationshipPicker';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Clock, Plus, Scale, User, Video, X, CalendarClock, FileText, MoreVertical, FileOutput, VideoIcon, Search, Building, AlertCircle, CheckCircle2, Upload, Eye, ShieldCheck } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Scale, User, Video, X, CalendarClock, FileText, MoreVertical, FileOutput, VideoIcon, Search, Building, AlertCircle, CheckCircle2, Upload, Eye, ShieldCheck, Download, Image } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table';
@@ -96,6 +96,8 @@ type Visit = {
     can_appeal?: boolean;
     appeal_deadline?: string | null;
     visit_session?: VisitSessionInfo;
+    relationship_proof_path: string | null;
+    additional_proof_path: string | null;
 };
 
 type Props = {
@@ -166,6 +168,50 @@ function getVisitTypeBadge(type: string) {
         <Badge variant="secondary" className="bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20">
             Physical
         </Badge>
+    );
+}
+
+function DocumentCard({ title, path, icon }: { title: string; path: string; icon: React.ReactNode }) {
+    const fileUrl = `/storage/${path}`;
+    const fileName = path.split('/').pop() || 'Document';
+    const fileExtension = fileName.split('.').pop()?.toLowerCase();
+    const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension || '');
+
+    return (
+        <div className="border border-gray-200 rounded-lg p-4 bg-white hover:border-gray-300 transition-colors">
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="bg-blue-50 text-blue-600 rounded-lg p-2 flex-shrink-0">
+                        {icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm text-gray-900 truncate">{title}</h4>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{fileName}</p>
+                    </div>
+                </div>
+                <a
+                    href={fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 hover:underline flex-shrink-0"
+                >
+                    <Download className="h-3.5 w-3.5" />
+                    View
+                </a>
+            </div>
+            {isImage && (
+                <div className="mt-3 rounded-lg overflow-hidden border border-gray-100">
+                    <img 
+                        src={fileUrl} 
+                        alt={title}
+                        className="w-full h-32 object-cover"
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                    />
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -1171,71 +1217,139 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
 
                 {/* View Details Modal */}
                 <Dialog open={isViewDetailsModalOpen} onOpenChange={(open) => !open && setIsViewDetailsModalOpen(false)}>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                            <DialogTitle>Visit Details</DialogTitle>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Eye className="h-5 w-5 text-blue-600" />
+                                Visit Details
+                            </DialogTitle>
+                            <DialogDescription>
+                                Complete information about your visit request
+                            </DialogDescription>
                         </DialogHeader>
                         
                         {selectedVisitForDetails && (
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground">PDL Name</h4>
-                                        <p className="text-sm">
-                                            {selectedVisitForDetails.inmate_first_name}
-                                            {selectedVisitForDetails.inmate_middle_name && ` ${selectedVisitForDetails.inmate_middle_name}`}
-                                            {selectedVisitForDetails.inmate_last_name && ` ${selectedVisitForDetails.inmate_last_name}`}
-                                        </p>
+                            <div className="space-y-5">
+                                {/* Visit Information Section */}
+                                <div className="bg-gray-50 rounded-lg p-5 space-y-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <CalendarClock className="h-4 w-4 text-gray-700" />
+                                        <h3 className="font-semibold text-sm text-gray-900 uppercase tracking-wide">Visit Information</h3>
                                     </div>
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground">Visit Type</h4>
-                                        <p className="text-sm capitalize">{selectedVisitForDetails.visit_type}</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1.5">PDL Name</span>
+                                            <div className="font-medium text-sm">
+                                                {selectedVisitForDetails.inmate_first_name}
+                                                {selectedVisitForDetails.inmate_middle_name && ` ${selectedVisitForDetails.inmate_middle_name}`}
+                                                {selectedVisitForDetails.inmate_last_name && ` ${selectedVisitForDetails.inmate_last_name}`}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1.5">Visit Type</span>
+                                            <div className="mt-0.5">
+                                                {getVisitTypeBadge(selectedVisitForDetails.visit_type)}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1.5">Scheduled Date</span>
+                                            <div className="font-medium text-sm">
+                                                {new Date(selectedVisitForDetails.scheduled_date).toLocaleDateString('en-US', { 
+                                                    weekday: 'long',
+                                                    month: 'long', 
+                                                    day: 'numeric', 
+                                                    year: 'numeric' 
+                                                })}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1.5">Scheduled Time</span>
+                                            <div className="font-medium text-sm flex items-center gap-1.5">
+                                                <Clock className="h-3.5 w-3.5 text-gray-600" />
+                                                {selectedVisitForDetails.scheduled_time || 'Not specified'}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1.5">Status</span>
+                                            <div className="mt-0.5">
+                                                {getStatusBadge(selectedVisitForDetails.status)}
+                                            </div>
+                                        </div>
+                                        {selectedVisitForDetails.jail_officer_name && (
+                                            <div>
+                                                <span className="text-muted-foreground text-xs block mb-1.5">Assigned Jail Officer</span>
+                                                <div className="font-medium text-sm flex items-center gap-1.5">
+                                                    <ShieldCheck className="h-3.5 w-3.5 text-gray-600" />
+                                                    {selectedVisitForDetails.jail_officer_name}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
+                                    {selectedVisitForDetails.notes && (
+                                        <div className="pt-3 border-t border-gray-200">
+                                            <span className="text-muted-foreground text-xs block mb-1.5">Your Notes</span>
+                                            <div className="text-sm bg-white border border-gray-200 rounded-lg p-3 mt-1.5 leading-relaxed">
+                                                {selectedVisitForDetails.notes}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground">Scheduled Date</h4>
-                                        <p className="text-sm">{selectedVisitForDetails.scheduled_date}</p>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground">Scheduled Time</h4>
-                                        <p className="text-sm">{selectedVisitForDetails.scheduled_time || 'Not specified'}</p>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h4 className="text-sm font-semibold text-muted-foreground">Status</h4>
-                                    <div className="mt-1">
-                                        {getStatusBadge(selectedVisitForDetails.status)}
-                                    </div>
-                                </div>
-
-                                {selectedVisitForDetails.jail_officer_name && (
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground">Assigned Jail Officer</h4>
-                                        <p className="text-sm">{selectedVisitForDetails.jail_officer_name}</p>
-                                    </div>
-                                )}
-
-                                {selectedVisitForDetails.notes && (
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground">Notes</h4>
-                                        <p className="text-sm">{selectedVisitForDetails.notes}</p>
-                                    </div>
-                                )}
-
+                                {/* Status-Specific Information */}
                                 {selectedVisitForDetails.rejection_reason && (
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground">Rejection Reason</h4>
-                                        <p className="text-sm text-destructive">{selectedVisitForDetails.rejection_reason}</p>
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                        <div className="flex items-start gap-3">
+                                            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-sm text-red-900 mb-1.5 flex items-center gap-1.5">
+                                                    <X className="h-4 w-4" />
+                                                    Rejection Reason
+                                                </h4>
+                                                <p className="text-sm text-red-800 leading-relaxed">{selectedVisitForDetails.rejection_reason}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
-                                <div className="pt-4 border-t">
-                                    <h4 className="text-sm font-semibold text-muted-foreground">Created At</h4>
-                                    <p className="text-sm text-muted-foreground">
-                                        {new Date(selectedVisitForDetails.created_at).toLocaleString()}
+                                {/* Documents Section */}
+                                {(selectedVisitForDetails.relationship_proof_path || selectedVisitForDetails.additional_proof_path) && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="h-4 w-4 text-gray-700" />
+                                            <h3 className="font-semibold text-sm text-gray-900 uppercase tracking-wide">Submitted Documents</h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {selectedVisitForDetails.relationship_proof_path && (
+                                                <DocumentCard
+                                                    title="Relationship Proof"
+                                                    path={selectedVisitForDetails.relationship_proof_path}
+                                                    icon={<Image className="h-4 w-4" />}
+                                                />
+                                            )}
+                                            {selectedVisitForDetails.additional_proof_path && (
+                                                <DocumentCard
+                                                    title="Additional Proof"
+                                                    path={selectedVisitForDetails.additional_proof_path}
+                                                    icon={<FileText className="h-4 w-4" />}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Metadata */}
+                                <div className="pt-4 border-t border-gray-200">
+                                    <span className="text-muted-foreground text-xs block mb-1.5">Request Submitted</span>
+                                    <p className="text-sm text-gray-700 flex items-center gap-1.5">
+                                        <Clock className="h-3.5 w-3.5 text-gray-600" />
+                                        {new Date(selectedVisitForDetails.created_at).toLocaleString('en-US', {
+                                            month: 'long',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true
+                                        })}
                                     </p>
                                 </div>
                             </div>
@@ -1260,12 +1374,19 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                         </DialogHeader>
                         
                         {/* Privacy Notice */}
-                        <div className="bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-4">
-                            <div className="flex items-start gap-3">
-                                <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                        <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                            <ShieldCheck style={{ width: '14px', height: '14px', color: '#6B7280', flexShrink: 0, marginTop: '1px' }} />
+                            <div>
+                                <div style={{ fontSize: '9px', fontWeight: 700, color: '#374151', marginBottom: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                                    Data Privacy Notice
+                                </div>
+                                <div style={{ fontSize: '9px', lineHeight: '1.5', color: '#4B5563' }}>
                                     The information provided in this visitation request will be collected and processed solely for identity verification, visitation scheduling, approval processing, security monitoring, record management, and other legitimate operational purposes. All information shall be handled in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.
-                                </p>
+                                    <br />
+                                    <span style={{ fontStyle: 'italic' }}>
+                                        (Ang impormasyon nga gihatag niini nga hangyo sa pagbisita mocollect ug giproseso lamang alang sa pag-verify sa pagkatawo, pag-iskedyul sa pagbisita, pagproseso sa apruba, pag-monitor sa seguridad, pagdumala sa rekord, ug uban pa nga lehitimo nga katuyoan sa operasyon. Ang tanan nga impormasyon gipangdumala sumala sa Data Privacy Act of 2012 ug mga nahisgutan nga privacy ug security policies.)
+                                    </span>
+                                </div>
                             </div>
                         </div>
 

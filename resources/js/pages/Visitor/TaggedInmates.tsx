@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Users, Calendar, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { User, Users, Calendar, FileText, CheckCircle, AlertCircle, X, ShieldCheck, Video, Building, Clock } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -18,6 +18,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { TimeSlotPicker } from '@/components/TimeSlotPicker';
+import axios from 'axios';
 
 interface TaggedInmate {
     inmate_id: number;
@@ -29,6 +35,9 @@ interface TaggedInmate {
     additional_proof_file_id: number | null;
     has_relationship_proof: boolean;
     has_additional_proof: boolean;
+    cell_id: number;
+    cell_number: string;
+    available_days: Record<number, { virtual: boolean; physical: boolean }>;
 }
 
 interface Props {
@@ -41,12 +50,75 @@ interface Props {
 export default function TaggedInmates({ taggedInmates, stats }: Props) {
     const [selectedInmate, setSelectedInmate] = useState<TaggedInmate | null>(null);
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<string>('');
     const [scheduleData, setScheduleData] = useState({
         scheduled_date: '',
         scheduled_time: '',
         visit_type: 'virtual',
         notes: '',
     });
+
+    // Schedule management states
+    const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+    const [slotCapacities, setSlotCapacities] = useState<Record<string, { current: number; max: number; isFull: boolean }>>({});
+    const [loadingSlots, setLoadingSlots] = useState(false);
+    const [dayUnavailable, setDayUnavailable] = useState(false);
+    const [durationMinutes, setDurationMinutes] = useState(20);
+    const [intervalMinutes, setIntervalMinutes] = useState(5);
+    const [startTime, setStartTime] = useState('07:00');
+    const [endTime, setEndTime] = useState('18:00');
+
+    // Fetch booked slots and capacities when date changes
+    useEffect(() => {
+        if (!selectedDate || !selectedInmate || !scheduleData.visit_type) {
+            setBookedSlots([]);
+            setSlotCapacities({});
+            return;
+        }
+
+        const fetchSlotData = async () => {
+            setLoadingSlots(true);
+            setDayUnavailable(false);
+            try {
+                const response = await fetch(
+                    `/visitor/schedule/booked-slots?date=${selectedDate}&visit_type=${scheduleData.visit_type}&inmate_id=${selectedInmate.inmate_id}`
+                );
+                const data = await response.json();
+                
+                if (data.slotCapacities) {
+                    setSlotCapacities(data.slotCapacities);
+                }
+                if (data.isDayUnavailable === true) {
+                    setDayUnavailable(true);
+                }
+                if (typeof data.durationMinutes === 'number') {
+                    setDurationMinutes(data.durationMinutes);
+                }
+                if (typeof data.intervalMinutes === 'number') {
+                    setIntervalMinutes(data.intervalMinutes);
+                }
+                if (data.startTime) {
+                    setStartTime(data.startTime);
+                }
+                if (data.endTime) {
+                    setEndTime(data.endTime);
+                }
+                
+                // Combine all booked slots
+                const allBooked = [
+                    ...(data.userBookedSlots || []),
+                    ...(data.inmateBookedSlots || []),
+                ];
+                setBookedSlots(allBooked);
+            } catch (error) {
+                console.error('Error fetching slot data:', error);
+            } finally {
+                setLoadingSlots(false);
+            }
+        };
+
+        fetchSlotData();
+    }, [selectedDate, selectedInmate, scheduleData.visit_type]);
 
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard/visitor' },
@@ -61,6 +133,10 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
             visit_type: 'virtual',
             notes: '',
         });
+        setSelectedDate('');
+        setBookedSlots([]);
+        setSlotCapacities({});
+        setDayUnavailable(false);
         setIsScheduleModalOpen(true);
     };
 
@@ -80,11 +156,13 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
         if (!selectedInmate) return;
 
         router.post('/visitor/schedule', {
-            ...scheduleData,
-            inmate_id: selectedInmate.inmate_id,
+            scheduled_date: scheduleData.scheduled_date,
+            scheduled_time: scheduleData.scheduled_time,
+            visit_type: scheduleData.visit_type,
             inmate_first_name: selectedInmate.inmate_first_name,
             inmate_middle_name: selectedInmate.inmate_middle_name,
             inmate_last_name: selectedInmate.inmate_last_name,
+            notes: scheduleData.notes,
             relationship_proof_file_id: selectedInmate.relationship_proof_file_id,
             additional_proof_file_id: selectedInmate.additional_proof_file_id,
             use_existing_documents: true,
@@ -94,7 +172,8 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
                 handleCloseScheduleModal();
             },
             onError: (errors) => {
-                toast.error('Failed to schedule visit. Please try again.');
+                const firstError = Object.values(errors)[0] as string;
+                toast.error(firstError || 'Failed to schedule visit. Please try again.');
             },
         });
     };
@@ -265,56 +344,202 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
 
             {/* Schedule Visit Modal */}
             <Dialog open={isScheduleModalOpen} onOpenChange={setIsScheduleModalOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Schedule Visit for {selectedInmate?.inmate_full_name}</DialogTitle>
+                        <DialogTitle>Apply for Visit Schedule</DialogTitle>
                         <DialogDescription>
-                            Inmate details and documents are already on file. Just select your preferred schedule.
+                            PDL details and documents are already on file. Just select your preferred schedule.
                         </DialogDescription>
                     </DialogHeader>
                     
-                    <form onSubmit={handleScheduleSubmit}>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="scheduled_date">Date *</Label>
-                                    <Input
-                                        id="scheduled_date"
-                                        type="date"
-                                        value={scheduleData.scheduled_date}
-                                        onChange={(e) => setScheduleData({ ...scheduleData, scheduled_date: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="scheduled_time">Time *</Label>
-                                    <Input
-                                        id="scheduled_time"
-                                        type="time"
-                                        value={scheduleData.scheduled_time}
-                                        onChange={(e) => setScheduleData({ ...scheduleData, scheduled_time: e.target.value })}
-                                        required
-                                    />
-                                </div>
+                    {/* Privacy Notice */}
+                    <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                        <ShieldCheck style={{ width: '14px', height: '14px', color: '#6B7280', flexShrink: 0, marginTop: '1px' }} />
+                        <div>
+                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#374151', marginBottom: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                                Data Privacy Notice
                             </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="visit_type">Visit Type *</Label>
+                            <div style={{ fontSize: '9px', lineHeight: '1.5', color: '#4B5563' }}>
+                                The information provided in this visitation request will be collected and processed solely for identity verification, visitation scheduling, approval processing, security monitoring, record management, and other legitimate operational purposes. All information shall be handled in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.
+                                <br />
+                                <span style={{ fontStyle: 'italic' }}>
+                                    (Ang impormasyon nga gihatag niini nga hangyo sa pagbisita mocollect ug giproseso lamang alang sa pag-verify sa pagkatawo, pag-iskedyul sa pagbisita, pagproseso sa apruba, pag-monitor sa seguridad, pagdumala sa rekord, ug uban pa nga lehitimo nga katuyoan sa operasyon. Ang tanan nga impormasyon gipangdumala sumala sa Data Privacy Act of 2012 ug mga nahisgutan nga privacy ug security policies.)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleScheduleSubmit}>
+                        <div className="flex flex-col gap-5 py-4">
+                            {/* Visit Type */}
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="visit_type">
+                                    Visit Type <span className="text-destructive">*</span>
+                                </Label>
                                 <Select
                                     value={scheduleData.visit_type}
-                                    onValueChange={(value) => setScheduleData({ ...scheduleData, visit_type: value })}
+                                    onValueChange={(value) => {
+                                        setScheduleData({ ...scheduleData, visit_type: value, scheduled_time: '' });
+                                    }}
                                 >
-                                    <SelectTrigger>
-                                        <SelectValue />
+                                    <SelectTrigger id="visit_type">
+                                        <SelectValue placeholder="Select visit type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="virtual">Virtual Visit</SelectItem>
-                                        <SelectItem value="physical">Physical Visit</SelectItem>
+                                        <SelectItem value="virtual">Virtual ({durationMinutes}-min)</SelectItem>
+                                        <SelectItem value="physical">Physical ({durationMinutes}-min)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                            
-                            <div className="space-y-2">
+
+                            {/* PDL Information */}
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-semibold flex items-center gap-2">
+                                    <User className="size-4" />
+                                    PDL Information
+                                </h3>
+
+                                <div className="rounded-lg border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                            <CheckCircle className="h-5 w-5 text-green-600" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-green-900">{selectedInmate?.inmate_full_name}</p>
+                                            <p className="text-xs text-green-700 mt-1">
+                                                Cell: {selectedInmate?.cell_number} • Documents on file from previous approved visit
+                                            </p>
+                                            {/* Available Days */}
+                                            {selectedInmate && (
+                                                <div className="mt-2">
+                                                    <p className="text-xs text-green-700 mb-1">Available days for {scheduleData.visit_type} visits:</p>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {Object.entries(selectedInmate.available_days)
+                                                            .filter(([day, availability]) => {
+                                                                return scheduleData.visit_type === 'virtual' 
+                                                                    ? availability.virtual 
+                                                                    : availability.physical;
+                                                            })
+                                                            .map(([day]) => {
+                                                                const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                                                return (
+                                                                    <Badge 
+                                                                        key={day} 
+                                                                        variant="outline" 
+                                                                        className="bg-white text-green-700 border-green-300 text-xs"
+                                                                    >
+                                                                        {dayNames[parseInt(day)]}
+                                                                    </Badge>
+                                                                );
+                                                            })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Scheduled Date - Calendar Picker */}
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-semibold flex items-center gap-2">
+                                    <CalendarIcon className="size-4" />
+                                    Select Date <span className="text-destructive">*</span>
+                                </h3>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className={cn(
+                                                'w-full justify-start text-left font-normal h-12',
+                                                !scheduleData.scheduled_date && 'text-muted-foreground'
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-5 w-5" />
+                                            {scheduleData.scheduled_date ? (
+                                                <span className="font-medium">{format(new Date(scheduleData.scheduled_date), 'EEEE, MMMM d, yyyy')}</span>
+                                            ) : (
+                                                <span>Select a date from the calendar</span>
+                                            )}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-4" align="start">
+                                        <div className="space-y-3">
+                                            <input
+                                                type="date"
+                                                value={scheduleData.scheduled_date}
+                                                min={new Date().toISOString().split('T')[0]}
+                                                onChange={(e) => {
+                                                    setScheduleData({ ...scheduleData, scheduled_date: e.target.value, scheduled_time: '' });
+                                                    setSelectedDate(e.target.value);
+                                                }}
+                                                className="w-full p-2 border rounded"
+                                                required
+                                            />
+                                            {selectedInmate && scheduleData.visit_type && (
+                                                <div className="text-xs text-muted-foreground">
+                                                    <p className="font-medium mb-1">Allowed days:</p>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {Object.entries(selectedInmate.available_days)
+                                                            .filter(([day, availability]) => {
+                                                                return scheduleData.visit_type === 'virtual' 
+                                                                    ? availability.virtual 
+                                                                    : availability.physical;
+                                                            })
+                                                            .map(([day]) => {
+                                                                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                                                return (
+                                                                    <Badge key={day} variant="outline" className="text-xs">
+                                                                        {dayNames[parseInt(day)]}
+                                                                    </Badge>
+                                                                );
+                                                            })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                                {dayUnavailable && (
+                                    <div className="rounded-md bg-amber-500/10 p-3 text-sm text-amber-800 flex items-start gap-2">
+                                        <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                                        <span>This date is currently unavailable for scheduling. Please select another date.</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Time Slot Picker */}
+                            {scheduleData.scheduled_date && selectedInmate && (
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-semibold flex items-center gap-2">
+                                        <Clock className="size-4" />
+                                        Select Time Slot <span className="text-destructive">*</span>
+                                    </h3>
+                                    {loadingSlots ? (
+                                        <div className="flex items-center justify-center py-8">
+                                            <div className="text-sm text-muted-foreground">Loading available time slots...</div>
+                                        </div>
+                                    ) : (
+                                        <TimeSlotPicker
+                                            selectedTime={scheduleData.scheduled_time}
+                                            bookedSlots={bookedSlots}
+                                            slotCapacities={slotCapacities}
+                                            visitType={scheduleData.visit_type as 'physical' | 'virtual'}
+                                            durationMinutes={durationMinutes}
+                                            intervalMinutes={intervalMinutes}
+                                            selectedDate={scheduleData.scheduled_date}
+                                            startTime={startTime}
+                                            endTime={endTime}
+                                            onTimeSelect={(time) => {
+                                                setScheduleData({ ...scheduleData, scheduled_time: time });
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Notes */}
+                            <div className="flex flex-col gap-2">
                                 <Label htmlFor="notes">Notes (Optional)</Label>
                                 <Textarea
                                     id="notes"
@@ -324,10 +549,14 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
                                     rows={3}
                                 />
                             </div>
-                            
-                            <div className="rounded-lg border bg-muted p-4">
-                                <h4 className="text-sm font-semibold mb-2">Documents On File:</h4>
-                                <div className="space-y-1 text-sm">
+
+                            {/* Documents On File */}
+                            <div className="rounded-lg border bg-muted/50 p-4">
+                                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                    <FileText className="h-4 w-4" />
+                                    Documents On File:
+                                </h4>
+                                <div className="space-y-2 text-sm">
                                     <div className="flex items-center gap-2">
                                         <FileText className="h-4 w-4" />
                                         <span>Relationship Proof: </span>
@@ -354,11 +583,14 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
                             </div>
                         </div>
                         
-                        <DialogFooter>
+                        <DialogFooter className="border-t pt-4">
                             <Button type="button" variant="outline" onClick={handleCloseScheduleModal}>
                                 Cancel
                             </Button>
-                            <Button type="submit">
+                            <Button 
+                                type="submit"
+                                disabled={!scheduleData.scheduled_date || !scheduleData.scheduled_time}
+                            >
                                 <Calendar className="h-4 w-4 mr-2" />
                                 Schedule Visit
                             </Button>

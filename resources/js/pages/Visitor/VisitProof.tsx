@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { Printer, ShieldCheck, CalendarDays, Clock, User, Mail, Lock, FileDown } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -367,7 +367,7 @@ export default function VisitProof({ visit }: Props) {
 
                             {visit.qr_code_data ? (
                                 <div className="qr-container" style={{ width: '100%' }}>
-                                    <QRCodeSVG
+                                    <QRCodeCanvas
                                         value={visit.qr_code_data}
                                         size={150}
                                         level="H"

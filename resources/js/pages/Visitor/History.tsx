@@ -209,12 +209,19 @@ export default function History({ audit_logs, stats }: Props) {
                 </div>
 
                 {/* Privacy Notice */}
-                <div className="bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-4">
-                    <div className="flex items-start gap-3">
-                        <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <ShieldCheck style={{ width: '14px', height: '14px', color: '#6B7280', flexShrink: 0, marginTop: '1px' }} />
+                    <div>
+                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#374151', marginBottom: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                            Data Privacy Notice
+                        </div>
+                        <div style={{ fontSize: '9px', lineHeight: '1.5', color: '#4B5563' }}>
                             The records displayed in this module are provided to promote transparency and allow you to review your visitation activities, requests, consents, notifications, and interactions within the eDalaw system. These records are visible only to you and authorized personnel in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and applicable privacy policies.
-                        </p>
+                            <br />
+                            <span style={{ fontStyle: 'italic' }}>
+                                (Ang mga rekord nga gipakita niini nga module gitanyag aron sa pagpalig-on sa transparency ug tugutan ka nga masusi ang imong mga kalabutan sa pagbisita, mga hangyo, mga pagtugot, mga pahibalo, ug mga interaksyon sa sulod sa eDalaw system. Kini nga mga rekord makita lamang nimo ug sa mga awtorisadong personel sumala sa Republic Act No. 10173 (Data Privacy Act of 2012) ug mga nahisgutan nga privacy policies.)
+                            </span>
+                        </div>
                     </div>
                 </div>
 

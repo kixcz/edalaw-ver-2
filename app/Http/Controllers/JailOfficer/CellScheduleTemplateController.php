@@ -18,47 +18,12 @@ class CellScheduleTemplateController extends Controller
     {
         $user = $request->user();
         
-        // Get JO's active scope IDs
-        $scopeIds = $user->jailOfficerScopes()->where('is_active', true);
-        
-        // Build list of cell IDs that match JO's scopes
-        $cellIds = [];
-        
-        // Get cells from direct cell assignments
-        $cellScopeIds = $scopeIds->clone()
-            ->where('scope_type', 'cell')
-            ->pluck('cell_id');
-        $cellIds = array_merge($cellIds, $cellScopeIds->toArray());
-        
-        // Get cells from dormitory assignments
-        $dormScopeIds = $scopeIds->clone()
-            ->where('scope_type', 'dormitory')
-            ->pluck('dormitory_id');
-        if ($dormScopeIds->isNotEmpty()) {
-            $cellsFromDorms = Cell::whereIn('dormitory_id', $dormScopeIds)->pluck('id');
-            $cellIds = array_merge($cellIds, $cellsFromDorms->toArray());
-        }
-        
-        // Get cells from annex assignments
-        $annexScopeIds = $scopeIds->clone()
-            ->where('scope_type', 'annex')
-            ->pluck('annex_id');
-        if ($annexScopeIds->isNotEmpty()) {
-            $cellsFromAnnexes = Cell::where(function($q) use ($annexScopeIds) {
-                    $q->whereIn('annex_id', $annexScopeIds)
-                      ->orWhereHas('dormitory', function($dq) use ($annexScopeIds) {
-                          $dq->whereIn('annex_id', $annexScopeIds);
-                      });
-                })->pluck('id');
-            $cellIds = array_merge($cellIds, $cellsFromAnnexes->toArray());
-        }
-        
-        // Remove duplicates
-        $cellIds = array_unique($cellIds);
+        // Get JO's active scope IDs - use scope resolver service
+        $authorizedCellIds = $user->getAuthorizedCellIds();
         
         // Query cells based on scope
-        $cellsQuery = Cell::with(['scheduleTemplates', 'dormitory', 'annex'])
-            ->whereIn('id', $cellIds);
+        $cellsQuery = Cell::with(['scheduleTemplates', 'dormitory', 'building'])
+            ->whereIn('id', $authorizedCellIds);
         
         // Apply additional filters if provided
         if ($request->filled('cell')) {

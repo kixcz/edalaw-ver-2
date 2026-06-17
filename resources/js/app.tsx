@@ -5,6 +5,9 @@ import { Toaster } from 'sonner';
 import '../css/app.css';
 import { initializeTheme } from './hooks/use-appearance';
 
+// Initialize Laravel Echo for real-time notifications
+import './echo';
+
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({

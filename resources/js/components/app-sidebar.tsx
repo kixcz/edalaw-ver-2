@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { AlertTriangle, BarChart3, Bell, Calendar, CalendarCheck, FileText, Folder, LayoutGrid, Link2, MessageSquare, Phone, Scale, Shield, Users, Heart, Monitor, Video, Camera, Flag, Settings, Sliders, Film, MessageCircle, Building, Clock, Archive, Building2, Columns4, BrickWall, Fence, Warehouse, PersonStanding } from 'lucide-react';
+import { AlertTriangle, BarChart3, Bell, Calendar, CalendarCheck, FileText, Folder, LayoutGrid, Link2, MessageSquare, Phone, Scale, Shield, Users, Heart, Monitor, Video, Camera, Flag, Settings, Sliders, Film, MessageCircle, Building, Clock, Archive, Building2, Columns4, BrickWall, Fence, Warehouse, PersonStanding, Key } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
 import { NavMain } from '@/components/nav-main';
@@ -398,7 +398,7 @@ export function AppSidebar() {
         ];
     }
 
-    // Jail Officer navigation (streamlined - only essential modules + scope-based facility access)
+    // Jail Officer navigation (streamlined - scope-based facility categories)
     let jailOfficerNavGroups: Array<{ label: string; items: NavItem[] }> | undefined;
     if (userRole === 'jail_officer') {
         const unreadJailCount = page.props.unreadNotificationCount ?? 0;
@@ -407,85 +407,58 @@ export function AppSidebar() {
         const userScopes: any[] = Array.isArray(page.props.auth?.user?.assigned_scopes) ? page.props.auth.user.assigned_scopes : [];
         const activeScopes = userScopes.filter((scope) => scope.is_active);
         
-        // Determine which facility modules to show based on scope
+        // Determine scope levels present (not individual facilities)
+        const hasCellScope = activeScopes.some((s) => s.scope_type === 'cell');
+        const hasDormitoryScope = activeScopes.some((s) => s.scope_type === 'dormitory');
+        const hasBuildingScope = activeScopes.some((s) => s.scope_type === 'building' || s.scope_type === 'annex');
+        
+        // Get highest scope level for filtering
+        const highestScope = hasBuildingScope ? 'building' : hasDormitoryScope ? 'dormitory' : hasCellScope ? 'cell' : null;
+        
+        // Build facility management items based on scope levels
         const facilityItems: NavItem[] = [];
         
-        // Add scope-specific modules based on hierarchy
-        activeScopes.forEach((scope: any) => {
-            if (scope.scope_type === 'cell') {
-                // Cell-level assignment: Show only that specific cell and its PDLs
-                facilityItems.push(
-                    {
-                        title: `Cell ${scope.cell?.cell_number || 'My Cell'}`,
-                        href: `/jail-officer/cells-hierarchical?cell=${scope.cell_id}`,
-                        icon: Fence,
-                    },
-                    {
-                        title: 'PDLs in Cell',
-                        href: `/jail-officer/inmates-hierarchical?cell=${scope.cell_id}`,
-                        icon: PersonStanding,
-                    },
-                    {
-                        title: 'Cell Schedule',
-                        href: `/jail-officer/cell-schedules?cell=${scope.cell_id}`,
-                        icon: Clock,
-                    }
-                );
-            } else if (scope.scope_type === 'dormitory') {
-                // Dormitory-level assignment: Show dorm overview, all cells in dorm, and all PDLs
-                facilityItems.push(
-                    {
-                        title: scope.dormitory?.name || 'My Dormitory',
-                        href: `/jail-officer/dormitories`,
-                        icon: Building,
-                    },
-                    {
-                        title: 'Cells in Dormitory',
-                        href: `/jail-officer/cells-hierarchical?dormitory=${scope.dormitory_id}`,
-                        icon: Columns4,
-                    },
-                    {
-                        title: 'PDLs in Dormitory',
-                        href: `/jail-officer/inmates-hierarchical?dormitory=${scope.dormitory_id}`,
-                        icon: PersonStanding,
-                    },
-                    {
-                        title: 'Cell Schedules',
-                        href: `/jail-officer/cell-schedules?dormitory=${scope.dormitory_id}`,
-                        icon: Clock,
-                    }
-                );
-            } else if (scope.scope_type === 'annex') {
-                // Annex-level assignment: Show annex overview, all dorms, all cells, all PDLs
-                facilityItems.push(
-                    {
-                        title: scope.annex?.name || 'My Annex',
-                        href: `/jail-officer/annexes`,
-                        icon: Warehouse,
-                    },
-                    {
-                        title: 'Dormitories in Annex',
-                        href: `/jail-officer/dormitories`,
-                        icon: Building,
-                    },
-                    {
-                        title: 'Cells in Annex',
-                        href: `/jail-officer/cells-hierarchical?annex=${scope.annex_id}`,
-                        icon: Fence,
-                    },
-                    {
-                        title: 'PDLs in Annex',
-                        href: `/jail-officer/inmates-hierarchical?annex=${scope.annex_id}`,
-                        icon: PersonStanding,
-                    },
-                    {
-                        title: 'Cell Schedules',
-                        href: `/jail-officer/cell-schedules?annex=${scope.annex_id}`,
-                        icon: Clock,
-                    }
-                );
+        // Add category-based menus (not individual facilities)
+        if (hasBuildingScope || hasDormitoryScope || hasCellScope) {
+            // Buildings/Annexes - show if officer has building-level access
+            if (hasBuildingScope) {
+                facilityItems.push({
+                    title: 'Buildings',
+                    href: '/jail-officer/annexes',
+                    icon: Warehouse,
+                });
             }
-        });
+            
+            // Dormitories - show if officer has dormitory or building level access
+            if (hasDormitoryScope || hasBuildingScope) {
+                facilityItems.push({
+                    title: 'Dormitories',
+                    href: '/jail-officer/dormitories',
+                    icon: Building,
+                });
+            }
+            
+            // Cells - always show if officer has any scope
+            facilityItems.push({
+                title: 'Cells',
+                href: '/jail-officer/cells-hierarchical',
+                icon: Columns4,
+            });
+            
+            // PDLs Management - always show if officer has any scope
+            facilityItems.push({
+                title: 'PDL Management',
+                href: '/jail-officer/inmates-hierarchical',
+                icon: PersonStanding,
+            });
+            
+            // Cell Schedules - always show if officer has any scope
+            facilityItems.push({
+                title: 'Cell Schedules',
+                href: '/jail-officer/cell-schedules',
+                icon: Clock,
+            });
+        }
         
         jailOfficerNavGroups = [
             {
@@ -531,6 +504,11 @@ export function AppSidebar() {
                         title: 'Chat Archive',
                         href: '/jail-officer/chat-recordings',
                         icon: Archive,
+                    },
+                    {
+                        title: 'Inmate Tunnels',
+                        href: '/jail-officer/inmate-tunnels',
+                        icon: Key,
                     },
                     {
                         title: 'Audit Logs',

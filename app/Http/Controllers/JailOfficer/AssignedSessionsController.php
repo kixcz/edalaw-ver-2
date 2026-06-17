@@ -31,28 +31,13 @@ class AssignedSessionsController extends Controller
         $query = VisitSession::with(['visit.user', 'eburol.user', 'visit.inmate.cell', 'eburol', 'visit']);
         
         if (! $isSuperAdmin) {
-            // Filter sessions based on jail officer's assigned scope
-            $query->whereHas('visit', function ($q) use ($user) {
-                // Get all active scopes for this jail officer
-                $scopeIds = $user->jailOfficerScopes()->where('is_active', true);
-                
+            // Filter sessions based on jail officer's assigned scope - use scope resolver
+            $authorizedCellIds = $user->getAuthorizedCellIds();
+            
+            $query->whereHas('visit', function ($q) use ($user, $authorizedCellIds) {
                 // Match visits where the inmate's cell falls within the JO's scope
-                $q->whereHas('inmate', function ($inmateQuery) use ($scopeIds) {
-                    // Check if inmate's cell matches any of the JO's assigned scopes
-                    $inmateQuery->where(function ($query) use ($scopeIds) {
-                        // Direct cell assignment
-                        $query->whereHas('cell', function ($cellQuery) use ($scopeIds) {
-                            $cellQuery->whereIn('id', $scopeIds->clone()->where('scope_type', 'cell')->pluck('cell_id'));
-                        })
-                        // Or inmate's annex matches JO's annex assignment
-                        ->orWhereHas('annex', function ($annexQuery) use ($scopeIds) {
-                            $annexQuery->whereIn('id', $scopeIds->clone()->where('scope_type', 'annex')->pluck('annex_id'));
-                        })
-                        // Or inmate's dormitory matches JO's dormitory assignment
-                        ->orWhereHas('dormitory', function ($dormQuery) use ($scopeIds) {
-                            $dormQuery->whereIn('id', $scopeIds->clone()->where('scope_type', 'dormitory')->pluck('dormitory_id'));
-                        });
-                    });
+                $q->whereHas('inmate', function ($inmateQuery) use ($authorizedCellIds) {
+                    $inmateQuery->whereIn('cell_id', $authorizedCellIds);
                 })
                 // Fallback: Also include visits explicitly assigned to this JO
                 ->orWhere('jail_officer_id', $user->id);

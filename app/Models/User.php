@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\ApprovalStatus;
+use App\Services\JailOfficerScopeResolver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -181,5 +182,61 @@ class User extends Authenticatable
     public function getBranchIdForScope(): ?int
     {
         return $this->hasBranchAccess() ? $this->branch_id : null;
+    }
+
+    /**
+     * Get active scope resolver instance.
+     */
+    public function scopeResolver(): JailOfficerScopeResolver
+    {
+        return new JailOfficerScopeResolver();
+    }
+
+    /**
+     * Get all authorized cell IDs (convenience method).
+     */
+    public function getAuthorizedCellIds(): array
+    {
+        return $this->scopeResolver()->getAuthorizedCellIds($this);
+    }
+
+    /**
+     * Get all authorized building IDs.
+     */
+    public function getAuthorizedBuildingIds(): array
+    {
+        return $this->scopeResolver()->getAuthorizedBuildingIds($this);
+    }
+
+    /**
+     * Alias for getAuthorizedBuildingIds() - uses "annex" terminology.
+     */
+    public function getAuthorizedAnnexIds(): array
+    {
+        return $this->getAuthorizedBuildingIds();
+    }
+
+    /**
+     * Get all authorized dormitory IDs.
+     */
+    public function getAuthorizedDormitoryIds(): array
+    {
+        return $this->scopeResolver()->getAuthorizedDormitoryIds($this);
+    }
+
+    /**
+     * Get all authorized inmate IDs.
+     */
+    public function getAuthorizedInmateIds(): array
+    {
+        return $this->scopeResolver()->getAuthorizedInmateIds($this);
+    }
+
+    /**
+     * Check if JO has scope assigned.
+     */
+    public function hasFacilityScope(): bool
+    {
+        return $this->scopeResolver()->hasActiveScope($this);
     }
 }

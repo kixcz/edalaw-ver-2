@@ -47,6 +47,16 @@ class Cell extends Model
     }
 
     /**
+     * Alias for annex() - uses "building" terminology.
+     *
+     * @return BelongsTo<Annex>
+     */
+    public function building(): BelongsTo
+    {
+        return $this->annex();
+    }
+
+    /**
      * Get the dormitory that this cell belongs to.
      *
      * @return BelongsTo<Dormitory>

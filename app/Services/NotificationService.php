@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\JailOfficerNotification;
 use App\Models\Appeal;
 use App\Models\Eburol;
 use App\Models\Notification;
@@ -518,7 +519,7 @@ class NotificationService
         $visitType = $visit->visit_type->value === 'virtual' ? 'Virtual' : 'Physical';
         $visitorName = trim("{$visit->user->first_name} {$visit->user->last_name}");
 
-        Notification::create([
+        $notification = Notification::create([
             'user_id' => $visit->jail_officer_id,
             'type' => 'monitoring_assignment',
             'title' => 'New Visit Assignment',
@@ -526,6 +527,12 @@ class NotificationService
             'notifiable_id' => $visit->id,
             'notifiable_type' => Visit::class,
         ]);
+
+        // Broadcast real-time notification
+        $jailOfficer = $visit->jailOfficer;
+        if ($jailOfficer) {
+            broadcast(new JailOfficerNotification($jailOfficer, $notification));
+        }
     }
 
     /**
@@ -540,7 +547,7 @@ class NotificationService
         $deceasedName = trim("{$eburol->deceased_first_name} {$eburol->deceased_middle_name} {$eburol->deceased_last_name}");
         $visitorName = trim("{$eburol->user->first_name} {$eburol->user->last_name}");
 
-        Notification::create([
+        $notification = Notification::create([
             'user_id' => $eburol->jail_officer_id,
             'type' => 'monitoring_assignment',
             'title' => 'New E-Burol Assignment',
@@ -548,6 +555,12 @@ class NotificationService
             'notifiable_id' => $eburol->id,
             'notifiable_type' => Eburol::class,
         ]);
+
+        // Broadcast real-time notification
+        $jailOfficer = $eburol->jailOfficer;
+        if ($jailOfficer) {
+            broadcast(new JailOfficerNotification($jailOfficer, $notification));
+        }
     }
 
     /**

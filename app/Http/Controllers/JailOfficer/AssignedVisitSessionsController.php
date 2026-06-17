@@ -28,53 +28,17 @@ class AssignedVisitSessionsController extends Controller
         $user = $request->user();
         $isSuperAdmin = $user->role?->slug === 'super_admin';
 
-        // Get JO's active scope IDs
-        $scopeIds = $user->jailOfficerScopes()->where('is_active', true);
-        
-        // Build list of cell IDs that match JO's scopes
-        $cellIds = [];
-        
-        // Get cells from direct cell assignments
-        $cellScopeIds = $scopeIds->clone()
-            ->where('scope_type', 'cell')
-            ->pluck('cell_id');
-        $cellIds = array_merge($cellIds, $cellScopeIds->toArray());
-        
-        // Get cells from dormitory assignments
-        $dormScopeIds = $scopeIds->clone()
-            ->where('scope_type', 'dormitory')
-            ->pluck('dormitory_id');
-        if ($dormScopeIds->isNotEmpty()) {
-            $cellsFromDorms = \App\Models\Cell::whereIn('dormitory_id', $dormScopeIds)->pluck('id');
-            $cellIds = array_merge($cellIds, $cellsFromDorms->toArray());
-        }
-        
-        // Get cells from annex assignments
-        $annexScopeIds = $scopeIds->clone()
-            ->where('scope_type', 'annex')
-            ->pluck('annex_id');
-        if ($annexScopeIds->isNotEmpty()) {
-            // Get cells that have this annex_id directly OR cells in dormitories that belong to this annex
-            $cellsFromAnnexes = \App\Models\Cell::where(function($q) use ($annexScopeIds) {
-                    $q->whereIn('annex_id', $annexScopeIds)
-                      ->orWhereHas('dormitory', function($dq) use ($annexScopeIds) {
-                          $dq->whereIn('annex_id', $annexScopeIds);
-                      });
-                })->pluck('id');
-            $cellIds = array_merge($cellIds, $cellsFromAnnexes->toArray());
-        }
-        
-        // Remove duplicates
-        $cellIds = array_unique($cellIds);
+        // Get JO's active scope IDs - use scope resolver service
+        $authorizedCellIds = $user->getAuthorizedCellIds();
 
         // Get all visits assigned to this JO based on scope OR direct assignment
-        $visitsQuery = Visit::with(['user', 'inmate.cell.dormitory', 'inmate.cell.annex', 'jailOfficer'])
-            ->where(function ($q) use ($user, $cellIds) {
+        $visitsQuery = Visit::with(['user', 'inmate.cell.building', 'inmate.cell.dormitory', 'jailOfficer'])
+            ->where(function ($q) use ($user, $authorizedCellIds) {
                 // Direct assignment by jail_officer_id
                 $q->where('jail_officer_id', $user->id)
                   // OR inmate is in one of the cells assigned to JO
-                  ->orWhereHas('inmate', function ($inmateQuery) use ($cellIds) {
-                      $inmateQuery->whereIn('cell_id', $cellIds);
+                  ->orWhereHas('inmate', function ($inmateQuery) use ($authorizedCellIds) {
+                      $inmateQuery->whereIn('cell_id', $authorizedCellIds);
                   });
             });
 
@@ -85,13 +49,13 @@ class AssignedVisitSessionsController extends Controller
         
         // DEBUG: Check visits without the inmate filter
         $directVisits = Visit::where('jail_officer_id', $user->id)->count();
-        $cellVisits = Visit::whereHas('inmate', function ($q) use ($cellIds) {
-            $q->whereIn('cell_id', $cellIds);
+        $cellVisits = Visit::whereHas('inmate', function ($q) use ($authorizedCellIds) {
+            $q->whereIn('cell_id', $authorizedCellIds);
         })->count();
         \Log::info('Visit counts', [
             'direct_assignment' => $directVisits,
             'via_cell_scope' => $cellVisits,
-            'cell_ids' => $cellIds,
+            'cell_ids' => $authorizedCellIds,
         ]);
 
         // Filter by status if requested
@@ -113,7 +77,7 @@ class AssignedVisitSessionsController extends Controller
         // DEBUG: Log query results
         \Log::info('Jail Officer Visit Sessions Query', [
             'user_id' => $user->id,
-            'cell_ids' => $cellIds,
+            'cell_ids' => $authorizedCellIds,
             'total_visits' => $visits->total(),
             'current_page_visits' => $visits->count(),
         ]);
@@ -139,6 +103,9 @@ class AssignedVisitSessionsController extends Controller
                 'rejection_reason' => $visit->rejection_reason,
                 'created_at' => $visit->created_at?->toIso8601String(),
                 'has_session' => $visit->visitSessions()->exists(),
+                'relationship_proof_path' => $visit->relationship_proof_path,
+                'additional_proof_path' => $visit->additional_proof_path,
+                'notes' => $visit->notes,
             ];
             
             \Log::info('Visit transformed', ['visit_id' => $visit->id, 'data' => $data]);
@@ -168,30 +135,42 @@ class AssignedVisitSessionsController extends Controller
     {
         $user = $request->user();
         
+        \Log::info('[Approve] Starting approval process', [
+            'visit_id' => $visit->id,
+            'visit_type' => $visit->visit_type->value,
+            'current_status' => $visit->status->value,
+        ]);
+        
         // Verify JO is assigned to this visit (via scope or direct assignment)
         $isAssigned = $this->isJailOfficerAssignedToVisit($user, $visit);
         if (!$isAssigned && $user->role?->slug !== 'super_admin') {
+            \Log::error('[Approve] User not assigned to visit', ['user_id' => $user->id]);
             abort(403, 'You are not assigned to this visit.');
         }
 
         // Can only approve pending visits
         if ($visit->status->value !== 'pending') {
+            \Log::error('[Approve] Visit not pending', ['status' => $visit->status->value]);
             return back()->withErrors(['approve' => 'Only pending visits can be approved.']);
         }
 
         // Check if schedule has passed
         if ($visit->isScheduleInPast()) {
+            \Log::error('[Approve] Schedule in past');
             return back()->withErrors(['approve' => 'This schedule has passed and cannot be approved.']);
         }
 
         DB::beginTransaction();
         try {
             // Update visit status
+            \Log::info('[Approve] Updating visit status to approved');
             $visit->update([
                 'status' => 'approved',
                 'jail_officer_id' => $user->id,
                 'notes' => $request->input('notes'),
             ]);
+            
+            \Log::info('[Approve] Visit status updated', ['new_status' => $visit->fresh()->status->value]);
 
             // If virtual visit, create VideoSDK room and session
             if ($visit->visit_type === VisitType::Virtual && !$visit->daily_co_room_id) {
@@ -204,10 +183,11 @@ class AssignedVisitSessionsController extends Controller
 
                 // Create room
                 $roomResult = $videoSdk->createRoom(
-                    roomId: null,
-                    title: "Visit #{$visit->id} - {$visit->user->last_name}",
-                    scheduledStart: $visit->scheduled_date->format('Y-m-d') . ' ' . $visit->scheduled_time,
-                    scheduledEnd: $visit->scheduled_date->copy()->addMinutes(10)->format('Y-m-d H:i'),
+                    "Visit #{$visit->id} - {$visit->user->last_name}",
+                    [
+                        'scheduled_start' => $visit->scheduled_date->format('Y-m-d') . ' ' . $visit->scheduled_time,
+                        'scheduled_end' => $visit->scheduled_date->copy()->addMinutes(10)->format('Y-m-d H:i'),
+                    ]
                 );
 
                 if (!($roomResult['success'] ?? false)) {
@@ -240,29 +220,57 @@ class AssignedVisitSessionsController extends Controller
                 ]);
 
                 // Create visit session
-                VisitSession::create([
+                // scheduled_date is already a Carbon instance, so we need to extract just the date part
+                $dateString = $visit->scheduled_date->format('Y-m-d');
+                $scheduledStart = \Carbon\Carbon::parse($dateString . ' ' . $visit->scheduled_time);
+                $scheduledEnd = $scheduledStart->copy()->addMinutes(10);
+                
+                \Log::info('[Approve] Creating VisitSession', [
+                    'visit_id' => $visit->id,
+                    'date_string' => $dateString,
+                    'scheduled_time' => $visit->scheduled_time,
+                    'scheduled_start' => $scheduledStart->toDateTimeString(),
+                    'scheduled_end' => $scheduledEnd->toDateTimeString(),
+                ]);
+                
+                $visitSession = VisitSession::create([
                     'visit_id' => $visit->id,
                     'room_id' => $roomId,
                     'session_type' => 'visit',
-                    'scheduled_start' => $visit->scheduled_date->copy()->parse($visit->scheduled_time),
-                    'scheduled_end' => $visit->scheduled_date->copy()->parse($visit->scheduled_time)->addMinutes(10),
+                    'scheduled_start' => $scheduledStart,
+                    'scheduled_end' => $scheduledEnd,
                     'status' => 'scheduled',
                     'recording_status' => 'not_recording',
                     'chat_locked' => false,
                     'monitor_id' => $user->id,
                 ]);
+                
+                \Log::info('[Approve] VisitSession created', ['session_id' => $visitSession->id]);
 
-                // Generate inmate tunnel
+                // Generate inmate tunnel - use the newly created session directly
                 $tunnel = InmateTunnel::create([
-                    'visit_session_id' => Visit::latest()->first()->id,
+                    'visit_session_id' => $visitSession->id,
                     'tunnel_token' => InmateTunnel::generateToken(),
                     'short_code' => InmateTunnel::generateShortCode(),
-                    'expires_at' => $visit->scheduled_date->copy()->parse($visit->scheduled_time)->addMinutes(10),
+                    'expires_at' => $scheduledEnd,
                     'is_used' => false,
                 ]);
+                
+                \Log::info('[Approve] InmateTunnel created', ['tunnel_id' => $tunnel->id]);
             }
 
             DB::commit();
+            
+            \Log::info('[Approve] Transaction committed successfully', ['visit_id' => $visit->id]);
+
+            // Reload the visit to get the updated status
+            $visit->refresh();
+            
+            \Log::info('[Approve] Visit reloaded', [
+                'visit_id' => $visit->id,
+                'status' => $visit->status->value,
+                'jail_officer_id' => $visit->jail_officer_id,
+            ]);
 
             // Send notification
             NotificationService::createVisitNotification($visit, 'approved');
@@ -280,6 +288,11 @@ class AssignedVisitSessionsController extends Controller
             return back()->with('success', 'Visit schedule approved successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('[Approve] Failed to approve visit', [
+                'visit_id' => $visit->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return back()->withErrors(['approve' => 'Failed to approve visit: ' . $e->getMessage()]);
         }
     }
@@ -357,12 +370,12 @@ class AssignedVisitSessionsController extends Controller
                 return true;
             }
 
-            // Check annex (via cell's direct annex or through dormitory)
+            // Check building/annex (via cell's direct building or through dormitory)
             if ($visit->inmate->cell) {
                 $cellAnnexId = $visit->inmate->cell->annex_id ?? $visit->inmate->cell->dormitory?->annex_id;
                 if ($cellAnnexId && $scopeIds->clone()
-                    ->where('scope_type', 'annex')
-                    ->pluck('annex_id')
+                    ->where('scope_type', 'building')
+                    ->pluck('building_id')
                     ->contains($cellAnnexId)) {
                     return true;
                 }

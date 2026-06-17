@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Camera, CheckCircle, Clock, FileText, MoreVertical, XCircle } from 'lucide-react';
+import { Camera, CheckCircle, Clock, Download, FileText, Image, MoreVertical, XCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { DataTable } from '@/components/data-table';
@@ -62,6 +62,9 @@ type Visit = {
     rejection_reason: string | null;
     created_at: string | null;
     has_session: boolean;
+    relationship_proof_path: string | null;
+    additional_proof_path: string | null;
+    notes: string | null;
 };
 
 type Props = {
@@ -105,6 +108,50 @@ function getVisitTypeBadge(type: string) {
                 </>
             )}
         </Badge>
+    );
+}
+
+function DocumentCard({ title, path, icon }: { title: string; path: string; icon: React.ReactNode }) {
+    const fileUrl = `/storage/${path}`;
+    const fileName = path.split('/').pop() || 'Document';
+    const fileExtension = fileName.split('.').pop()?.toLowerCase();
+    const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension || '');
+
+    return (
+        <div className="border border-gray-200 rounded-lg p-4 bg-white hover:border-gray-300 transition-colors">
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="bg-blue-50 text-blue-600 rounded-lg p-2 flex-shrink-0">
+                        {icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm text-gray-900 truncate">{title}</h4>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{fileName}</p>
+                    </div>
+                </div>
+                <a
+                    href={fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 hover:underline flex-shrink-0"
+                >
+                    <Download className="h-3.5 w-3.5" />
+                    View
+                </a>
+            </div>
+            {isImage && (
+                <div className="mt-3 rounded-lg overflow-hidden border border-gray-100">
+                    <img 
+                        src={fileUrl} 
+                        alt={title}
+                        className="w-full h-32 object-cover"
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                    />
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -239,11 +286,29 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
     const handleApprove = async () => {
         if (!selectedVisit) return;
 
+        console.log('[Approve] Attempting to approve visit:', selectedVisit.id);
+
         try {
-            await axios.post(`/jail-officer/assigned-visit-sessions/${selectedVisit.id}/approve`);
+            const response = await axios.post(`/jail-officer/assigned-visit-sessions/${selectedVisit.id}/approve`);
+            console.log('[Approve] Visit approved successfully', response.data);
+            
+            // Show success message
+            if (response.data?.success) {
+                console.log('[Approve] Success message:', response.data.success);
+            }
+            
+            // Reload the page to reflect the status change
+            console.log('[Approve] Reloading page...');
             window.location.reload();
         } catch (error: any) {
-            alert(error?.response?.data?.errors?.approve?.[0] || 'Failed to approve visit');
+            console.error('[Approve] Error:', error);
+            console.error('[Approve] Error response:', error?.response?.data);
+            
+            // Show detailed error message
+            const errorMessage = error?.response?.data?.errors?.approve?.[0] || 
+                                error?.response?.data?.message || 
+                                'Failed to approve visit';
+            alert(errorMessage);
         }
     };
 
@@ -329,47 +394,124 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
                 </Card>
 
                 {/* Approve Modal */}
-                <Dialog open={isApproveModalOpen} onOpenChange={setIsApproveModalOpen}>
-                    <DialogContent>
+                <Dialog open={isApproveModalOpen} onOpenChange={(open) => {
+                    console.log('[Approve Modal] Open state changed:', open);
+                    setIsApproveModalOpen(open);
+                }}>
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                            <DialogTitle>Approve Visit Schedule</DialogTitle>
+                            <DialogTitle className="flex items-center gap-2">
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                Approve Visit Schedule
+                            </DialogTitle>
                             <DialogDescription>
-                                Are you sure you want to approve this visit schedule? This will create a video room and send notifications to the visitor.
+                                Review the visit details and attached documents before approving. This will create a video room and notify the visitor.
                             </DialogDescription>
                         </DialogHeader>
                         
                         {selectedVisit && (
-                            <div className="py-4 space-y-2">
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <span className="text-muted-foreground">Visitor:</span>
-                                        <div className="font-medium">{selectedVisit.visitor_name}</div>
+                            <div className="py-4 space-y-6">
+                                {/* Visit Details Section */}
+                                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                                    <h3 className="font-semibold text-sm text-gray-900 uppercase tracking-wide">Visit Details</h3>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1">Visitor</span>
+                                            <div className="font-medium">{selectedVisit.visitor_name}</div>
+                                            <div className="text-xs text-muted-foreground">{selectedVisit.visitor_email}</div>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1">PDL</span>
+                                            <div className="font-medium">{selectedVisit.inmate_name}</div>
+                                            {selectedVisit.cell_info && (
+                                                <div className="text-xs text-muted-foreground">
+                                                    {selectedVisit.cell_info.cell_number}
+                                                    {selectedVisit.cell_info.floor && `, Floor ${selectedVisit.cell_info.floor}`}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1">Date</span>
+                                            <div className="font-medium">
+                                                {new Date(selectedVisit.scheduled_date).toLocaleDateString('en-US', { 
+                                                    month: 'long', 
+                                                    day: 'numeric', 
+                                                    year: 'numeric' 
+                                                })}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1">Time</span>
+                                            <div className="font-medium">{selectedVisit.scheduled_time}</div>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1">Visit Type</span>
+                                            <div className="font-medium capitalize">{selectedVisit.visit_type}</div>
+                                        </div>
+                                        {selectedVisit.cell_info?.annex_name && (
+                                            <div>
+                                                <span className="text-muted-foreground text-xs block mb-1">Building</span>
+                                                <div className="font-medium">{selectedVisit.cell_info.annex_name}</div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div>
-                                        <span className="text-muted-foreground">PDL:</span>
-                                        <div className="font-medium">{selectedVisit.inmate_name}</div>
-                                    </div>
-                                    <div>
-                                        <span className="text-muted-foreground">Date:</span>
-                                        <div className="font-medium">{selectedVisit.scheduled_date}</div>
-                                    </div>
-                                    <div>
-                                        <span className="text-muted-foreground">Time:</span>
-                                        <div className="font-medium">{selectedVisit.scheduled_time}</div>
-                                    </div>
-                                    <div>
-                                        <span className="text-muted-foreground">Type:</span>
-                                        <div className="font-medium capitalize">{selectedVisit.visit_type}</div>
-                                    </div>
+                                    {selectedVisit.notes && (
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1">Visitor Notes</span>
+                                            <div className="text-sm bg-white border border-gray-200 rounded p-3 mt-1">
+                                                {selectedVisit.notes}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
+
+                                {/* Documents Section */}
+                                {(selectedVisit.relationship_proof_path || selectedVisit.additional_proof_path) && (
+                                    <div className="space-y-4">
+                                        <h3 className="font-semibold text-sm text-gray-900 uppercase tracking-wide">Attached Documents</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {selectedVisit.relationship_proof_path && (
+                                                <DocumentCard
+                                                    title="Relationship Proof"
+                                                    path={selectedVisit.relationship_proof_path}
+                                                    icon={<Image className="h-4 w-4" />}
+                                                />
+                                            )}
+                                            {selectedVisit.additional_proof_path && (
+                                                <DocumentCard
+                                                    title="Additional Proof"
+                                                    path={selectedVisit.additional_proof_path}
+                                                    icon={<FileText className="h-4 w-4" />}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsApproveModalOpen(false)}>
+                        <DialogFooter className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200">
+                            <Button 
+                                variant="outline" 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('[Approve Modal] Cancel clicked');
+                                    setIsApproveModalOpen(false);
+                                }}
+                            >
                                 Cancel
                             </Button>
-                            <Button onClick={handleApprove}>
+                            <Button 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('[Approve Modal] Approve button clicked');
+                                    handleApprove();
+                                }} 
+                                className="bg-green-600 hover:bg-green-700"
+                                type="button"
+                            >
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Approve Visit
                             </Button>

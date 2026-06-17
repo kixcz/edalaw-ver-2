@@ -266,6 +266,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('jail-warden.officer-scopes.update');
         Route::delete('dashboard/jail-warden/officer-scopes/{scope}', [\App\Http\Controllers\JailOfficerScopeController::class, 'destroy'])
             ->name('jail-warden.officer-scopes.destroy');
+        Route::post('dashboard/jail-warden/officer-scopes/{scope}/transfer', [\App\Http\Controllers\JailOfficerScopeController::class, 'transfer'])
+            ->name('jail-warden.officer-scopes.transfer');
+        Route::post('dashboard/jail-warden/officer-scopes/{scope}/revoke', [\App\Http\Controllers\JailOfficerScopeController::class, 'revoke'])
+            ->name('jail-warden.officer-scopes.revoke');
         
         // Annex Management
         Route::get('jail-warden/annexes', [\App\Http\Controllers\JailWarden\AnnexManagementController::class, 'index'])
@@ -320,7 +324,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::middleware(['role:monitoring_officer'])->get('dashboard/monitoring-officer', [\App\Http\Controllers\MonitoringOfficer\AnalyticsController::class, 'index'])
         ->name('dashboard.monitoring-officer');
 
-    Route::middleware(['role:jail_officer'])->get('dashboard/jail-officer', [\App\Http\Controllers\JailOfficer\AnalyticsController::class, 'index'])
+    Route::middleware(['role:jail_officer', 'resolve_jo_scope'])->get('dashboard/jail-officer', [\App\Http\Controllers\JailOfficer\DashboardController::class, 'index'])
         ->name('dashboard.jail-officer');
 
     Route::middleware(['role:jail_warden,jail_officer'])->prefix('monitoring')->name('monitoring.')->group(function () {
@@ -546,7 +550,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     });
 
     // Cell, Inmate, and Cell Schedule Management (accessible by Jail Officer)
-    Route::middleware(['role:jail_officer'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
+    Route::middleware(['role:jail_officer', 'resolve_jo_scope'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
         // Cell Management
         Route::get('cells', [\App\Http\Controllers\BjmpOfficer\CellManagementController::class, 'index'])
             ->name('cells.index');
@@ -579,7 +583,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     });
 
     // Hierarchical Jail Management (Jail Officer only)
-    Route::middleware(['role:jail_officer'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
+    Route::middleware(['role:jail_officer', 'resolve_jo_scope'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
         // Jail Management
         Route::get('jails', [\App\Http\Controllers\JailOfficer\JailManagementController::class, 'index'])
             ->name('jails.index');
@@ -643,7 +647,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('cell-schedules.bulk-update');
     });
 
-    Route::middleware(['role:jail_officer'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
+    Route::middleware(['role:jail_officer', 'resolve_jo_scope'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
         Route::get('notifications', [\App\Http\Controllers\BjmpOfficer\NotificationController::class, 'index'])
             ->name('notifications.index');
         Route::post('notifications/{notification}/read', [\App\Http\Controllers\BjmpOfficer\NotificationController::class, 'markAsRead'])
@@ -692,7 +696,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     });
 
     // Unified Jail Officer Routes (combines Monitoring Officer + BJMP Officer features)
-    Route::middleware(['role:jail_officer'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
+    Route::middleware(['role:jail_officer', 'resolve_jo_scope'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
         // Dashboard
         Route::get('dashboard', [\App\Http\Controllers\JailOfficer\AnalyticsController::class, 'index'])
             ->name('dashboard');

@@ -62,8 +62,8 @@ class BackfillJailOfficerId extends Command
                                 ->where('dormitory_id', $cell->dormitory_id);
                           })
                           ->orWhere(function($q) use ($cell) {
-                              $q->where('scope_type', 'annex')
-                                ->where('annex_id', $cell->annex_id);
+                              $q->where('scope_type', 'building')
+                                ->where('building_id', $cell->annex_id);
                           });
                 })
                 ->first();

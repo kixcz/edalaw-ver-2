@@ -32,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'approved' => \App\Http\Middleware\EnsureApproved::class,
             'prevent_duplicate_inmate' => \App\Http\Middleware\PreventDuplicateInmateSession::class,
             'branch_scope' => \App\Http\Middleware\EnforceBranchScope::class,
+            'resolve_jo_scope' => \App\Http\Middleware\ResolveJailOfficerScope::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

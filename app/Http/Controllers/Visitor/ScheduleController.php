@@ -105,6 +105,8 @@ class ScheduleController extends Controller
                     'can_appeal' => $canAppeal,
                     'appeal_deadline' => $appealDeadline,
                     'visit_session' => $sessionPayload,
+                    'relationship_proof_path' => $visit->relationship_proof_path,
+                    'additional_proof_path' => $visit->additional_proof_path,
                 ];
             });
 
@@ -310,9 +312,21 @@ class ScheduleController extends Controller
             'inmate_middle_name' => ['nullable', 'string', 'max:255'],
             'inmate_last_name' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'relationship_proof' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'], // 10MB max
-            'additional_proof' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'], // 10MB max
+            'relationship_proof' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'], // 10MB max
+            'additional_proof' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'], // 10MB max
+            'use_existing_documents' => ['nullable', 'boolean'],
+            'relationship_proof_file_id' => ['nullable', 'integer', 'exists:uploaded_files,id'],
+            'additional_proof_file_id' => ['nullable', 'integer', 'exists:uploaded_files,id'],
         ]);
+
+        // Additional validation: either upload files OR use existing documents
+        if (!$request->boolean('use_existing_documents')) {
+            if (!$request->hasFile('relationship_proof') && !$request->filled('relationship_proof_file_id')) {
+                $validator->after(function ($validator) {
+                    $validator->errors()->add('relationship_proof', 'Please upload relationship proof or use existing documents.');
+                });
+            }
+        }
 
         if ($validator->fails()) {
             return redirect()->back()
@@ -388,16 +402,46 @@ class ScheduleController extends Controller
                 ->withInput();
         }
 
-        // Store uploaded files
+        // Store uploaded files OR use existing document file IDs
         $relationshipProofPath = null;
         $additionalProofPath = null;
 
-        if ($request->hasFile('relationship_proof')) {
-            $relationshipProofPath = $request->file('relationship_proof')->store('visits/relationship_proofs', 'public');
+        if ($request->boolean('use_existing_documents')) {
+            // Use existing documents from tagged inmates
+            if ($request->filled('relationship_proof_file_id')) {
+                $uploadedFile = \App\Models\UploadedFile::find($request->relationship_proof_file_id);
+                if ($uploadedFile) {
+                    $relationshipProofPath = $uploadedFile->file_path;
+                }
+            }
+            if ($request->filled('additional_proof_file_id')) {
+                $uploadedFile = \App\Models\UploadedFile::find($request->additional_proof_file_id);
+                if ($uploadedFile) {
+                    $additionalProofPath = $uploadedFile->file_path;
+                }
+            }
+        } else {
+            // Use newly uploaded files
+            if ($request->hasFile('relationship_proof')) {
+                $relationshipProofPath = $request->file('relationship_proof')->store('visits/relationship_proofs', 'public');
+            }
+            if ($request->hasFile('additional_proof')) {
+                $additionalProofPath = $request->file('additional_proof')->store('visits/additional_proofs', 'public');
+            }
         }
 
-        if ($request->hasFile('additional_proof')) {
-            $additionalProofPath = $request->file('additional_proof')->store('visits/additional_proofs', 'public');
+        // Find or create the inmate based on the provided name
+        $inmate = \App\Models\Inmate::where('first_name', $request->inmate_first_name)
+            ->where('last_name', $request->inmate_last_name)
+            ->when($request->filled('inmate_middle_name'), function ($query) use ($request) {
+                $query->where('middle_name', $request->inmate_middle_name);
+            })
+            ->first();
+
+        if (!$inmate) {
+            return redirect()->back()
+                ->withErrors(['inmate_first_name' => 'The specified PDL could not be found. Please verify the name and try again.'])
+                ->withInput();
         }
 
         // Auto-assign jail officer based on inmate's cell and jail_officer_scopes
@@ -770,10 +814,10 @@ class ScheduleController extends Controller
                           $q->where('scope_type', 'dormitory')
                             ->where('dormitory_id', $cell->dormitory_id);
                       })
-                      // Annex assignment
+                      // Building assignment
                       ->orWhere(function($q) use ($cell) {
-                          $q->where('scope_type', 'annex')
-                            ->where('annex_id', $cell->annex_id);
+                          $q->where('scope_type', 'building')
+                            ->where('building_id', $cell->annex_id);
                       });
             })
             ->first();

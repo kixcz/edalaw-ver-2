@@ -46,11 +46,29 @@ class Dormitory extends Model
     }
 
     /**
+     * Alias for annex() - uses "building" terminology.
+     *
+     * @return BelongsTo<Annex>
+     */
+    public function building(): BelongsTo
+    {
+        return $this->annex();
+    }
+
+    /**
      * Get the annexes in this dormitory.
      */
     public function annexes(): HasMany
     {
         return $this->hasMany(Annex::class);
+    }
+
+    /**
+     * Alias for annexes() - uses "buildings" terminology.
+     */
+    public function buildings(): HasMany
+    {
+        return $this->annexes();
     }
 
     /**
