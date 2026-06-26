@@ -24,11 +24,19 @@ class JailOfficerScopeController extends Controller
 
         $validated = $request->validate([
             'jail_officer_id' => 'required|exists:users,id',
-            'scope_type' => 'required|in:building,dormitory,cell',
-            'building_id' => 'nullable|exists:buildings,id',
+            'scope_type' => 'required|in:annex,dormitory,cell',
+            'annex_id' => 'nullable|exists:annexes,id',
             'dormitory_id' => 'nullable|exists:dormitories,id',
             'cell_id' => 'nullable|exists:cells,id',
         ]);
+
+        // Ensure all optional keys exist with null defaults
+        $validated['annex_id'] = $validated['annex_id'] ?? null;
+        $validated['dormitory_id'] = $validated['dormitory_id'] ?? null;
+        $validated['cell_id'] = $validated['cell_id'] ?? null;
+        
+        // Map annex_id to building_id for internal processing (terminology compatibility)
+        $validated['building_id'] = $validated['annex_id'];
 
         // Verify the jail officer belongs to the same branch
         $officer = User::where('id', $validated['jail_officer_id'])
@@ -80,17 +88,24 @@ class JailOfficerScopeController extends Controller
             return back()->withErrors(['scope' => implode(' ', $conflicts)]);
         }
 
-        // Deactivate existing scopes for this officer at the same level
-        JailOfficerScope::where('jail_officer_id', $validated['jail_officer_id'])
-            ->where('scope_type', $validated['scope_type'])
+        // Deactivate ALL existing scopes for this officer (only 1 scope allowed at a time)
+        $deactivatedCount = JailOfficerScope::where('jail_officer_id', $validated['jail_officer_id'])
+            ->where('is_active', true)
             ->update(['is_active' => false]);
+
+        if ($deactivatedCount > 0) {
+            Log::info('Previous scope(s) deactivated', [
+                'officer_id' => $validated['jail_officer_id'],
+                'deactivated_count' => $deactivatedCount,
+            ]);
+        }
 
         // Create the scope assignment
         JailOfficerScope::create([
             'jail_officer_id' => $validated['jail_officer_id'],
             'assigned_by' => $user->id,
             'scope_type' => $validated['scope_type'],
-            'building_id' => $validated['building_id'] ?? null,
+            'building_id' => $validated['annex_id'] ?? null, // Store annex_id in building_id column (DB compatibility)
             'dormitory_id' => $validated['dormitory_id'] ?? null,
             'cell_id' => $validated['cell_id'] ?? null,
             'is_active' => true,
@@ -156,11 +171,19 @@ class JailOfficerScopeController extends Controller
         }
 
         $validated = $request->validate([
-            'scope_type' => 'required|in:building,dormitory,cell',
-            'building_id' => 'nullable|exists:buildings,id',
+            'scope_type' => 'required|in:annex,dormitory,cell',
+            'annex_id' => 'nullable|exists:annexes,id',
             'dormitory_id' => 'nullable|exists:dormitories,id',
             'cell_id' => 'nullable|exists:cells,id',
         ]);
+
+        // Ensure all optional keys exist with null defaults
+        $validated['annex_id'] = $validated['annex_id'] ?? null;
+        $validated['dormitory_id'] = $validated['dormitory_id'] ?? null;
+        $validated['cell_id'] = $validated['cell_id'] ?? null;
+        
+        // Map annex_id to building_id for internal processing
+        $validated['building_id'] = $validated['annex_id'];
 
         // Validate scope type matches the provided IDs
         if (!ValidFacilityScope::validateScopeTypeMatch(
@@ -203,15 +226,17 @@ class JailOfficerScopeController extends Controller
             return back()->withErrors(['scope' => implode(' ', $conflicts)]);
         }
 
-        // Deactivate the old scope
-        $scope->update(['is_active' => false]);
+        // Deactivate ALL existing scopes for this officer (only 1 scope allowed at a time)
+        JailOfficerScope::where('jail_officer_id', $scope->jail_officer_id)
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
 
         // Create the new scope assignment
         JailOfficerScope::create([
             'jail_officer_id' => $scope->jail_officer_id,
             'assigned_by' => $user->id,
             'scope_type' => $validated['scope_type'],
-            'building_id' => $validated['building_id'] ?? null,
+            'building_id' => $validated['annex_id'] ?? null, // Store annex_id in building_id column
             'dormitory_id' => $validated['dormitory_id'] ?? null,
             'cell_id' => $validated['cell_id'] ?? null,
             'is_active' => true,

@@ -40,20 +40,25 @@ class ValidFacilityScope implements ValidationRule
         }
 
         return match ($scopeType) {
-            'dormitory' => Dormitory::join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            'dormitory' => Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $branchId)
                 ->where('dormitories.id', $facilityId)
                 ->exists(),
             
-            'building' => Building::join('dormitories', 'buildings.dormitory_id', '=', 'dormitories.id')
-                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            'annex' => \App\Models\Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $branchId)
-                ->where('buildings.id', $facilityId)
+                ->where('annexes.id', $facilityId)
                 ->exists(),
             
-            'cell' => Cell::join('buildings', 'cells.building_id', '=', 'buildings.id')
-                ->join('dormitories', 'buildings.dormitory_id', '=', 'dormitories.id')
-                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            'building' => \App\Models\Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $branchId)
+                ->where('annexes.id', $facilityId)
+                ->exists(),
+            
+            'cell' => Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+                ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $branchId)
                 ->where('cells.id', $facilityId)
                 ->exists(),
@@ -68,7 +73,7 @@ class ValidFacilityScope implements ValidationRule
     public static function validateScopeTypeMatch(string $scopeType, ?int $buildingId, ?int $dormitoryId, ?int $cellId): bool
     {
         return match ($scopeType) {
-            'building' => $buildingId !== null && $dormitoryId === null && $cellId === null,
+            'annex', 'building' => $buildingId !== null && $dormitoryId === null && $cellId === null,
             'dormitory' => $dormitoryId !== null && $buildingId === null && $cellId === null,
             'cell' => $cellId !== null && $buildingId === null && $dormitoryId === null,
             default => false,
@@ -109,24 +114,24 @@ class ValidFacilityScope implements ValidationRule
      */
     protected static function isNewScopeChildOfExisting(string $newScopeType, ?int $newBuildingId, ?int $newDormitoryId, ?int $newCellId, JailOfficerScope $existingScope): bool
     {
-        // If existing is dormitory, new cannot be building or cell in that dormitory
+        // If existing is dormitory, new cannot be building/annex or cell in that dormitory
         if ($existingScope->scope_type === 'dormitory') {
-            if ($newScopeType === 'building' && $newBuildingId) {
-                $building = Building::find($newBuildingId);
+            if (($newScopeType === 'building' || $newScopeType === 'annex') && $newBuildingId) {
+                $building = \App\Models\Annex::find($newBuildingId);
                 return $building && $building->dormitory_id === $existingScope->dormitory_id;
             }
             
             if ($newScopeType === 'cell' && $newCellId) {
-                $cell = Cell::with('building')->find($newCellId);
-                return $cell && $cell->building && $cell->building->dormitory_id === $existingScope->dormitory_id;
+                $cell = Cell::with('annex')->find($newCellId);
+                return $cell && $cell->annex && $cell->annex->dormitory_id === $existingScope->dormitory_id;
             }
         }
 
-        // If existing is building, new cannot be cell in that building
-        if ($existingScope->scope_type === 'building') {
+        // If existing is building/annex, new cannot be cell in that building
+        if ($existingScope->scope_type === 'building' || $existingScope->scope_type === 'annex') {
             if ($newScopeType === 'cell' && $newCellId) {
                 $cell = Cell::find($newCellId);
-                return $cell && $cell->building_id === $existingScope->building_id;
+                return $cell && $cell->annex_id === $existingScope->building_id;
             }
         }
 
@@ -138,24 +143,24 @@ class ValidFacilityScope implements ValidationRule
      */
     protected static function isNewScopeParentOfExisting(string $newScopeType, ?int $newBuildingId, ?int $newDormitoryId, ?int $newCellId, JailOfficerScope $existingScope): bool
     {
-        // If new is dormitory, existing cannot be building or cell in that dormitory
+        // If new is dormitory, existing cannot be building/annex or cell in that dormitory
         if ($newScopeType === 'dormitory') {
-            if ($existingScope->scope_type === 'building' && $existingScope->building_id) {
-                $building = Building::find($existingScope->building_id);
+            if (($existingScope->scope_type === 'building' || $existingScope->scope_type === 'annex') && $existingScope->building_id) {
+                $building = \App\Models\Annex::find($existingScope->building_id);
                 return $building && $building->dormitory_id === $newDormitoryId;
             }
             
             if ($existingScope->scope_type === 'cell' && $existingScope->cell_id) {
-                $cell = Cell::with('building')->find($existingScope->cell_id);
-                return $cell && $cell->building && $cell->building->dormitory_id === $newDormitoryId;
+                $cell = Cell::with('annex')->find($existingScope->cell_id);
+                return $cell && $cell->annex && $cell->annex->dormitory_id === $newDormitoryId;
             }
         }
 
-        // If new is building, existing cannot be cell in that building
-        if ($newScopeType === 'building') {
+        // If new is building/annex, existing cannot be cell in that building
+        if ($newScopeType === 'building' || $newScopeType === 'annex') {
             if ($existingScope->scope_type === 'cell' && $existingScope->cell_id) {
                 $cell = Cell::find($existingScope->cell_id);
-                return $cell && $cell->building_id === $newBuildingId;
+                return $cell && $cell->annex_id === $newBuildingId;
             }
         }
 
@@ -173,7 +178,8 @@ class ValidFacilityScope implements ValidationRule
 
         return match ($scopeType) {
             'dormitory' => Dormitory::where('id', $facilityId)->where('status', 'active')->exists(),
-            'building' => Building::where('id', $facilityId)->where('status', 'active')->exists(),
+            'annex' => \App\Models\Annex::where('id', $facilityId)->where('status', 'active')->exists(),
+            'building' => \App\Models\Annex::where('id', $facilityId)->where('status', 'active')->exists(),
             'cell' => Cell::where('id', $facilityId)->where('status', 'active')->exists(),
             default => false,
         };

@@ -21,7 +21,11 @@ return new class extends Migration
         if ($driver === 'sqlite') {
             DB::statement("DROP INDEX IF EXISTS {$indexName}");
         } elseif ($driver === 'mysql') {
-            DB::statement("ALTER TABLE time_slot_capacities DROP INDEX IF EXISTS {$indexName}");
+            // MySQL doesn't support DROP INDEX IF EXISTS, so we check first
+            $indexExists = DB::select("SELECT COUNT(*) as count FROM information_schema.statistics WHERE table_name = 'time_slot_capacities' AND index_name = '{$indexName}'");
+            if ($indexExists[0]->count > 0) {
+                DB::statement("ALTER TABLE time_slot_capacities DROP INDEX {$indexName}");
+            }
         } else {
             DB::statement("DROP INDEX IF EXISTS {$indexName}");
         }

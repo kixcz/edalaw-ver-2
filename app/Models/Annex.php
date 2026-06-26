@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use App\Models\Jail;
 
 class Annex extends Model
 {
@@ -19,20 +20,20 @@ class Annex extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'dormitory_id',
+        'jail_id',
         'name',
         'description',
         'status',
     ];
 
     /**
-     * Get the dormitory that owns this annex.
+     * Get the jail that owns this annex.
      *
-     * @return BelongsTo<Dormitory>
+     * @return BelongsTo<Jail>
      */
-    public function dormitory(): BelongsTo
+    public function jail(): BelongsTo
     {
-        return $this->belongsTo(Dormitory::class);
+        return $this->belongsTo(Jail::class);
     }
 
     /**
@@ -44,19 +45,19 @@ class Annex extends Model
     }
 
     /**
-     * Get the cells in this annex.
+     * Get all cells through dormitories.
      */
-    public function cells(): HasMany
+    public function cells(): HasManyThrough
     {
-        return $this->hasMany(Cell::class);
+        return $this->hasManyThrough(Cell::class, Dormitory::class);
     }
 
     /**
-     * Get the jail officer scopes for this annex.
+     * Get the jail officer scopes for this annex (building).
      */
     public function jailOfficerScopes(): HasMany
     {
-        return $this->hasMany(JailOfficerScope::class);
+        return $this->hasMany(JailOfficerScope::class, 'building_id');
     }
 
     /**

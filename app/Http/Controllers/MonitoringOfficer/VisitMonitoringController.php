@@ -18,7 +18,7 @@ class VisitMonitoringController extends Controller
         $user = $request->user();
 
         $visits = Visit::with(['user', 'visitSessions' => fn ($q) => $q->orderBy('scheduled_start', 'desc')->limit(1)])
-            ->where('monitoring_officer_id', $user->id)
+            ->where('jail_officer_id', $user->id)
             ->where('visit_type', \App\VisitType::Virtual)
             ->orderBy('scheduled_date', 'desc')
             ->orderBy('scheduled_time', 'desc')

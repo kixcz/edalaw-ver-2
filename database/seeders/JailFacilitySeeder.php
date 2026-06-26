@@ -27,7 +27,7 @@ class JailFacilitySeeder extends Seeder
             $this->createJailsForBranch($branch);
         }
 
-        $this->command->info('Jails and facilities seeded successfully.');
+        $this->command->info('Facilities seeded successfully (Branch → Jail → Annex → Dormitory → Cell).');
     }
 
     /**
@@ -50,72 +50,72 @@ class JailFacilitySeeder extends Seeder
                 ]
             );
 
-            $this->createDormitoriesForJail($jail);
+            $this->createAnnexesForJail($jail);
             
             $this->command->info("  Created jail: {$jail->name}");
         }
     }
 
     /**
-     * Create dormitories for a jail.
+     * Create annexes for a jail.
      */
-    private function createDormitoriesForJail($jail): void
+    private function createAnnexesForJail($jail): void
+    {
+        // Create 2-3 annexes per jail
+        $annexesCount = rand(2, 3);
+        
+        for ($i = 1; $i <= $annexesCount; $i++) {
+            $annex = Annex::firstOrCreate(
+                ['jail_id' => $jail->id, 'name' => "{$jail->name} - Annex {$i}"],
+                [
+                    'jail_id' => $jail->id,
+                    'name' => "{$jail->name} - Annex {$i}",
+                    'description' => "Annex facility #{$i} at {$jail->name}",
+                    'status' => 'active',
+                ]
+            );
+
+            $this->createDormitoriesForAnnex($annex);
+        }
+    }
+
+    /**
+     * Create dormitories for an annex.
+     */
+    private function createDormitoriesForAnnex($annex): void
     {
         $dormitoryTypes = ['male', 'female', 'juvenile', 'special'];
         
         foreach ($dormitoryTypes as $type) {
             $dormitory = Dormitory::firstOrCreate(
-                ['jail_id' => $jail->id, 'name' => "{$jail->name} - {$type} Dormitory"],
+                ['annex_id' => $annex->id, 'name' => "{$annex->name} - {$type} Dormitory"],
                 [
-                    'jail_id' => $jail->id,
-                    'name' => "{$jail->name} - {$type} Dormitory",
+                    'annex_id' => $annex->id,
+                    'name' => "{$annex->name} - {$type} Dormitory",
                     'type' => $type,
-                    'description' => "{$type} dormitory at {$jail->name}",
+                    'description' => "{$type} dormitory at {$annex->name}",
                     'status' => 'active',
                 ]
             );
 
-            $this->createAnnexesForDormitory($dormitory);
+            $this->createCellsForDormitory($dormitory);
         }
     }
 
     /**
-     * Create annexes for a dormitory.
+     * Create cells for a dormitory.
      */
-    private function createAnnexesForDormitory($dormitory): void
+    private function createCellsForDormitory($dormitory): void
     {
-        // Create 2-3 annexes per dormitory
-        $annexesCount = rand(2, 3);
-        
-        for ($i = 1; $i <= $annexesCount; $i++) {
-            $annex = Annex::firstOrCreate(
-                ['dormitory_id' => $dormitory->id, 'name' => "{$dormitory->name} - Building {$i}"],
-                [
-                    'dormitory_id' => $dormitory->id,
-                    'name' => "{$dormitory->name} - Building {$i}",
-                    'description' => "Building {$i} of {$dormitory->name}",
-                    'status' => 'active',
-                ]
-            );
-
-            $this->createCellsForAnnex($annex);
-        }
-    }
-
-    /**
-     * Create cells for an annex.
-     */
-    private function createCellsForAnnex($annex): void
-    {
-        // Create 4-8 cells per annex
+        // Create 4-8 cells per dormitory
         $cellsCount = rand(4, 8);
         
         for ($i = 1; $i <= $cellsCount; $i++) {
             Cell::firstOrCreate(
-                ['annex_id' => $annex->id, 'cell_number' => "{$annex->name}-Cell-{$i}"],
+                ['dormitory_id' => $dormitory->id, 'cell_number' => "{$dormitory->name}-Cell-{$i}"],
                 [
-                    'annex_id' => $annex->id,
-                    'cell_number' => "{$annex->name}-Cell-{$i}",
+                    'dormitory_id' => $dormitory->id,
+                    'cell_number' => "{$dormitory->name}-Cell-{$i}",
                     'capacity' => rand(4, 12),
                     'status' => 'active',
                 ]

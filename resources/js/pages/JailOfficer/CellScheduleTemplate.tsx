@@ -1,5 +1,5 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Clock, Save, AlertCircle, Monitor, UserCheck } from 'lucide-react';
+import { Save, AlertCircle, Monitor, UserCheck } from 'lucide-react';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -303,21 +303,32 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
                 {/* Legend */}
                 <Card className="mt-4">
                     <CardHeader>
-                        <CardTitle className="text-sm">Legend</CardTitle>
+                        <CardTitle className="text-sm">Legend & Instructions</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex flex-wrap gap-6 text-sm">
-                            <div className="flex items-center gap-2">
-                                <Monitor className="h-4 w-4 text-blue-500" />
-                                <span>Virtual - Video call visits</span>
+                        <div className="space-y-4">
+                            <div className="flex flex-wrap gap-6 text-sm">
+                                <div className="flex items-center gap-2">
+                                    <Monitor className="h-4 w-4 text-blue-500" />
+                                    <span>Virtual - Video call visits</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <UserCheck className="h-4 w-4 text-green-500" />
+                                    <span>Physical - In-person visits</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Checkbox checked={true} className="pointer-events-none" />
+                                    <span>Checked = Available</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <UserCheck className="h-4 w-4 text-green-500" />
-                                <span>Physical - In-person visits</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Checkbox checked={true} className="pointer-events-none" />
-                                <span>Checked = Available</span>
+                            <div className="border-t pt-4">
+                                <p className="text-sm font-medium mb-2">Time Configuration:</p>
+                                <ul className="text-xs space-y-1 text-muted-foreground">
+                                    <li>• <strong>Start/End Time:</strong> Operating hours for each visit type (applies to all days)</li>
+                                    <li>• <strong>Duration:</strong> Length of each visit in minutes (1-120 min)</li>
+                                    <li>• <strong>Interval:</strong> Break time between visits in minutes (0-30 min, set to 0 for no break)</li>
+                                    <li>• Visitors will see available time slots based on these settings when scheduling</li>
+                                </ul>
                             </div>
                         </div>
                     </CardContent>

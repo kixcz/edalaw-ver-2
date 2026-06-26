@@ -39,6 +39,7 @@ class User extends Authenticatable
         'contact_number',
         'role_id',
         'branch_id',
+        'region_id',
         'approval_status',
         'rejection_reason',
         'email_verified_at',
@@ -137,7 +138,8 @@ class User extends Authenticatable
      */
     public function getFullNameAttribute(): string
     {
-        $name = trim($this->first_name . ' ' . ($this->middle_name ?? '') . ' ' . $this->last_name);
+        $name = trim($this->first_name.' '.($this->middle_name ?? '').' '.$this->last_name);
+
         return trim(preg_replace('/\s+/', ' ', $name));
     }
 
@@ -146,7 +148,7 @@ class User extends Authenticatable
      */
     public function isNationalOffice(): bool
     {
-        return $this->role && 
+        return $this->role &&
                ($this->role->slug === 'national' || $this->role->name === 'National Office');
     }
 
@@ -155,19 +157,19 @@ class User extends Authenticatable
      */
     public function isJailWarden(): bool
     {
-        return $this->role && 
+        return $this->role &&
                ($this->role->slug === 'jail_warden' || $this->role->name === 'Jail Warden');
     }
-    
+
     /**
      * Check if the user is a jail officer.
      */
     public function isJailOfficer(): bool
     {
-        return $this->role && 
+        return $this->role &&
                ($this->role->slug === 'jail_officer' || $this->role->name === 'Jail Officer');
     }
-    
+
     /**
      * Check if the user has branch-level access.
      */
@@ -189,7 +191,7 @@ class User extends Authenticatable
      */
     public function scopeResolver(): JailOfficerScopeResolver
     {
-        return new JailOfficerScopeResolver();
+        return new JailOfficerScopeResolver;
     }
 
     /**

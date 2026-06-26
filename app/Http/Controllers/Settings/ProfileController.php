@@ -19,16 +19,22 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
-        $user = $request->user();
-        
+        $user = $request->user()->loadMissing('role');
+        $role = $user->role;
+
         return Inertia::render('settings/profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
             'user' => [
+                'name' => $user->full_name,
                 'first_name' => $user->first_name,
                 'middle_name' => $user->middle_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
+                'email_verified_at' => $user->email_verified_at?->toISOString(),
+                'two_factor_enabled' => filled($user->two_factor_secret),
+                'role' => $role?->slug,
+                'role_name' => $role?->name,
                 'contact_number' => $user->contact_number,
                 'dob' => $user->dob?->format('Y-m-d'),
                 'gender' => $user->gender,

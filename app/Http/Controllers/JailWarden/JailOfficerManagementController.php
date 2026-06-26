@@ -60,24 +60,24 @@ class JailOfficerManagementController extends Controller
 
         // Get facilities for dropdown
         $facilities = [
-            'annexes' => Annex::join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            'annexes' => Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $user->branch_id)
                 ->where('annexes.status', 'active')
                 ->orderBy('annexes.name')
                 ->select('annexes.id', 'annexes.name')
                 ->get(),
-            
-            'dormitories' => Dormitory::join('jails', 'dormitories.jail_id', '=', 'jails.id')
+
+            'dormitories' => Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $user->branch_id)
                 ->where('dormitories.status', 'active')
                 ->orderBy('dormitories.name')
                 ->select('dormitories.id', 'dormitories.name')
                 ->get(),
-            
-            'cells' => Cell::join('annexes', 'cells.annex_id', '=', 'annexes.id')
-                ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+
+            'cells' => Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+                ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $user->branch_id)
                 ->where('cells.status', 'active')
                 ->orderBy('cells.cell_number')

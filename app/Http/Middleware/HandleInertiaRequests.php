@@ -82,9 +82,22 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $user ? [
-                    ...$user->toArray(),
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'middle_name' => $user->middle_name,
+                    'last_name' => $user->last_name,
+                    'name' => $user->name ?? trim("{$user->first_name} {$user->middle_name} {$user->last_name}"),
+                    'email' => $user->email,
+                    'branch_id' => $user->branch_id,
+                    'approval_status' => $user->approval_status?->value ?? $user->approval_status,
                     'role' => $user->role?->slug,
-                    'assigned_scopes' => $user->assignedScopes ? $user->assignedScopes()->with(['cell', 'dormitory', 'annex'])->get() : [],
+                    'assigned_scopes' => $user->role?->slug === 'jail_officer'
+                        ? $user->assignedScopes()
+                            ->active()
+                            ->select(['id', 'jail_officer_id', 'scope_type', 'building_id', 'dormitory_id', 'cell_id'])
+                            ->limit(20)
+                            ->get()
+                        : [],
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

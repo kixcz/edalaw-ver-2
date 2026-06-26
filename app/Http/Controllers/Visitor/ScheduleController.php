@@ -89,6 +89,7 @@ class ScheduleController extends Controller
                     'scheduled_date' => $visit->scheduled_date->format('Y-m-d'),
                     'scheduled_time' => $visit->scheduled_time,
                     'visit_type' => $visit->visit_type->value,
+                    'inmate_id' => $visit->inmate_id,
                     'inmate_first_name' => $visit->inmate_first_name,
                     'inmate_middle_name' => $visit->inmate_middle_name,
                     'inmate_last_name' => $visit->inmate_last_name,
@@ -145,7 +146,8 @@ class ScheduleController extends Controller
         }
 
         // Check if today is unavailable based on virtual visit operating hours
-        $virtualSettings = \App\Models\TimeSlotCapacity::where('visit_type', 'virtual')->first();
+        $userBranchId = auth()->user()->branch_id;
+        $virtualSettings = \App\Models\TimeSlotCapacity::getTimeConfig($userBranchId, 'virtual');
         $virtualEndTime = $virtualSettings?->end_time?->format('H:i') ?? '22:00';
         
         // Calculate cutoff time (when last slot starts for virtual visits)
@@ -174,6 +176,7 @@ class ScheduleController extends Controller
         $request->validate([
             'date' => ['required', 'date'],
             'visit_type' => ['nullable', 'string', 'in:physical,virtual'],
+            'inmate_id' => ['nullable', 'integer'],
         ]);
 
         $visitType = $request->visit_type ?? 'physical';
@@ -183,12 +186,22 @@ class ScheduleController extends Controller
         $dateCarbon = \Carbon\Carbon::parse($date)->startOfDay();
         $nowTime = now()->format('H:i');
 
-        // Get duration and interval settings from database
-        $settings = \App\Models\TimeSlotCapacity::where('visit_type', $visitType)->first();
+        // Get duration, interval, and time settings from time_slot_capacities table (branch-scoped)
+        $userBranchId = auth()->user()->branch_id;
+        $settings = \App\Models\TimeSlotCapacity::getTimeConfig($userBranchId, $visitType);
         $durationMinutes = $settings?->duration_minutes ?? ($isPhysical ? 30 : 20);
         $intervalMinutes = $settings?->interval_minutes ?? ($isPhysical ? 10 : 5);
         $startTime = $settings?->start_time?->format('H:i') ?? '07:00';
         $endTime = $settings?->end_time?->format('H:i') ?? ($isPhysical ? '18:00' : '22:00');
+        
+        \Log::info('Time config from time_slot_capacities (branch-scoped): ' . json_encode([
+            'branch_id' => $userBranchId,
+            'visit_type' => $visitType,
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+            'durationMinutes' => $durationMinutes,
+            'intervalMinutes' => $intervalMinutes,
+        ]));
         
         // Calculate cutoff time (when last slot starts)
         [$endHour, $endMinute] = explode(':', $endTime);
@@ -226,7 +239,7 @@ class ScheduleController extends Controller
                     'isFull' => true,
                 ];
             } else {
-                $capacity = \App\Models\TimeSlotCapacity::getCapacity($timeSlot, $visitType);
+                $capacity = \App\Models\TimeSlotCapacity::getCapacity($timeSlot, $visitType, $userBranchId);
                 $currentBookings = \App\Models\TimeSlotCapacity::getCurrentBookings($date, $timeSlot, $visitType);
                 $isFull = $currentBookings >= $capacity;
 
@@ -336,8 +349,9 @@ class ScheduleController extends Controller
 
         $scheduledDate = \Carbon\Carbon::parse($request->scheduled_date)->startOfDay();
         
-        // Get operating hours from database
-        $settings = \App\Models\TimeSlotCapacity::where('visit_type', $request->visit_type)->first();
+        // Get operating hours from database (branch-scoped)
+        $userBranchId = auth()->user()->branch_id;
+        $settings = \App\Models\TimeSlotCapacity::getTimeConfig($userBranchId, $request->visit_type);
         $endTime = $settings?->end_time?->format('H:i') ?? ($request->visit_type === 'physical' ? '18:00' : '22:00');
         $durationMinutes = $settings?->duration_minutes ?? ($request->visit_type === 'physical' ? 30 : 20);
         
@@ -672,7 +686,7 @@ class ScheduleController extends Controller
                 ]);
             }
 
-            // Get cell schedule templates
+            // Get cell schedule templates (for day availability only)
             $availableDays = [];
             foreach ($inmate->cell->scheduleTemplates as $template) {
                 $availableDays[$template->day_of_week] = [

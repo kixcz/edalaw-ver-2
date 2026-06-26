@@ -45,17 +45,35 @@ Route::get('/', function () {
 
 // Public Information Portal Routes
 Route::prefix('about')->name('about.')->group(function () {
-    Route::get('/', function () { return Inertia::render('public/about'); })->name('index');
-    Route::get('/objectives', function () { return Inertia::render('public/objectives'); })->name('objectives');
+    Route::get('/', function () {
+        return Inertia::render('public/about');
+    })->name('index');
+    Route::get('/objectives', function () {
+        return Inertia::render('public/objectives');
+    })->name('objectives');
 });
 
-Route::get('/services', function () { return Inertia::render('public/services'); })->name('services');
-Route::get('/how-it-works', function () { return Inertia::render('public/how-it-works'); })->name('how-it-works');
-Route::get('/faq', function () { return Inertia::render('public/faq'); })->name('faq');
-Route::get('/privacy', function () { return Inertia::render('public/privacy'); })->name('privacy');
-Route::get('/terms', function () { return Inertia::render('public/terms'); })->name('terms');
-Route::get('/contact', function () { return Inertia::render('public/contact'); })->name('contact');
-Route::get('/announcements', function () { return Inertia::render('public/announcements'); })->name('announcements');
+Route::get('/services', function () {
+    return Inertia::render('public/services');
+})->name('services');
+Route::get('/how-it-works', function () {
+    return Inertia::render('public/how-it-works');
+})->name('how-it-works');
+Route::get('/faq', function () {
+    return Inertia::render('public/faq');
+})->name('faq');
+Route::get('/privacy', function () {
+    return Inertia::render('public/privacy');
+})->name('privacy');
+Route::get('/terms', function () {
+    return Inertia::render('public/terms');
+})->name('terms');
+Route::get('/contact', function () {
+    return Inertia::render('public/contact');
+})->name('contact');
+Route::get('/announcements', function () {
+    return Inertia::render('public/announcements');
+})->name('announcements');
 
 // Dedicated Login Route
 Route::get('/login', function () {
@@ -244,6 +262,16 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::middleware(['role:national'])->get('dashboard/national-office', \App\Http\Controllers\Dashboard\NationalOfficeDashboardController::class)
         ->name('dashboard.national-office');
 
+    Route::middleware(['role:national'])->prefix('national-office')->name('national-office.')->group(function () {
+        Route::resource('regions', \App\Http\Controllers\NationalOffice\RegionManagementController::class)->except(['show', 'create', 'edit']);
+        Route::resource('branches', \App\Http\Controllers\NationalOffice\BranchManagementController::class)->except(['show', 'create', 'edit']);
+        Route::resource('officers', \App\Http\Controllers\NationalOffice\OfficerManagementController::class)->except(['show', 'create', 'edit']);
+        Route::resource('annexes', \App\Http\Controllers\NationalOffice\AnnexManagementController::class)->except(['show', 'create', 'edit']);
+        Route::resource('dormitories', \App\Http\Controllers\NationalOffice\DormitoryManagementController::class)->except(['show', 'create', 'edit']);
+        Route::resource('cells', \App\Http\Controllers\NationalOffice\CellManagementController::class)->except(['show', 'create', 'edit']);
+        Route::resource('pdls', \App\Http\Controllers\NationalOffice\PdlManagementController::class)->except(['show', 'create', 'edit']);
+    });
+
     // Regional Supervisor Routes
     Route::middleware(['role:regional_supervisor'])->group(function () {
         Route::get('dashboard/regional-supervisor', [\App\Http\Controllers\Dashboard\RegionalOfficeDashboardController::class, 'index'])
@@ -270,7 +298,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('jail-warden.officer-scopes.transfer');
         Route::post('dashboard/jail-warden/officer-scopes/{scope}/revoke', [\App\Http\Controllers\JailOfficerScopeController::class, 'revoke'])
             ->name('jail-warden.officer-scopes.revoke');
-        
+
         // Annex Management
         Route::get('jail-warden/annexes', [\App\Http\Controllers\JailWarden\AnnexManagementController::class, 'index'])
             ->name('jail-warden.annexes.index');
@@ -280,7 +308,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('jail-warden.annexes.update');
         Route::delete('jail-warden/annexes/{annex}', [\App\Http\Controllers\JailWarden\AnnexManagementController::class, 'destroy'])
             ->name('jail-warden.annexes.destroy');
-        
+
         // Dormitory Management
         Route::get('jail-warden/dormitories', [\App\Http\Controllers\JailWarden\DormitoryManagementController::class, 'index'])
             ->name('jail-warden.dormitories.index');
@@ -290,7 +318,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('jail-warden.dormitories.update');
         Route::delete('jail-warden/dormitories/{dormitory}', [\App\Http\Controllers\JailWarden\DormitoryManagementController::class, 'destroy'])
             ->name('jail-warden.dormitories.destroy');
-        
+
         // Cell Management
         Route::get('jail-warden/cells', [\App\Http\Controllers\JailWarden\CellManagementController::class, 'index'])
             ->name('jail-warden.cells.index');
@@ -300,13 +328,13 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('jail-warden.cells.update');
         Route::delete('jail-warden/cells/{cell}', [\App\Http\Controllers\JailWarden\CellManagementController::class, 'destroy'])
             ->name('jail-warden.cells.destroy');
-        
+
         // Jail Officer Management
         Route::get('jail-warden/officers', [\App\Http\Controllers\JailWarden\JailOfficerManagementController::class, 'index'])
             ->name('jail-warden.officers.index');
         Route::post('jail-warden/officers', [\App\Http\Controllers\JailWarden\JailOfficerManagementController::class, 'store'])
             ->name('jail-warden.officers.store');
-        
+
         // PDL Management
         Route::get('jail-warden/pdls', [\App\Http\Controllers\JailWarden\PdlManagementController::class, 'index'])
             ->name('jail-warden.pdls.index');
@@ -768,7 +796,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('assigned-sessions.start');
         Route::post('assigned-sessions/{session}/end', [\App\Http\Controllers\JailOfficer\AssignedSessionsController::class, 'endSession'])
             ->name('assigned-sessions.end');
-        
+
         // Session Management Controls (Active sessions only)
         Route::post('assigned-sessions/{session}/kill', [\App\Http\Controllers\JailOfficer\AssignedSessionsController::class, 'killSession'])
             ->name('assigned-sessions.kill');

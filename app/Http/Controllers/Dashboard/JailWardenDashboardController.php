@@ -171,9 +171,9 @@ class JailWardenDashboardController extends Controller
             'total_annexes' => $branch->annexes()->count(),
             'total_cells' => $branch->cells()->count(),
             'total_pdls' => DB::table('cells')
-                ->join('annexes', 'cells.annex_id', '=', 'annexes.id')
-                ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+                ->join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+                ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $branch->id)
                 ->sum('cells.capacity'), // Use capacity as total PDLs
             'total_jail_officers' => User::where('role_id', function($query) {
@@ -187,36 +187,35 @@ class JailWardenDashboardController extends Controller
         ];
 
         // Get all dormitories with their annexes and cells (branch-scoped through jails)
-        $dormitories = Dormitory::join('jails', 'dormitories.jail_id', '=', 'jails.id')
+        $dormitories = Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
             ->where('jails.branch_id', $branch->id)
-            ->with(['annexes.cells.inmates'])
+            ->with(['annex.cells.inmates'])
             ->get()
             ->map(function ($dorm) {
                 return [
                     'id' => $dorm->id,
                     'name' => $dorm->name,
                     'type' => $dorm->type,
-                    'capacity' => $dorm->annexes->sum(fn($annex) => $annex->cells->sum('capacity')),
-                    'annexes' => $dorm->annexes->map(function ($annex) {
-                        return [
-                            'id' => $annex->id,
-                            'name' => $annex->name,
-                            'cells' => $annex->cells->map(function ($cell) {
-                                return [
-                                    'id' => $cell->id,
-                                    'cell_number' => $cell->cell_number,
-                                    'capacity' => $cell->capacity,
-                                    'current_inmates' => $cell->inmates->count(),
-                                    'inmates' => $cell->inmates->map(fn($inmate) => [
+                    'capacity' => $dorm->annex->cells->sum('capacity'),
+                    'annex' => [
+                        'id' => $dorm->annex->id,
+                        'name' => $dorm->annex->name,
+                        'cells' => $dorm->annex->cells->map(function ($cell) {
+                            return [
+                                'id' => $cell->id,
+                                'cell_number' => $cell->cell_number,
+                                'capacity' => $cell->capacity,
+                                'current_inmates' => $cell->inmates->count(),
+                                'inmates' => $cell->inmates->map(fn($inmate) => [
                                         'id' => $inmate->id,
                                         'full_name' => trim("{$inmate->first_name} {$inmate->middle_name} {$inmate->last_name}"),
                                         'age' => $inmate->age,
                                         'gender' => $inmate->gender,
                                     ]),
-                                ];
-                            }),
-                        ];
-                    }),
+                            ];
+                        }),
+                    ],
                 ];
             });
 
@@ -245,21 +244,21 @@ class JailWardenDashboardController extends Controller
 
         // Get facilities data for scope assignment dropdowns (branch-scoped through jails)
         $facilities = [
-            'annexes' => Annex::join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            'annexes' => Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $branch->id)
                 ->select('annexes.*')
                 ->with(['dormitories'])
                 ->get()
                 ->map(fn($a) => ['id' => $a->id, 'name' => $a->name, 'dormitories' => $a->dormitories->map(fn($d) => ['id' => $d->id, 'name' => $d->name])]),
             
-            'dormitories' => Dormitory::join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            'dormitories' => Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $branch->id)
                 ->select('dormitories.*')
                 ->get()
                 ->map(fn($d) => ['id' => $d->id, 'name' => $d->name]),
             
-            'cells' => Cell::whereHas('dormitory.jail', fn($q) => $q->where('branch_id', $branch->id))
+            'cells' => Cell::whereHas('dormitory.annex.jail', fn($q) => $q->where('branch_id', $branch->id))
                 ->with(['dormitory.annex'])
                 ->get()
                 ->map(fn($c) => [

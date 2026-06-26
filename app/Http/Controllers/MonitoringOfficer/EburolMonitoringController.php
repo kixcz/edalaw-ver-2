@@ -18,7 +18,7 @@ class EburolMonitoringController extends Controller
         $user = $request->user();
 
         $eburols = Eburol::with(['user', 'visitSessions.inmateTunnels'])
-            ->where('monitoring_officer_id', $user->id)
+            ->where('jail_officer_id', $user->id)
             ->orderBy('wake_start_date', 'desc')
             ->get()
             ->map(function ($eburol) {

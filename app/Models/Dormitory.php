@@ -18,7 +18,7 @@ class Dormitory extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'jail_id',
+        'annex_id',
         'name',
         'type',
         'description',
@@ -26,17 +26,7 @@ class Dormitory extends Model
     ];
 
     /**
-     * Get the jail that owns this dormitory.
-     *
-     * @return BelongsTo<Jail>
-     */
-    public function jail(): BelongsTo
-    {
-        return $this->belongsTo(Jail::class);
-    }
-
-    /**
-     * Get the annex that this dormitory belongs to.
+     * Get the annex that owns this dormitory.
      *
      * @return BelongsTo<Annex>
      */
@@ -56,27 +46,11 @@ class Dormitory extends Model
     }
 
     /**
-     * Get the annexes in this dormitory.
+     * Get the cells in this dormitory.
      */
-    public function annexes(): HasMany
+    public function cells(): HasMany
     {
-        return $this->hasMany(Annex::class);
-    }
-
-    /**
-     * Alias for annexes() - uses "buildings" terminology.
-     */
-    public function buildings(): HasMany
-    {
-        return $this->annexes();
-    }
-
-    /**
-     * Get all cells through annexes.
-     */
-    public function cells(): HasManyThrough
-    {
-        return $this->hasManyThrough(Cell::class, Annex::class);
+        return $this->hasMany(Cell::class);
     }
 
     /**

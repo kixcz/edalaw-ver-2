@@ -46,7 +46,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function DormitoryManagement({ auth, dormitories, jails }: any) {
+export default function DormitoryManagement({ auth, dormitories, annexes }: any) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedDormitory, setSelectedDormitory] = useState<any>(null);
@@ -56,11 +56,11 @@ export default function DormitoryManagement({ auth, dormitories, jails }: any) {
         type: '',
         description: '',
         status: 'active',
-        jail_id: '',
+        annex_id: '',
     });
 
     const openCreateModal = () => {
-        form.setData({ name: '', type: '', description: '', status: 'active', jail_id: '' });
+        form.setData({ name: '', type: '', description: '', status: 'active', annex_id: '' });
         setIsCreateModalOpen(true);
     };
 
@@ -71,7 +71,7 @@ export default function DormitoryManagement({ auth, dormitories, jails }: any) {
             type: dormitory.type,
             description: dormitory.description || '',
             status: dormitory.status,
-            jail_id: dormitory.jail?.id?.toString() || '',
+            annex_id: dormitory.annex?.id?.toString() || '',
         });
         setIsEditModalOpen(true);
     };
@@ -121,13 +121,14 @@ export default function DormitoryManagement({ auth, dormitories, jails }: any) {
                 ),
             },
             {
+                accessorKey: 'annex.name',
+                header: 'Annex',
+                cell: ({ row }) => row.original.annex?.name || '-',
+            },
+            {
                 accessorKey: 'jail.name',
                 header: 'Jail',
                 cell: ({ row }) => row.original.jail?.name || '-',
-            },
-            {
-                accessorKey: 'annexes_count',
-                header: 'Annexes',
             },
             {
                 accessorKey: 'status',
@@ -218,7 +219,7 @@ export default function DormitoryManagement({ auth, dormitories, jails }: any) {
                     <DialogHeader>
                         <DialogTitle>Create New Dormitory</DialogTitle>
                         <DialogDescription>
-                            Add a new dormitory to your branch. Select a jail to link it to.
+                            Add a new dormitory to your branch. Select an annex to link it to.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitCreate}>
@@ -236,24 +237,24 @@ export default function DormitoryManagement({ auth, dormitories, jails }: any) {
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="jail_id">Jail</Label>
+                                <Label htmlFor="annex_id">Annex</Label>
                                 <Select
-                                    value={form.data.jail_id}
-                                    onValueChange={(value) => form.setData('jail_id', value)}
+                                    value={form.data.annex_id}
+                                    onValueChange={(value) => form.setData('annex_id', value)}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select jail" />
+                                        <SelectValue placeholder="Select annex" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {jails?.map((jail: any) => (
-                                            <SelectItem key={jail.id} value={jail.id.toString()}>
-                                                {jail.name}
+                                        {annexes?.map((annex: any) => (
+                                            <SelectItem key={annex.id} value={annex.id.toString()}>
+                                                {annex.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {form.errors.jail_id && (
-                                    <p className="text-sm text-red-600">{form.errors.jail_id}</p>
+                                {form.errors.annex_id && (
+                                    <p className="text-sm text-red-600">{form.errors.annex_id}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
@@ -377,24 +378,24 @@ export default function DormitoryManagement({ auth, dormitories, jails }: any) {
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-jail_id">Jail</Label>
+                                <Label htmlFor="edit-annex_id">Annex</Label>
                                 <Select
-                                    value={form.data.jail_id}
-                                    onValueChange={(value) => form.setData('jail_id', value)}
+                                    value={form.data.annex_id}
+                                    onValueChange={(value) => form.setData('annex_id', value)}
                                 >
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {jails?.map((jail: any) => (
-                                            <SelectItem key={jail.id} value={jail.id.toString()}>
-                                                {jail.name}
+                                        {annexes?.map((annex: any) => (
+                                            <SelectItem key={annex.id} value={annex.id.toString()}>
+                                                {annex.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {form.errors.jail_id && (
-                                    <p className="text-sm text-red-600">{form.errors.jail_id}</p>
+                                {form.errors.annex_id && (
+                                    <p className="text-sm text-red-600">{form.errors.annex_id}</p>
                                 )}
                             </div>
                             <div className="space-y-2">

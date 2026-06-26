@@ -43,14 +43,14 @@ class NotificationSeeder extends Seeder
         for ($i = 0; $i < $notificationsCount; $i++) {
             $user = $users->random();
 
+            $isRead = fake()->boolean(40);
+            
             Notification::create([
                 'user_id' => $user->id,
                 'type' => fake()->randomElement($notificationTypes),
                 'title' => fake()->sentence(),
                 'message' => fake()->paragraph(),
-                'is_read' => fake()->boolean(40),
-                'priority' => fake()->randomElement(['low', 'medium', 'high']),
-                'data' => json_encode(['example' => 'data']),
+                'read_at' => $isRead ? now() : null,
                 'created_at' => fake()->dateTimeBetween('-1 month', 'now'),
             ]);
             

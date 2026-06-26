@@ -20,7 +20,7 @@ class JailOfficerScope extends Model
         'jail_officer_id',
         'assigned_by',
         'scope_type',
-        'annex_id',
+        'building_id',
         'dormitory_id',
         'cell_id',
         'is_active',
@@ -194,7 +194,7 @@ class JailOfficerScope extends Model
 
     /**
      * Helper: Get all cells from a dormitory scope.
-     * Note: cells and annexes tables use annex_id (building is alias)
+     * Note: cells have dormitory_id, dormitories have annex_id
      */
     protected function getCellsFromDormitory(): array
     {
@@ -202,15 +202,14 @@ class JailOfficerScope extends Model
             return [];
         }
 
-        return Cell::join('annexes', 'cells.annex_id', '=', 'annexes.id')
-            ->where('annexes.dormitory_id', $this->dormitory_id)
-            ->pluck('cells.id')
+        return Cell::where('dormitory_id', $this->dormitory_id)
+            ->pluck('id')
             ->toArray();
     }
 
     /**
      * Helper: Get all cells from a building scope.
-     * Note: cells table uses annex_id column (building is alias)
+     * Note: dormitories have annex_id, cells have dormitory_id
      */
     protected function getCellsFromBuilding(): array
     {
@@ -218,12 +217,15 @@ class JailOfficerScope extends Model
             return [];
         }
 
-        return Cell::where('annex_id', $this->building_id)->pluck('id')->toArray();
+        // Get all dormitories in this annex/building, then get all cells in those dormitories
+        $dormitoryIds = Dormitory::where('annex_id', $this->building_id)->pluck('id')->toArray();
+        
+        return Cell::whereIn('dormitory_id', $dormitoryIds)->pluck('id')->toArray();
     }
 
     /**
      * Helper: Get all buildings from a dormitory scope.
-     * Note: Uses Annex model (building is alias)
+     * Note: Uses Annex model (building is alias), dormitories have annex_id
      */
     protected function getBuildingsFromDormitory(): array
     {
@@ -231,12 +233,13 @@ class JailOfficerScope extends Model
             return [];
         }
 
-        return Annex::where('dormitory_id', $this->dormitory_id)->pluck('id')->toArray();
+        $dormitory = Dormitory::find($this->dormitory_id);
+        return $dormitory && $dormitory->annex_id ? [$dormitory->annex_id] : [];
     }
 
     /**
      * Helper: Get the building containing a cell.
-     * Note: cells table uses annex_id column
+     * Note: cells have dormitory_id, dormitories have annex_id
      */
     protected function getBuildingFromCell(): array
     {
@@ -244,13 +247,15 @@ class JailOfficerScope extends Model
             return [];
         }
 
-        $cell = Cell::find($this->cell_id);
-        return $cell && $cell->annex_id ? [$cell->annex_id] : [];
+        $cell = Cell::with('dormitory.annex')->find($this->cell_id);
+        return $cell && $cell->dormitory && $cell->dormitory->annex 
+            ? [$cell->dormitory->annex->id] 
+            : [];
     }
 
     /**
      * Helper: Get the dormitory containing a building.
-     * Note: Uses Annex model
+     * Note: Uses Dormitory model, dormitories have annex_id
      */
     protected function getDormitoryFromBuilding(): array
     {
@@ -258,12 +263,13 @@ class JailOfficerScope extends Model
             return [];
         }
 
-        $annex = Annex::find($this->building_id);
-        return $annex && $annex->dormitory_id ? [$annex->dormitory_id] : [];
+        // Find dormitories that belong to this annex/building
+        $dormitoryIds = Dormitory::where('annex_id', $this->building_id)->pluck('id')->toArray();
+        return $dormitoryIds;
     }
 
     /**
-     * Helper: Get the dormitory containing a cell (through building).
+     * Helper: Get the dormitory containing a cell (through cell's dormitory_id).
      */
     protected function getDormitoryFromCell(): array
     {
@@ -271,9 +277,9 @@ class JailOfficerScope extends Model
             return [];
         }
 
-        $cell = Cell::with('building')->find($this->cell_id);
-        return $cell && $cell->building && $cell->building->dormitory_id
-            ? [$cell->building->dormitory_id]
+        $cell = Cell::find($this->cell_id);
+        return $cell && $cell->dormitory_id
+            ? [$cell->dormitory_id]
             : [];
     }
 }

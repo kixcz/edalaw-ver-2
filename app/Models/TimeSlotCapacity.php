@@ -12,6 +12,7 @@ class TimeSlotCapacity extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'branch_id',
         'time_slot',
         'visit_type',
         'max_capacity',
@@ -29,6 +30,7 @@ class TimeSlotCapacity extends Model
     protected function casts(): array
     {
         return [
+            'branch_id' => 'integer',
             'max_capacity' => 'integer',
             'duration_minutes' => 'integer',
             'interval_minutes' => 'integer',
@@ -38,38 +40,69 @@ class TimeSlotCapacity extends Model
     }
 
     /**
+     * Get the branch this time slot belongs to.
+     */
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Get time configuration for a branch and visit type.
+     * Prioritizes branch-specific config, falls back to global (null branch_id).
+     */
+    public static function getTimeConfig(?int $branchId, string $visitType): ?self
+    {
+        return self::where('visit_type', $visitType)
+            ->where(function ($query) use ($branchId) {
+                if ($branchId) {
+                    $query->where('branch_id', $branchId)
+                        ->orWhereNull('branch_id');
+                } else {
+                    $query->whereNull('branch_id');
+                }
+            })
+            ->orderByRaw('CASE WHEN branch_id IS NULL THEN 1 ELSE 0 END')
+            ->first();
+    }
+
+    /**
      * Get the default start time for a visit type.
      */
-    public static function getStartTime(string $visitType): string
+    public static function getStartTime(string $visitType, ?int $branchId = null): string
     {
-        $capacity = self::where('visit_type', $visitType)
-            ->where('time_slot', '07:00') // Get first slot of the day
-            ->first();
-
-        return $capacity?->start_time?->format('H:i') ?? '07:00';
+        $config = self::getTimeConfig($branchId, $visitType);
+        return $config?->start_time?->format('H:i') ?? '07:00';
     }
 
     /**
      * Get the default end time for a visit type.
      */
-    public static function getEndTime(string $visitType): string
+    public static function getEndTime(string $visitType, ?int $branchId = null): string
     {
-        $capacity = self::where('visit_type', $visitType)
-            ->where('time_slot', '07:00') // Get first slot of the day
-            ->first();
-
-        // Default end times: virtual 22:00, physical 18:00
+        $config = self::getTimeConfig($branchId, $visitType);
         $defaultEndTime = $visitType === 'virtual' ? '22:00' : '18:00';
-        return $capacity?->end_time?->format('H:i') ?? $defaultEndTime;
+        return $config?->end_time?->format('H:i') ?? $defaultEndTime;
     }
 
     /**
      * Get the default capacity for a time slot if not configured.
      */
-    public static function getCapacity(string $timeSlot, string $visitType, int $default = 4): int
+    public static function getCapacity(string $timeSlot, string $visitType, ?int $branchId = null, int $default = 4): int
     {
-        $capacity = self::where('time_slot', $timeSlot)
-            ->where('visit_type', $visitType)
+        $query = self::where('time_slot', $timeSlot)
+            ->where('visit_type', $visitType);
+        
+        if ($branchId) {
+            $query->where(function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId)
+                    ->orWhereNull('branch_id');
+            });
+        } else {
+            $query->whereNull('branch_id');
+        }
+        
+        $capacity = $query->orderByRaw('CASE WHEN branch_id IS NULL THEN 1 ELSE 0 END')
             ->first();
 
         return $capacity ? $capacity->max_capacity : $default;
@@ -91,9 +124,9 @@ class TimeSlotCapacity extends Model
     /**
      * Check if a time slot is available.
      */
-    public static function isAvailable(string $date, string $timeSlot, string $visitType, ?int $excludeVisitId = null): bool
+    public static function isAvailable(string $date, string $timeSlot, string $visitType, ?int $branchId = null, ?int $excludeVisitId = null): bool
     {
-        $capacity = self::getCapacity($timeSlot, $visitType);
+        $capacity = self::getCapacity($timeSlot, $visitType, $branchId);
         $currentBookings = self::getCurrentBookings($date, $timeSlot, $visitType);
 
         // Exclude the current visit if rescheduling

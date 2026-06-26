@@ -1,5 +1,3 @@
-import { Link, usePage } from '@inertiajs/react';
-import type { PropsWithChildren } from 'react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -10,13 +8,22 @@ import { edit } from '@/routes/profile';
 import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
 import type { NavItem, SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import {
+    Clock,
+    KeyRound,
+    MonitorCog,
+    Palette,
+    ShieldCheck,
+    UserRound,
+} from 'lucide-react';
+import type { PropsWithChildren } from 'react';
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentUrl } = useCurrentUrl();
     const page = usePage<SharedData>();
     const userRole = page.props.auth?.user?.role;
 
-    // When server-side rendering, we only render the layout on the client...
     if (typeof window === 'undefined') {
         return null;
     }
@@ -25,74 +32,87 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
         {
             title: 'Profile',
             href: edit(),
-            icon: null,
+            icon: UserRound,
         },
         {
             title: 'Password',
             href: editPassword(),
-            icon: null,
+            icon: KeyRound,
         },
         {
             title: 'Two-Factor Auth',
             href: show(),
-            icon: null,
+            icon: ShieldCheck,
         },
         {
             title: 'Appearance',
             href: editAppearance(),
-            icon: null,
+            icon: Palette,
         },
     ];
 
-    // Add Time Slot Capacity for super admin only
     if (userRole === 'super_admin') {
         sidebarNavItems.push({
             title: 'Time Slot Capacity',
             href: '/settings/time-slot-capacity',
-            icon: null,
+            icon: Clock,
         });
     }
 
     return (
-        <div className="px-4 py-6">
-            <Heading
-                title="Settings"
-                description="Manage your profile and account settings"
-            />
+        <div className="px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mb-8 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <Heading
+                    title="Settings"
+                    description="Manage your profile, security, appearance, and account preferences"
+                />
+                <div className="hidden items-center gap-2 rounded-full border bg-card px-3 py-2 text-xs font-medium text-muted-foreground shadow-sm lg:flex">
+                    <MonitorCog className="h-4 w-4" />
+                    Account control center
+                </div>
+            </div>
 
-            <div className="flex flex-col lg:flex-row lg:space-x-12">
-                <aside className="w-full max-w-xl lg:w-48">
-                    <nav
-                        className="flex flex-col space-y-1 space-x-0"
-                        aria-label="Settings"
-                    >
-                        {sidebarNavItems.map((item, index) => (
-                            <Button
-                                key={`${toUrl(item.href)}-${index}`}
-                                size="sm"
-                                variant="ghost"
-                                asChild
-                                className={cn('w-full justify-start', {
-                                    'bg-muted': isCurrentUrl(item.href),
-                                })}
-                            >
-                                <Link href={item.href}>
-                                    {item.icon && (
-                                        <item.icon className="h-4 w-4" />
-                                    )}
-                                    {item.title}
-                                </Link>
-                            </Button>
-                        ))}
-                    </nav>
+            <div className="grid gap-6 xl:grid-cols-[260px_1fr]">
+                <aside className="xl:sticky xl:top-6 xl:self-start">
+                    <div className="rounded-2xl border bg-card p-2 shadow-sm">
+                        <nav
+                            className="grid grid-cols-2 gap-1 sm:grid-cols-4 xl:grid-cols-1"
+                            aria-label="Settings"
+                        >
+                            {sidebarNavItems.map((item, index) => {
+                                const active = isCurrentUrl(item.href);
+
+                                return (
+                                    <Button
+                                        key={`${toUrl(item.href)}-${index}`}
+                                        size="sm"
+                                        variant="ghost"
+                                        asChild
+                                        className={cn(
+                                            'h-auto justify-start rounded-xl px-3 py-2.5 text-left text-sm',
+                                            active &&
+                                                'bg-muted text-foreground shadow-sm',
+                                        )}
+                                    >
+                                        <Link href={item.href}>
+                                            {item.icon && (
+                                                <item.icon className="h-4 w-4 shrink-0" />
+                                            )}
+                                            <span className="truncate">
+                                                {item.title}
+                                            </span>
+                                        </Link>
+                                    </Button>
+                                );
+                            })}
+                        </nav>
+                    </div>
                 </aside>
 
-                <Separator className="my-6 lg:hidden" />
+                <Separator className="xl:hidden" />
 
-                <div className="flex-1 md:max-w-4xl">
-                    <section className="w-full space-y-12">
-                        {children}
-                    </section>
+                <div className="min-w-0 flex-1">
+                    <section className="w-full space-y-8">{children}</section>
                 </div>
             </div>
         </div>

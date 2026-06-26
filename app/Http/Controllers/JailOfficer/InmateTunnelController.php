@@ -30,7 +30,7 @@ class InmateTunnelController extends Controller
                         });
                 })
                 // Only virtual visits (sessions with tunnels are virtual)
-                ->where('session_type', 'visit');
+                ->whereNotNull('visit_id');
             });
 
         if ($request->filled('search')) {

@@ -9,12 +9,12 @@ use App\Models\Cell;
 use App\Models\Dormitory;
 use App\Models\Inmate;
 use App\Models\Jail;
-use App\Models\JailOfficerScope;
 use App\Models\Region;
 use App\Models\User;
 use App\Models\Visit;
 use App\Models\VisitSession;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class NationalOfficeDashboardController extends Controller
@@ -27,6 +27,7 @@ class NationalOfficeDashboardController extends Controller
         // Get date range for analytics (default: last 30 days)
         $dateFrom = $request->input('date_from', now()->subDays(30)->format('Y-m-d'));
         $dateTo = $request->input('date_to', now()->format('Y-m-d'));
+        $registryLimit = 50;
 
         // === OVERVIEW STATISTICS ===
         $overviewStats = [
@@ -37,28 +38,31 @@ class NationalOfficeDashboardController extends Controller
             'total_annexes' => Annex::count(),
             'total_cells' => Cell::count(),
             'total_pdls' => Inmate::count(),
-            'total_visitors' => User::whereHas('role', fn($q) => $q->where('slug', 'visitor'))->count(),
+            'total_visitors' => User::whereHas('role', fn ($q) => $q->where('slug', 'visitor'))->count(),
             'total_visits' => Visit::count(),
             'active_visit_sessions' => VisitSession::whereNull('ended_at')->count(),
         ];
 
         // === REGIONAL OFFICES MODULE ===
         $regions = Region::withCount(['branches as total_branches'])->get()->map(function ($region) {
-            $jailsCount = $region->jails()->count();
-            $dormsCount = Dormitory::join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            $jailsCount = Jail::join('branches', 'jails.branch_id', '=', 'branches.id')
+                ->where('branches.region_id', $region->id)
+                ->count();
+            $dormsCount = Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->join('branches', 'jails.branch_id', '=', 'branches.id')
                 ->where('branches.region_id', $region->id)
                 ->count();
-            $cellsCount = Cell::join('annexes', 'cells.annex_id', '=', 'annexes.id')
-                ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            $cellsCount = Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+                ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->join('branches', 'jails.branch_id', '=', 'branches.id')
                 ->where('branches.region_id', $region->id)
                 ->count();
             $pdlsCount = Inmate::join('cells', 'inmates.cell_id', '=', 'cells.id')
-                ->join('annexes', 'cells.annex_id', '=', 'annexes.id')
-                ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+                ->join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+                ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->join('branches', 'jails.branch_id', '=', 'branches.id')
                 ->where('branches.region_id', $region->id)
                 ->count();
@@ -77,15 +81,27 @@ class NationalOfficeDashboardController extends Controller
         });
 
         // === BJMP BRANCHES MODULE ===
-        $branches = Branch::with(['region', 'jailWarden'])->withCount([
-            'jails as total_jails',
-            'dormitories as total_dormitories',
-            'annexes as total_annexes',
-        ])->get()->map(function ($branch) {
-            // Calculate cells count manually since it's not a direct relationship
-            $totalCells = Cell::join('annexes', 'cells.annex_id', '=', 'annexes.id')
-                ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+        $branches = Branch::with([
+            'region:id,code,name',
+            'jailWarden:id,branch_id,first_name,middle_name,last_name,email',
+        ])->limit($registryLimit)->get()->map(function ($branch) {
+            $totalJails = Jail::where('branch_id', $branch->id)->count();
+            $totalAnnexes = Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $branch->id)
+                ->count();
+            $totalDormitories = Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $branch->id)
+                ->count();
+            $totalCells = Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+                ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $branch->id)
+                ->count();
+            $totalPdls = Inmate::join('cells', 'inmates.cell_id', '=', 'cells.id')
+                ->join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+                ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $branch->id)
                 ->count();
 
@@ -96,30 +112,27 @@ class NationalOfficeDashboardController extends Controller
                 'type' => $branch->type,
                 'status' => $branch->status,
                 'region' => [
-                    'code' => $branch->region->code,
-                    'name' => $branch->region->name,
+                    'code' => $branch->region?->code ?? 'Unknown',
+                    'name' => $branch->region?->name ?? 'Unknown',
                 ],
                 'jail_warden' => $branch->jailWarden ? [
                     'id' => $branch->jailWarden->id,
                     'name' => trim("{$branch->jailWarden->first_name} {$branch->jailWarden->middle_name} {$branch->jailWarden->last_name}"),
                     'email' => $branch->jailWarden->email,
                 ] : null,
-                'total_jails' => $branch->total_jails,
-                'total_dormitories' => $branch->total_dormitories,
-                'total_annexes' => $branch->total_annexes,
+                'total_jails' => $totalJails,
+                'total_dormitories' => $totalDormitories,
+                'total_annexes' => $totalAnnexes,
                 'total_cells' => $totalCells,
-                'total_pdls' => Inmate::join('cells', 'inmates.cell_id', '=', 'cells.id')
-                    ->join('annexes', 'cells.annex_id', '=', 'annexes.id')
-                    ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-                    ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
-                    ->where('jails.branch_id', $branch->id)
-                    ->count(),
+                'total_pdls' => $totalPdls,
             ];
         });
 
         // === JAIL OFFICERS MODULE ===
-        $jailOfficers = User::whereHas('role', fn($q) => $q->where('slug', 'jail_officer'))
-            ->with(['branch.region', 'assignedScopes.annex', 'assignedScopes.dormitory', 'assignedScopes.cell'])
+        $jailOfficers = User::whereHas('role', fn ($q) => $q->where('slug', 'jail_officer'))
+            ->select(['id', 'branch_id', 'first_name', 'middle_name', 'last_name', 'email'])
+            ->with(['branch:id,region_id,code,name', 'branch.region:id,name'])
+            ->limit($registryLimit)
             ->get()->map(function ($officer) {
                 return [
                     'id' => $officer->id,
@@ -130,97 +143,110 @@ class NationalOfficeDashboardController extends Controller
                         'name' => $officer->branch->name,
                         'region' => $officer->branch->region?->name ?? 'Unknown',
                     ] : null,
-                    'scopes' => $officer->assignedScopes()->active()->get()->map(function ($scope) {
-                        return [
-                            'scope_type' => $scope->scope_type,
-                            'description' => $scope->scope_description,
-                        ];
-                    }),
+                    'scopes' => $officer->assignedScopes()
+                        ->active()
+                        ->select(['id', 'jail_officer_id', 'scope_type', 'building_id', 'dormitory_id', 'cell_id'])
+                        ->limit(5)
+                        ->get()
+                        ->map(function ($scope) {
+                            return [
+                                'scope_type' => $scope->scope_type,
+                                'description' => $scope->scope_description,
+                            ];
+                        }),
                 ];
             });
 
         // === ANNEX MODULE ===
-        $annexes = Annex::with(['dormitory.jail.branch.region'])
-            ->withCount(['cells as total_cells'])
+        $annexes = Annex::with(['jail:id,branch_id,name,code', 'jail.branch:id,region_id,name,code', 'jail.branch.region:id,name,code'])
+            ->withCount(['cells as total_cells', 'dormitories as total_dormitories'])
+            ->limit($registryLimit)
             ->get()->map(function ($annex) {
                 return [
                     'id' => $annex->id,
                     'name' => $annex->name,
-                    'dormitory' => [
-                        'name' => $annex->dormitory?->name ?? 'Unknown',
-                        'type' => $annex->dormitory?->type ?? 'Unknown',
-                    ],
                     'jail' => [
-                        'name' => $annex->dormitory?->jail?->name ?? 'Unknown',
-                        'code' => $annex->dormitory?->jail?->code ?? 'Unknown',
+                        'name' => $annex->jail?->name ?? 'Unknown',
+                        'code' => $annex->jail?->code ?? 'Unknown',
                     ],
                     'branch' => [
-                        'name' => $annex->dormitory?->jail?->branch?->name ?? 'Unknown',
-                        'code' => $annex->dormitory?->jail?->branch?->code ?? 'Unknown',
+                        'name' => $annex->jail?->branch?->name ?? 'Unknown',
+                        'code' => $annex->jail?->branch?->code ?? 'Unknown',
                     ],
                     'region' => [
-                        'name' => $annex->dormitory?->jail?->branch?->region?->name ?? 'Unknown',
-                        'code' => $annex->dormitory?->jail?->branch?->region?->code ?? 'Unknown',
+                        'name' => $annex->jail?->branch?->region?->name ?? 'Unknown',
+                        'code' => $annex->jail?->branch?->region?->code ?? 'Unknown',
                     ],
+                    'total_dormitories' => $annex->total_dormitories,
                     'total_cells' => $annex->total_cells,
                     'assigned_officers' => $annex->jailOfficerScopes()->active()->count(),
                 ];
             });
 
         // === DORMITORIES MODULE ===
-        $dormitories = Dormitory::with(['jail.branch.region'])
-            ->withCount(['annexes as total_annexes', 'cells as total_cells'])
+        $dormitories = Dormitory::with(['annex:id,jail_id,name', 'annex.jail:id,branch_id,name,code', 'annex.jail.branch:id,region_id,name,code', 'annex.jail.branch.region:id,name,code'])
+            ->withCount(['cells as total_cells'])
+            ->limit($registryLimit)
             ->get()->map(function ($dorm) {
                 return [
                     'id' => $dorm->id,
                     'name' => $dorm->name,
                     'type' => $dorm->type,
-                    'capacity' => $dorm->capacity,
+                    'annex' => [
+                        'name' => $dorm->annex?->name ?? 'Unknown',
+                    ],
                     'jail' => [
-                        'name' => $dorm->jail?->name ?? 'Unknown',
-                        'code' => $dorm->jail?->code ?? 'Unknown',
+                        'name' => $dorm->annex?->jail?->name ?? 'Unknown',
+                        'code' => $dorm->annex?->jail?->code ?? 'Unknown',
                     ],
                     'branch' => [
-                        'name' => $dorm->jail?->branch?->name ?? 'Unknown',
-                        'code' => $dorm->jail?->branch?->code ?? 'Unknown',
+                        'name' => $dorm->annex?->jail?->branch?->name ?? 'Unknown',
+                        'code' => $dorm->annex?->jail?->branch?->code ?? 'Unknown',
                     ],
                     'region' => [
-                        'name' => $dorm->jail?->branch?->region?->name ?? 'Unknown',
-                        'code' => $dorm->jail?->branch?->region?->code ?? 'Unknown',
+                        'name' => $dorm->annex?->jail?->branch?->region?->name ?? 'Unknown',
+                        'code' => $dorm->annex?->jail?->branch?->region?->code ?? 'Unknown',
                     ],
-                    'total_annexes' => $dorm->total_annexes,
                     'total_cells' => $dorm->total_cells,
                     'total_pdls' => $dorm->cells()->withCount('inmates')->get()->sum('inmates_count'),
                 ];
             });
 
         // === CELLS MODULE ===
-        $cells = Cell::with(['annex.dormitory.jail.branch.region'])
+        $cells = Cell::select(['id', 'dormitory_id', 'cell_number', 'capacity', 'status'])
+            ->with(['dormitory:id,annex_id,name,type', 'dormitory.annex:id,jail_id,name', 'dormitory.annex.jail:id,branch_id,name,code', 'dormitory.annex.jail.branch:id,region_id,name,code', 'dormitory.annex.jail.branch.region:id,name,code'])
             ->withCount(['inmates as total_pdls'])
+            ->limit($registryLimit)
             ->get()->map(function ($cell) {
+                $dormitory = $cell->dormitory;
+                $annex = $dormitory?->annex;
+                $jail = $annex?->jail;
+                $branch = $jail?->branch;
+                $region = $branch?->region;
+
                 return [
                     'id' => $cell->id,
                     'cell_number' => $cell->cell_number,
-                    'floor_number' => $cell->floor_number,
                     'capacity' => $cell->capacity,
+                    'status' => $cell->status,
                     'annex' => [
-                        'name' => $cell->annex?->name ?? 'Unknown',
+                        'name' => $annex?->name ?? 'Unknown',
                     ],
                     'dormitory' => [
-                        'name' => $cell->annex?->dormitory?->name ?? 'Unknown',
-                        'type' => $cell->annex?->dormitory?->type ?? 'Unknown',
+                        'name' => $dormitory?->name ?? 'Unknown',
+                        'type' => $dormitory?->type ?? 'Unknown',
                     ],
                     'jail' => [
-                        'name' => $cell->annex?->dormitory?->jail?->name ?? 'Unknown',
-                        'code' => $cell->annex?->dormitory?->jail?->code ?? 'Unknown',
+                        'name' => $jail?->name ?? 'Unknown',
+                        'code' => $jail?->code ?? 'Unknown',
                     ],
                     'branch' => [
-                        'name' => $cell->annex?->dormitory?->jail?->branch?->name ?? 'Unknown',
-                        'code' => $cell->annex?->dormitory?->jail?->branch?->code ?? 'Unknown',
+                        'name' => $branch?->name ?? 'Unknown',
+                        'code' => $branch?->code ?? 'Unknown',
                     ],
                     'region' => [
-                        'name' => $cell->annex?->dormitory?->jail?->branch?->region?->name ?? 'Unknown',
-                        'code' => $cell->annex?->dormitory?->jail?->branch?->region?->code ?? 'Unknown',
+                        'name' => $region?->name ?? 'Unknown',
+                        'code' => $region?->code ?? 'Unknown',
                     ],
                     'total_pdls' => $cell->total_pdls,
                     'assigned_officers' => $cell->jailOfficerScopes()->active()->count(),
@@ -228,104 +254,148 @@ class NationalOfficeDashboardController extends Controller
             });
 
         // === PDL MODULE ===
-        $pdls = Inmate::with(['cell.annex.dormitory.jail.branch.region'])
+        $pdls = Inmate::select(['id', 'cell_id', 'first_name', 'middle_name', 'last_name', 'date_of_birth', 'status'])
+            ->with(['cell:id,dormitory_id,cell_number', 'cell.dormitory:id,annex_id,name,type', 'cell.dormitory.annex:id,jail_id,name', 'cell.dormitory.annex.jail:id,branch_id,name,code', 'cell.dormitory.annex.jail.branch:id,region_id,name,code', 'cell.dormitory.annex.jail.branch.region:id,name,code'])
+            ->limit($registryLimit)
             ->get()->map(function ($inmate) {
+                $cell = $inmate->cell;
+                $dormitory = $cell?->dormitory;
+                $annex = $dormitory?->annex;
+                $jail = $annex?->jail;
+                $branch = $jail?->branch;
+                $region = $branch?->region;
+
                 return [
                     'id' => $inmate->id,
                     'full_name' => trim("{$inmate->first_name} {$inmate->middle_name} {$inmate->last_name}"),
-                    'age' => $inmate->age,
-                    'gender' => $inmate->gender,
+                    'age' => $inmate->date_of_birth ? now()->diffInYears($inmate->date_of_birth) : null,
+                    'gender' => 'N/A',
                     'cell' => [
-                        'cell_number' => $inmate->cell?->cell_number ?? 'N/A',
+                        'cell_number' => $cell?->cell_number ?? 'N/A',
                     ],
                     'annex' => [
-                        'name' => $inmate->cell?->annex?->name ?? 'N/A',
+                        'name' => $annex?->name ?? 'N/A',
                     ],
                     'dormitory' => [
-                        'name' => $inmate->cell?->annex?->dormitory?->name ?? 'N/A',
-                        'type' => $inmate->cell?->annex?->dormitory?->type ?? 'N/A',
+                        'name' => $dormitory?->name ?? 'N/A',
+                        'type' => $dormitory?->type ?? 'N/A',
                     ],
                     'jail' => [
-                        'name' => $inmate->cell?->annex?->dormitory?->jail?->name ?? 'N/A',
-                        'code' => $inmate->cell?->annex?->dormitory?->jail?->code ?? 'N/A',
+                        'name' => $jail?->name ?? 'N/A',
+                        'code' => $jail?->code ?? 'N/A',
                     ],
                     'branch' => [
-                        'name' => $inmate->cell?->annex?->dormitory?->jail?->branch?->name ?? 'N/A',
-                        'code' => $inmate->cell?->annex?->dormitory?->jail?->branch?->code ?? 'N/A',
+                        'name' => $branch?->name ?? 'N/A',
+                        'code' => $branch?->code ?? 'N/A',
                     ],
                     'region' => [
-                        'name' => $inmate->cell?->annex?->dormitory?->jail?->branch?->region?->name ?? 'N/A',
-                        'code' => $inmate->cell?->annex?->dormitory?->jail?->branch?->region?->code ?? 'N/A',
+                        'name' => $region?->name ?? 'N/A',
+                        'code' => $region?->code ?? 'N/A',
                     ],
                 ];
             });
 
         // === ANALYTICS DATA ===
-        
-        // PDL count per branch
-        $pdlPerBranch = Branch::with(['jails.dormitories.annexes.cells.inmates'])
+
+        // PDL count per branch (optimized with direct query)
+        $pdlPerBranch = DB::table('branches')
+            ->leftJoin('jails', 'branches.id', '=', 'jails.branch_id')
+            ->leftJoin('annexes', 'jails.id', '=', 'annexes.jail_id')
+            ->leftJoin('dormitories', 'annexes.id', '=', 'dormitories.annex_id')
+            ->leftJoin('cells', 'dormitories.id', '=', 'cells.dormitory_id')
+            ->leftJoin('inmates', 'cells.id', '=', 'inmates.cell_id')
+            ->select('branches.id', 'branches.name', DB::raw('COUNT(inmates.id) as aggregate_count'))
+            ->groupBy('branches.id', 'branches.name')
+            ->orderByDesc('aggregate_count')
+            ->limit(20)
             ->get()
-            ->map(function ($b) {
-                $count = 0;
-                foreach ($b->jails as $jail) {
-                    foreach ($jail->dormitories as $dorm) {
-                        foreach ($dorm->annexes as $annex) {
-                            $count += $annex->cells->sum('inmates_count');
-                        }
-                    }
-                }
-                return ['name' => $b->name, 'count' => $count];
-            });
+            ->map(fn ($branch) => ['name' => $branch->name, 'count' => (int) $branch->aggregate_count]);
 
         // Branch count per region
         $branchPerRegion = Region::withCount('branches')
             ->get()
-            ->map(fn($r) => ['name' => $r->name, 'count' => $r->branches_count]);
+            ->map(fn ($r) => ['name' => $r->name, 'count' => $r->branches_count]);
 
         // Cell count per branch
-        $cellPerBranch = Branch::with(['jails.dormitories.annexes.cells'])
+        $cellPerBranch = DB::table('branches')
+            ->leftJoin('jails', 'branches.id', '=', 'jails.branch_id')
+            ->leftJoin('annexes', 'jails.id', '=', 'annexes.jail_id')
+            ->leftJoin('dormitories', 'annexes.id', '=', 'dormitories.annex_id')
+            ->leftJoin('cells', 'dormitories.id', '=', 'cells.dormitory_id')
+            ->select('branches.id', 'branches.name', DB::raw('COUNT(DISTINCT cells.id) as aggregate_count'))
+            ->groupBy('branches.id', 'branches.name')
+            ->orderByDesc('aggregate_count')
+            ->limit(20)
             ->get()
-            ->map(function ($b) {
-                $count = 0;
-                foreach ($b->jails as $jail) {
-                    foreach ($jail->dormitories as $dorm) {
-                        $count += $dorm->annexes->sum(fn($annex) => $annex->cells->count());
-                    }
-                }
-                return ['name' => $b->name, 'count' => $count];
-            });
+            ->map(fn ($branch) => ['name' => $branch->name, 'count' => (int) $branch->aggregate_count]);
 
         // Visits per region
-        $visitsPerRegion = Region::with(['branches.jails.visits'])
+        $visitsPerRegion = DB::table('regions')
+            ->leftJoin('branches', 'regions.id', '=', 'branches.region_id')
+            ->leftJoin('jails', 'branches.id', '=', 'jails.branch_id')
+            ->leftJoin('visits', function ($join) use ($dateFrom, $dateTo) {
+                $join->on('jails.id', '=', 'visits.jail_id')
+                    ->whereBetween('visits.scheduled_date', [$dateFrom, $dateTo]);
+            })
+            ->select('regions.id', 'regions.name', DB::raw('COUNT(visits.id) as aggregate_count'))
+            ->groupBy('regions.id', 'regions.name')
+            ->orderByDesc('aggregate_count')
+            ->limit(20)
             ->get()
-            ->map(fn($r) => [
-                'name' => $r->name,
-                'count' => $r->branches->sum(fn($b) => $b->jails->sum(fn($j) => $j->visits->count()))
-            ]);
+            ->map(fn ($region) => ['name' => $region->name, 'count' => (int) $region->aggregate_count]);
 
         // Visits per branch
-        $visitsPerBranch = Branch::withCount(['visits'])
+        $visitsPerBranch = DB::table('branches')
+            ->leftJoin('jails', 'branches.id', '=', 'jails.branch_id')
+            ->leftJoin('visits', function ($join) use ($dateFrom, $dateTo) {
+                $join->on('jails.id', '=', 'visits.jail_id')
+                    ->whereBetween('visits.scheduled_date', [$dateFrom, $dateTo]);
+            })
+            ->select('branches.id', 'branches.name', DB::raw('COUNT(visits.id) as aggregate_count'))
+            ->groupBy('branches.id', 'branches.name')
+            ->orderByDesc('aggregate_count')
+            ->limit(20)
             ->get()
-            ->map(fn($b) => ['name' => $b->name, 'count' => $b->visits_count]);
+            ->map(fn ($branch) => ['name' => $branch->name, 'count' => (int) $branch->aggregate_count]);
 
         // Visits per dormitory
-        $visitsPerDormitory = Dormitory::with(['jail.visits'])
+        $visitsPerDormitory = DB::table('dormitories')
+            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+            ->leftJoin('visits', function ($join) use ($dateFrom, $dateTo) {
+                $join->on('jails.id', '=', 'visits.jail_id')
+                    ->whereBetween('visits.scheduled_date', [$dateFrom, $dateTo]);
+            })
+            ->select('dormitories.id', 'dormitories.name', DB::raw('COUNT(visits.id) as visit_count'))
+            ->groupBy('dormitories.id', 'dormitories.name')
+            ->orderByDesc('visit_count')
+            ->limit(20)
             ->get()
-            ->map(fn($d) => ['name' => $d->name, 'count' => $d->jail?->visits->count() ?? 0]);
+            ->map(fn ($d) => ['name' => $d->name, 'count' => (int) $d->visit_count]);
 
         // Visits per cell (top 20 by inmate visits in that cell)
-        $visitsPerCell = Cell::with(['annex.dormitory', 'inmates.visits'])
-            ->get()
-            ->map(function ($cell) {
-                $visitCount = $cell->inmates->sum(fn($inmate) => $inmate->visits->count());
-                return [
-                    'name' => "{$cell->cell_number} ({$cell->annex->dormitory->name})",
-                    'count' => $visitCount
-                ];
+        $visitsPerCell = DB::table('cells')
+            ->join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->leftJoin('inmates', 'cells.id', '=', 'inmates.cell_id')
+            ->leftJoin('visits', function ($join) use ($dateFrom, $dateTo) {
+                $join->on('inmates.id', '=', 'visits.inmate_id')
+                    ->whereBetween('visits.scheduled_date', [$dateFrom, $dateTo]);
             })
-            ->sortByDesc('count')
-            ->take(20)
-            ->values();
+            ->select(
+                'cells.id',
+                'cells.cell_number',
+                'annexes.name as annex_name',
+                DB::raw('COUNT(DISTINCT visits.id) as visit_count')
+            )
+            ->groupBy('cells.id', 'cells.cell_number', 'annexes.name')
+            ->orderByDesc('visit_count')
+            ->limit(20)
+            ->get()
+            ->map(fn ($c) => [
+                'name' => "{$c->cell_number} ({$c->annex_name})",
+                'count' => (int) $c->visit_count,
+            ]);
 
         return Inertia::render('NationalOffice/Dashboard', [
             'overviewStats' => $overviewStats,
@@ -345,6 +415,7 @@ class NationalOfficeDashboardController extends Controller
                 'visits_per_dormitory' => $visitsPerDormitory,
                 'visits_per_cell' => $visitsPerCell,
             ],
+            'registryLimit' => $registryLimit,
             'filters' => [
                 'date_from' => $dateFrom,
                 'date_to' => $dateTo,

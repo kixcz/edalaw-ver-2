@@ -42,32 +42,30 @@ class Branch extends Model
     }
 
     /**
-     * Get all dormitories through jails.
+     * Get all dormitories through jails and annexes.
      */
     public function dormitories(): HasManyThrough
     {
-        return $this->hasManyThrough(Dormitory::class, Jail::class);
+        return $this->hasManyThrough(Dormitory::class, Annex::class, 'jail_id', 'annex_id');
     }
 
     /**
-     * Get all annexes through jails and dormitories.
+     * Get all annexes through jails.
      */
     public function annexes(): HasManyThrough
     {
-        return $this->hasManyThrough(Annex::class, Dormitory::class, 'jail_id', 'dormitory_id');
+        return $this->hasManyThrough(Annex::class, Jail::class);
     }
 
     /**
-     * Get all cells through jails, dormitories, and annexes.
-     * Note: This uses a query builder approach since HasManyThrough
-     * doesn't support more than 2 levels directly.
+     * Get all cells through jails, annexes, and dormitories.
      */
     public function cells()
     {
         return Cell::query()
-            ->join('annexes', 'cells.annex_id', '=', 'annexes.id')
-            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
             ->where('jails.branch_id', $this->id)
             ->select('cells.*');
     }

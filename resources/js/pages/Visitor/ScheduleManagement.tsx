@@ -80,6 +80,7 @@ type Visit = {
     scheduled_date: string;
     scheduled_time: string | null;
     visit_type: 'virtual' | 'physical';
+    inmate_id: number;
     inmate_first_name: string;
     inmate_middle_name: string | null;
     inmate_last_name: string;
@@ -734,7 +735,12 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
             setRescheduleDayUnavailable(false);
             try {
                 const visitType = selectedVisitForReschedule.visit_type;
-                const response = await fetch(`/visitor/schedules/booked-slots?date=${rescheduleDate}&visit_type=${visitType}`);
+                const inmateId = selectedVisitForReschedule.inmate_id;
+                let url = `/visitor/schedules/booked-slots?date=${rescheduleDate}&visit_type=${visitType}`;
+                if (inmateId) {
+                    url += `&inmate_id=${inmateId}`;
+                }
+                const response = await fetch(url);
                 const data = await response.json();
                 if (data.slotCapacities) {
                     setRescheduleSlotCapacities(data.slotCapacities);
@@ -742,7 +748,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                 if (data.isDayUnavailable === true) {
                     setRescheduleDayUnavailable(true);
                 }
-                // Set duration and interval from admin settings
+                // Set duration and interval from cell-specific settings
                 if (typeof data.durationMinutes === 'number') {
                     setRescheduleDurationMinutes(data.durationMinutes);
                 }

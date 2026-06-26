@@ -1,5 +1,34 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { AlertTriangle, BarChart3, Bell, Calendar, CalendarCheck, FileText, Folder, LayoutGrid, Link2, MessageSquare, Phone, Scale, Shield, Users, Heart, Monitor, Video, Camera, Flag, Settings, Sliders, Film, MessageCircle, Building, Clock, Archive, Building2, Columns4, BrickWall, Fence, Warehouse, PersonStanding, Key } from 'lucide-react';
+import {
+    Archive,
+    Bell,
+    Building,
+    Building2,
+    Calendar,
+    Clock,
+    Columns4,
+    Fence,
+    FileText,
+    Film,
+    Flag,
+    Folder,
+    Heart,
+    Key,
+    LayoutGrid,
+    Link2,
+    MessageCircle,
+    MessageSquare,
+    Monitor,
+    PersonStanding,
+    Phone,
+    Scale,
+    Settings,
+    Shield,
+    Sliders,
+    Users,
+    Video,
+    Warehouse,
+} from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
 import { NavMain } from '@/components/nav-main';
@@ -16,26 +45,28 @@ import {
 import type { NavItem, SharedData } from '@/types';
 import AppLogo from './app-logo';
 
-
 export function AppSidebar() {
     const page = usePage<SharedData>();
     const sidebarRef = useRef<HTMLDivElement>(null);
-    
+
     if (!page?.props) {
         return null;
     }
-    
+
     const auth = page.props.auth;
-    const userRole = auth?.user?.role;
+    const userRole = String(auth?.user?.role ?? '');
 
     // Save scroll position before navigation
     useEffect(() => {
         let isMounted = true;
-        
+
         const handleStart = () => {
             if (isMounted && sidebarRef.current) {
                 const scrollTop = sidebarRef.current.scrollTop;
-                localStorage.setItem('jailOfficerSidebarScrollPosition', scrollTop.toString());
+                localStorage.setItem(
+                    'jailOfficerSidebarScrollPosition',
+                    scrollTop.toString(),
+                );
             }
         };
 
@@ -49,7 +80,9 @@ export function AppSidebar() {
 
     // Restore scroll position after page load
     useEffect(() => {
-        const savedPosition = localStorage.getItem('jailOfficerSidebarScrollPosition');
+        const savedPosition = localStorage.getItem(
+            'jailOfficerSidebarScrollPosition',
+        );
         if (savedPosition && sidebarRef.current) {
             const scrollTop = parseInt(savedPosition, 10);
             // Use setTimeout to ensure the DOM is ready
@@ -62,18 +95,20 @@ export function AppSidebar() {
     }, [page.component]); // Restore when page component changes
 
     const mainNavItems: NavItem[] = [];
-   
+
     // Role-specific dashboard routes
     const getDashboardRoute = () => {
+        if (userRole === 'national') return '/dashboard/national-office';
         if (userRole === 'jail_warden') return '/dashboard/jail-warden';
         if (userRole === 'jail_officer') return '/dashboard/jail-officer';
-        if (userRole === 'monitoring_officer') return '/dashboard/monitoring-officer';
+        if (userRole === 'monitoring_officer')
+            return '/dashboard/monitoring-officer';
         if (userRole === 'bjmp_officer') return '/dashboard';
         if (userRole === 'visitor') return '/dashboard';
         if (userRole === 'super_admin') return '/dashboard';
         return '/dashboard';
     };
-    
+
     if (userRole !== 'visitor' && userRole !== 'super_admin') {
         mainNavItems.push({
             title: 'Dashboard',
@@ -82,10 +117,15 @@ export function AppSidebar() {
         });
     }
 
-    let superAdminNavGroups: Array<{ label: string; items: NavItem[] }> | undefined;
+    let superAdminNavGroups:
+        | Array<{ label: string; items: NavItem[] }>
+        | undefined;
     if (userRole === 'super_admin') {
-        const unreadAdminCount = typeof page.props.unreadAdminNotificationCount === 'number' ? page.props.unreadAdminNotificationCount : 0;
-        
+        const unreadAdminCount =
+            typeof page.props.unreadAdminNotificationCount === 'number'
+                ? page.props.unreadAdminNotificationCount
+                : 0;
+
         superAdminNavGroups = [
             {
                 label: 'Main',
@@ -99,7 +139,8 @@ export function AppSidebar() {
                         title: 'Notification',
                         href: '/admin/notifications',
                         icon: Bell,
-                        badge: unreadAdminCount > 0 ? unreadAdminCount : undefined,
+                        badge:
+                            unreadAdminCount > 0 ? unreadAdminCount : undefined,
                     },
                 ],
             },
@@ -197,10 +238,12 @@ export function AppSidebar() {
     }
 
     // Visitor navigation with categories
-    let visitorNavGroups: Array<{ label: string; items: NavItem[] }> | undefined;
+    let visitorNavGroups:
+        | Array<{ label: string; items: NavItem[] }>
+        | undefined;
     if (userRole === 'visitor') {
         const unreadCount = page.props.unreadNotificationCount || 0;
-        
+
         visitorNavGroups = [
             {
                 label: 'Main',
@@ -287,37 +330,77 @@ export function AppSidebar() {
     }
 
     // BJMP Officer navigation with categories
-    let bjmpOfficerNavGroups: Array<{ label: string; items: NavItem[] }> | undefined;
+    let bjmpOfficerNavGroups:
+        | Array<{ label: string; items: NavItem[] }>
+        | undefined;
     if (userRole === 'bjmp_officer') {
         const unreadBjmpCount = page.props.unreadNotificationCount ?? 0;
         bjmpOfficerNavGroups = [
             {
                 label: 'Main',
                 items: [
-                    { title: 'Dashboard', href: '/dashboard', icon: LayoutGrid },
-                    { title: 'Notifications', href: '/bjmp-officer/notifications', icon: Bell, badge: unreadBjmpCount > 0 ? unreadBjmpCount : undefined },
+                    {
+                        title: 'Dashboard',
+                        href: '/dashboard',
+                        icon: LayoutGrid,
+                    },
+                    {
+                        title: 'Notifications',
+                        href: '/bjmp-officer/notifications',
+                        icon: Bell,
+                        badge:
+                            unreadBjmpCount > 0 ? unreadBjmpCount : undefined,
+                    },
                 ],
             },
             {
                 label: 'Services',
                 items: [
-                    { title: 'E-Burol', href: '/bjmp-officer/eburols', icon: Heart },
-                    { title: 'Visit Schedules', href: '/bjmp-officer/schedules', icon: Calendar },
-                    { title: 'Appeals', href: '/bjmp-officer/appeals', icon: Scale },
+                    {
+                        title: 'E-Burol',
+                        href: '/bjmp-officer/eburols',
+                        icon: Heart,
+                    },
+                    {
+                        title: 'Visit Schedules',
+                        href: '/bjmp-officer/schedules',
+                        icon: Calendar,
+                    },
+                    {
+                        title: 'Appeals',
+                        href: '/bjmp-officer/appeals',
+                        icon: Scale,
+                    },
                 ],
             },
             {
                 label: 'Facility Management',
                 items: [
-                    { title: 'Cell Management', href: '/bjmp-officer/cells', icon: Building },
-                    { title: 'Inmate Management', href: '/bjmp-officer/inmates', icon: Users },
-                    { title: 'Cell Schedules', href: '/bjmp-officer/cell-schedules', icon: Clock },
+                    {
+                        title: 'Cell Management',
+                        href: '/bjmp-officer/cells',
+                        icon: Building,
+                    },
+                    {
+                        title: 'Inmate Management',
+                        href: '/bjmp-officer/inmates',
+                        icon: Users,
+                    },
+                    {
+                        title: 'Cell Schedules',
+                        href: '/bjmp-officer/cell-schedules',
+                        icon: Clock,
+                    },
                 ],
             },
             {
                 label: 'System',
                 items: [
-                    { title: 'History Logs', href: '/bjmp-officer/audit-logs', icon: FileText },
+                    {
+                        title: 'History Logs',
+                        href: '/bjmp-officer/audit-logs',
+                        icon: FileText,
+                    },
                     { title: 'Settings', href: '/settings', icon: Settings },
                 ],
             },
@@ -325,7 +408,9 @@ export function AppSidebar() {
     }
 
     // Monitoring Officer navigation with categories
-    let monitoringOfficerNavGroups: Array<{ label: string; items: NavItem[] }> | undefined;
+    let monitoringOfficerNavGroups:
+        | Array<{ label: string; items: NavItem[] }>
+        | undefined;
     if (userRole === 'monitoring_officer') {
         const unreadMoCount = page.props.unreadNotificationCount ?? 0;
         monitoringOfficerNavGroups = [
@@ -399,25 +484,41 @@ export function AppSidebar() {
     }
 
     // Jail Officer navigation (streamlined - scope-based facility categories)
-    let jailOfficerNavGroups: Array<{ label: string; items: NavItem[] }> | undefined;
+    let jailOfficerNavGroups:
+        | Array<{ label: string; items: NavItem[] }>
+        | undefined;
     if (userRole === 'jail_officer') {
         const unreadJailCount = page.props.unreadNotificationCount ?? 0;
-        
+
         // Get user's active scopes
-        const userScopes: any[] = Array.isArray(page.props.auth?.user?.assigned_scopes) ? page.props.auth.user.assigned_scopes : [];
+        const userScopes: any[] = Array.isArray(
+            page.props.auth?.user?.assigned_scopes,
+        )
+            ? page.props.auth.user.assigned_scopes
+            : [];
         const activeScopes = userScopes.filter((scope) => scope.is_active);
-        
+
         // Determine scope levels present (not individual facilities)
         const hasCellScope = activeScopes.some((s) => s.scope_type === 'cell');
-        const hasDormitoryScope = activeScopes.some((s) => s.scope_type === 'dormitory');
-        const hasBuildingScope = activeScopes.some((s) => s.scope_type === 'building' || s.scope_type === 'annex');
-        
+        const hasDormitoryScope = activeScopes.some(
+            (s) => s.scope_type === 'dormitory',
+        );
+        const hasBuildingScope = activeScopes.some(
+            (s) => s.scope_type === 'building' || s.scope_type === 'annex',
+        );
+
         // Get highest scope level for filtering
-        const highestScope = hasBuildingScope ? 'building' : hasDormitoryScope ? 'dormitory' : hasCellScope ? 'cell' : null;
-        
+        const highestScope = hasBuildingScope
+            ? 'building'
+            : hasDormitoryScope
+              ? 'dormitory'
+              : hasCellScope
+                ? 'cell'
+                : null;
+
         // Build facility management items based on scope levels
         const facilityItems: NavItem[] = [];
-        
+
         // Add category-based menus (not individual facilities)
         if (hasBuildingScope || hasDormitoryScope || hasCellScope) {
             // Buildings/Annexes - show if officer has building-level access
@@ -428,7 +529,7 @@ export function AppSidebar() {
                     icon: Warehouse,
                 });
             }
-            
+
             // Dormitories - show if officer has dormitory or building level access
             if (hasDormitoryScope || hasBuildingScope) {
                 facilityItems.push({
@@ -437,21 +538,21 @@ export function AppSidebar() {
                     icon: Building,
                 });
             }
-            
+
             // Cells - always show if officer has any scope
             facilityItems.push({
                 title: 'Cells',
                 href: '/jail-officer/cells-hierarchical',
                 icon: Columns4,
             });
-            
+
             // PDLs Management - always show if officer has any scope
             facilityItems.push({
                 title: 'PDL Management',
                 href: '/jail-officer/inmates-hierarchical',
                 icon: PersonStanding,
             });
-            
+
             // Cell Schedules - always show if officer has any scope
             facilityItems.push({
                 title: 'Cell Schedules',
@@ -459,7 +560,7 @@ export function AppSidebar() {
                 icon: Clock,
             });
         }
-        
+
         jailOfficerNavGroups = [
             {
                 label: 'Main',
@@ -473,7 +574,8 @@ export function AppSidebar() {
                         title: 'Notifications',
                         href: '/jail-officer/notifications',
                         icon: Bell,
-                        badge: unreadJailCount > 0 ? unreadJailCount : undefined,
+                        badge:
+                            unreadJailCount > 0 ? unreadJailCount : undefined,
                     },
                 ],
             },
@@ -517,10 +619,14 @@ export function AppSidebar() {
                     },
                 ],
             },
-            ...(facilityItems.length > 0 ? [{
-                label: 'Facility Management',
-                items: facilityItems,
-            }] : []),
+            ...(facilityItems.length > 0
+                ? [
+                      {
+                          label: 'Facility Management',
+                          items: facilityItems,
+                      },
+                  ]
+                : []),
             {
                 label: 'Configuration',
                 items: [
@@ -534,8 +640,79 @@ export function AppSidebar() {
         ];
     }
 
+    // National Office navigation with management modules
+    let nationalOfficeNavGroups:
+        | Array<{ label: string; items: NavItem[] }>
+        | undefined;
+    if (userRole === 'national') {
+        nationalOfficeNavGroups = [
+            {
+                label: 'Main',
+                items: [
+                    {
+                        title: 'Dashboard',
+                        href: '/dashboard/national-office',
+                        icon: LayoutGrid,
+                    },
+                ],
+            },
+            {
+                label: 'Administrative Management',
+                items: [
+                    {
+                        title: 'Regions',
+                        href: '/national-office/regions',
+                        icon: Columns4,
+                    },
+                    {
+                        title: 'Branches',
+                        href: '/national-office/branches',
+                        icon: Building2,
+                    },
+                    {
+                        title: 'Officers',
+                        href: '/national-office/officers',
+                        icon: Users,
+                    },
+                ],
+            },
+            {
+                label: 'Facility Management',
+                items: [
+                    {
+                        title: 'Annexes',
+                        href: '/national-office/annexes',
+                        icon: Warehouse,
+                    },
+                    {
+                        title: 'Dormitories',
+                        href: '/national-office/dormitories',
+                        icon: Building,
+                    },
+                    {
+                        title: 'Cells',
+                        href: '/national-office/cells',
+                        icon: Fence,
+                    },
+                ],
+            },
+            {
+                label: 'PDL Registry',
+                items: [
+                    {
+                        title: 'PDLs',
+                        href: '/national-office/pdls',
+                        icon: PersonStanding,
+                    },
+                ],
+            },
+        ];
+    }
+
     // Jail Warden navigation with categories
-    let jailWardenNavGroups: Array<{ label: string; items: NavItem[] }> | undefined;
+    let jailWardenNavGroups:
+        | Array<{ label: string; items: NavItem[] }>
+        | undefined;
     if (userRole === 'jail_warden') {
         jailWardenNavGroups = [
             {
@@ -602,7 +779,12 @@ export function AppSidebar() {
     }
 
     return (
-        <Sidebar ref={sidebarRef} collapsible="icon" variant="inset" className="sidebar-scroll-custom">
+        <Sidebar
+            ref={sidebarRef}
+            collapsible="icon"
+            variant="inset"
+            className="sidebar-scroll-custom"
+        >
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -618,11 +800,14 @@ export function AppSidebar() {
             <SidebarContent>
                 {userRole === 'visitor' && visitorNavGroups ? (
                     <NavMain groups={visitorNavGroups} />
+                ) : userRole === 'national' && nationalOfficeNavGroups ? (
+                    <NavMain groups={nationalOfficeNavGroups} />
                 ) : userRole === 'super_admin' && superAdminNavGroups ? (
                     <NavMain groups={superAdminNavGroups} />
                 ) : userRole === 'bjmp_officer' && bjmpOfficerNavGroups ? (
                     <NavMain groups={bjmpOfficerNavGroups} />
-                ) : userRole === 'monitoring_officer' && monitoringOfficerNavGroups ? (
+                ) : userRole === 'monitoring_officer' &&
+                  monitoringOfficerNavGroups ? (
                     <NavMain groups={monitoringOfficerNavGroups} />
                 ) : userRole === 'jail_officer' && jailOfficerNavGroups ? (
                     <NavMain groups={jailOfficerNavGroups} />
@@ -634,7 +819,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-              
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

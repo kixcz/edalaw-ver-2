@@ -22,11 +22,11 @@ class CellManagementController extends Controller
         }
 
         $cells = Cell::query()
-            ->join('annexes', 'cells.annex_id', '=', 'annexes.id')
-            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            ->join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
             ->where('jails.branch_id', $user->branch_id)
-            ->with(['annex', 'annex.dormitory', 'annex.dormitory.jail'])
+            ->with(['dormitory', 'dormitory.annex', 'dormitory.annex.jail'])
             ->select('cells.*')
             ->orderBy('cells.cell_number')
             ->paginate(15)
@@ -35,25 +35,24 @@ class CellManagementController extends Controller
                 'cell_number' => $cell->cell_number,
                 'capacity' => $cell->capacity,
                 'status' => $cell->status,
-                'annex' => [
-                    'id' => $cell->annex->id,
-                    'name' => $cell->annex->name,
-                    'dormitory' => [
-                        'id' => $cell->annex->dormitory->id,
-                        'name' => $cell->annex->dormitory->name,
-                        'jail' => [
-                            'id' => $cell->annex->dormitory->jail->id,
-                            'name' => $cell->annex->dormitory->jail->name,
-                        ],
-                    ],
-                ],
+                'annex' => $cell->dormitory?->annex ? [
+                    'id' => $cell->dormitory->annex->id,
+                    'name' => $cell->dormitory->annex->name,
+                    'dormitory' => $cell->dormitory ? [
+                        'id' => $cell->dormitory->id,
+                        'name' => $cell->dormitory->name,
+                        'jail' => $cell->dormitory->annex?->jail ? [
+                            'id' => $cell->dormitory->annex->jail->id,
+                            'name' => $cell->dormitory->annex->jail->name,
+                        ] : null,
+                    ] : null,
+                ] : null,
                 'created_at' => $cell->created_at,
             ]);
 
         return Inertia::render('JailWarden/CellManagement/Index', [
             'cells' => $cells,
-            'annexes' => Annex::join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-                ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+            'annexes' => Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $user->branch_id)
                 ->where('annexes.status', 'active')
                 ->select('annexes.*')
@@ -91,9 +90,8 @@ class CellManagementController extends Controller
             ])->withInput();
         }
 
-        // Verify annex belongs to warden's branch through dormitory and jail
-        $annex = Annex::join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+        // Verify annex belongs to warden's branch through jail
+        $annex = Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
             ->where('annexes.id', $validated['annex_id'])
             ->where('jails.branch_id', $user->branch_id)
             ->select('annexes.*')
@@ -117,12 +115,11 @@ class CellManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
-        // Verify cell belongs to warden's branch through annex, dormitory, and jail
-        $belongsToBranch = $cell->annex()
-            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+        // Verify cell belongs to warden's branch through dormitory, annex, and jail
+        $belongsToBranch = $cell->dormitory()
+            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
             ->where('jails.branch_id', $user->branch_id)
-            ->where('annexes.id', $cell->annex_id)
             ->exists();
 
         if (!$belongsToBranch) {
@@ -137,8 +134,7 @@ class CellManagementController extends Controller
         ]);
 
         // Verify new annex belongs to warden's branch
-        $newAnnex = Annex::join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+        $newAnnex = Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
             ->where('annexes.id', $validated['annex_id'])
             ->where('jails.branch_id', $user->branch_id)
             ->select('annexes.*')
@@ -160,12 +156,11 @@ class CellManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
-        // Verify cell belongs to warden's branch through annex, dormitory, and jail
-        $belongsToBranch = $cell->annex()
-            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-            ->join('jails', 'dormitories.jail_id', '=', 'jails.id')
+        // Verify cell belongs to warden's branch through dormitory, annex, and jail
+        $belongsToBranch = $cell->dormitory()
+            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
             ->where('jails.branch_id', $user->branch_id)
-            ->where('annexes.id', $cell->annex_id)
             ->exists();
 
         if (!$belongsToBranch) {

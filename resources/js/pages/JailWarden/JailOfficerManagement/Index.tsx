@@ -357,6 +357,24 @@ export default function JailOfficerManagement({ auth, officers, facilities }: an
                             {selectedOfficer?.name && `Assign a facility scope to ${selectedOfficer.name}`}
                         </DialogDescription>
                     </DialogHeader>
+                    
+                    {/* Warning if officer already has an active scope */}
+                    {selectedOfficer?.scopes?.some((s: any) => s.is_active) && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                                <svg className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <div className="flex-1">
+                                    <h4 className="font-semibold text-sm text-amber-900 mb-1">Active Scope Detected</h4>
+                                    <p className="text-sm text-amber-800">
+                                        This officer already has an active scope. Assigning a new scope will automatically replace the existing one.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-4 py-4">
                             <input type="hidden" name="jail_officer_id" value={assignForm.data.jail_officer_id} />

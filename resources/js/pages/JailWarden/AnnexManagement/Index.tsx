@@ -46,27 +46,27 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function AnnexManagement({ auth, annexes, branch, dormitories }: any) {
+export default function AnnexManagement({ auth, annexes, branch, jails }: any) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedAnnex, setSelectedAnnex] = useState<any>(null);
 
     const form = useForm({
-        dormitory_id: '',
+        jail_id: '',
         name: '',
         description: '',
         status: 'active',
     });
 
     const openCreateModal = () => {
-        form.setData({ dormitory_id: '', name: '', description: '', status: 'active' });
+        form.setData({ jail_id: '', name: '', description: '', status: 'active' });
         setIsCreateModalOpen(true);
     };
 
     const openEditModal = (annex: any) => {
         setSelectedAnnex(annex);
         form.setData({
-            dormitory_id: annex.dormitory?.id?.toString() || '',
+            jail_id: annex.jail?.id?.toString() || '',
             name: annex.name,
             description: annex.description || '',
             status: annex.status,
@@ -130,9 +130,9 @@ export default function AnnexManagement({ auth, annexes, branch, dormitories }: 
                 ),
             },
             {
-                accessorKey: 'dormitory',
-                header: 'Dormitory',
-                cell: ({ row }) => row.original.dormitory?.name || '-',
+                accessorKey: 'jail',
+                header: 'Jail',
+                cell: ({ row }) => row.original.jail?.name || '-',
             },
             {
                 accessorKey: 'cells_count',
@@ -219,24 +219,24 @@ export default function AnnexManagement({ auth, annexes, branch, dormitories }: 
                     <form onSubmit={submitCreate}>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="dormitory">Dormitory</Label>
+                                <Label htmlFor="jail">Jail</Label>
                                 <Select
-                                    value={form.data.dormitory_id}
-                                    onValueChange={(value) => form.setData('dormitory_id', value)}
+                                    value={form.data.jail_id}
+                                    onValueChange={(value) => form.setData('jail_id', value)}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select dormitory" />
+                                        <SelectValue placeholder="Select jail" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {dormitories?.map((dorm: any) => (
-                                            <SelectItem key={dorm.id} value={dorm.id.toString()}>
-                                                {dorm.name}
+                                        {jails?.map((jail: any) => (
+                                            <SelectItem key={jail.id} value={jail.id.toString()}>
+                                                {jail.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {form.errors.dormitory_id && (
-                                    <p className="text-sm text-red-600">{form.errors.dormitory_id}</p>
+                                {form.errors.jail_id && (
+                                    <p className="text-sm text-red-600">{form.errors.jail_id}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
@@ -308,24 +308,24 @@ export default function AnnexManagement({ auth, annexes, branch, dormitories }: 
                     <form onSubmit={submitUpdate}>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="edit-dormitory">Dormitory</Label>
+                                <Label htmlFor="edit-jail">Jail</Label>
                                 <Select
-                                    value={form.data.dormitory_id}
-                                    onValueChange={(value) => form.setData('dormitory_id', value)}
+                                    value={form.data.jail_id}
+                                    onValueChange={(value) => form.setData('jail_id', value)}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select dormitory" />
+                                        <SelectValue placeholder="Select jail" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {dormitories?.map((dorm: any) => (
-                                            <SelectItem key={dorm.id} value={dorm.id.toString()}>
-                                                {dorm.name}
+                                        {jails?.map((jail: any) => (
+                                            <SelectItem key={jail.id} value={jail.id.toString()}>
+                                                {jail.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {form.errors.dormitory_id && (
-                                    <p className="text-sm text-red-600">{form.errors.dormitory_id}</p>
+                                {form.errors.jail_id && (
+                                    <p className="text-sm text-red-600">{form.errors.jail_id}</p>
                                 )}
                             </div>
                             <div className="space-y-2">

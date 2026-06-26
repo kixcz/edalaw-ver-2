@@ -44,24 +44,33 @@ class Jail extends Model
     }
 
     /**
-     * Get the dormitories for this jail.
+     * Get the annexes for this jail.
      *
-     * @return HasMany<Dormitory>
+     * @return HasMany<Annex>
      */
-    public function dormitories(): HasMany
+    public function annexes(): HasMany
     {
-        return $this->hasMany(Dormitory::class);
+        return $this->hasMany(Annex::class);
     }
 
     /**
-     * Get all inmates through cells.
+     * Get all dormitories through annexes.
      */
-    public function inmates(): HasManyThrough
+    public function dormitories(): HasManyThrough
     {
-        return $this->hasManyThrough(Inmate::class, Cell::class, 'annex_id', 'cell_id')
-            ->join('annexes', 'cells.annex_id', '=', 'annexes.id')
-            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-            ->where('dormitories.jail_id', $this->id);
+        return $this->hasManyThrough(Dormitory::class, Annex::class);
+    }
+
+    /**
+     * Get all inmates through annexes, dormitories, and cells.
+     */
+    public function inmates()
+    {
+        return Inmate::query()
+            ->join('cells', 'inmates.cell_id', '=', 'cells.id')
+            ->join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->where('annexes.jail_id', $this->id);
     }
 
     /**
@@ -73,19 +82,11 @@ class Jail extends Model
     }
 
     /**
-     * Get all annexes through dormitories.
-     */
-    public function annexes(): HasManyThrough
-    {
-        return $this->hasManyThrough(Annex::class, Dormitory::class);
-    }
-
-    /**
-     * Get all cells through dormitories and annexes.
+     * Get all cells through annexes and dormitories.
      */
     public function cells(): HasManyThrough
     {
-        return $this->hasManyThrough(Cell::class, Dormitory::class, 'annex_id');
+        return $this->hasManyThrough(Cell::class, Dormitory::class, 'annex_id', 'dormitory_id');
     }
 
     /**

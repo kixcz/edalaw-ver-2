@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Cell extends Model
@@ -18,7 +18,7 @@ class Cell extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'annex_id',
+        'dormitory_id',
         'cell_number',
         'capacity',
         'status',
@@ -37,21 +37,21 @@ class Cell extends Model
     }
 
     /**
-     * Get the annex that this cell belongs to.
+     * Get the annex through the dormitory that this cell belongs to.
      *
-     * @return BelongsTo<Annex>
+     * @return HasOneThrough<Annex>
      */
-    public function annex(): BelongsTo
+    public function annex(): HasOneThrough
     {
-        return $this->belongsTo(Annex::class);
+        return $this->hasOneThrough(Annex::class, Dormitory::class, 'id', 'id', 'dormitory_id', 'annex_id');
     }
 
     /**
      * Alias for annex() - uses "building" terminology.
      *
-     * @return BelongsTo<Annex>
+     * @return HasOneThrough<Annex>
      */
-    public function building(): BelongsTo
+    public function building(): HasOneThrough
     {
         return $this->annex();
     }
@@ -113,7 +113,7 @@ class Cell extends Model
     /**
      * Scope a query to only include active cells.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)

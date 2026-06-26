@@ -40,23 +40,28 @@ class Region extends Model
     }
 
     /**
-     * Get all dormitories through branches and jails.
+     * Get all dormitories through branches, jails, and annexes.
      */
-    public function dormitories(): HasManyThrough
+    public function dormitories()
     {
-        return $this->hasManyThrough(Dormitory::class, Branch::class, 'id', 'jail_id', 'id', 'branch_id')
-            ->join('jails', 'dormitories.jail_id', '=', 'jails.id');
+        return Dormitory::query()
+            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+            ->join('branches', 'jails.branch_id', '=', 'branches.id')
+            ->where('branches.region_id', $this->id);
     }
 
     /**
-     * Get all cells through branches, jails, and dormitories/annexes.
+     * Get all cells through branches, jails, annexes, and dormitories.
      */
-    public function cells(): HasManyThrough
+    public function cells()
     {
-        return $this->hasManyThrough(Cell::class, Branch::class, 'id', 'branch_id', 'id', 'annex_id')
-            ->join('annexes', 'cells.annex_id', '=', 'annexes.id')
-            ->join('dormitories', 'annexes.dormitory_id', '=', 'dormitories.id')
-            ->join('jails', 'dormitories.jail_id', '=', 'jails.id');
+        return Cell::query()
+            ->join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+            ->join('branches', 'jails.branch_id', '=', 'branches.id')
+            ->where('branches.region_id', $this->id);
     }
 
     /**
