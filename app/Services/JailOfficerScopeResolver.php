@@ -123,7 +123,7 @@ class JailOfficerScopeResolver
             return 'dormitory';
         }
 
-        if (in_array('building', $activeScopes)) {
+        if (in_array('building', $activeScopes) || in_array('annex', $activeScopes)) {
             return 'building';
         }
 
@@ -163,11 +163,12 @@ class JailOfficerScopeResolver
             ->get();
 
         return $activeScopes->map(function ($scope) {
+            $isBuildingScope = in_array($scope->scope_type, ['building', 'annex']);
             return [
                 'id' => $scope->id,
                 'scope_type' => $scope->scope_type,
                 'facility_id' => $scope->annex_id ?? $scope->dormitory_id ?? $scope->cell_id,
-                'facility_name' => $scope->scope_type === 'building'
+                'facility_name' => $isBuildingScope
                     ? $scope->building?->name
                     : ($scope->scope_type === 'dormitory'
                         ? $scope->dormitory?->name
@@ -187,9 +188,9 @@ class JailOfficerScopeResolver
             return $scope->dormitory?->name ?? 'Unknown Dormitory';
         }
 
-        if ($scope->scope_type === 'building') {
+        if (in_array($scope->scope_type, ['building', 'annex'])) {
             $building = $scope->building;
-            $dormitory = $building?->dormitory;
+            $dormitory = $building?->dormitories?->first();
             return ($building?->name ?? 'Unknown Building') .
                 ($dormitory ? ' → ' . $dormitory->name : '');
         }
@@ -197,7 +198,7 @@ class JailOfficerScopeResolver
         if ($scope->scope_type === 'cell') {
             $cell = $scope->cell;
             $building = $cell?->building;
-            $dormitory = $building?->dormitory;
+            $dormitory = $cell?->dormitory;
 
             return 'Cell ' . ($cell?->cell_number ?? 'Unknown') .
                 ($building ? ' → ' . ($building->name ?? 'Unknown Building') : '') .
@@ -235,7 +236,7 @@ class JailOfficerScopeResolver
             return collect();
         }
 
-        return Annex::with(['dormitory', 'cells'])
+        return Annex::with(['dormitories', 'cells'])
             ->whereIn('id', $buildingIds)
             ->get();
     }
@@ -259,7 +260,7 @@ class JailOfficerScopeResolver
             return collect();
         }
 
-        return Dormitory::with(['buildings', 'cells'])
+        return Dormitory::with(['annex', 'cells'])
             ->whereIn('id', $dormitoryIds)
             ->get();
     }

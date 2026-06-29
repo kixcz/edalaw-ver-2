@@ -106,8 +106,44 @@ class InmateTunnelController extends Controller
                 ];
             });
 
+        // Calculate stats (use all tunnels, not just paginated)
+        $allTunnelsQuery = InmateTunnel::query()->whereHas('visitSession', function ($q) use ($user) {
+            $q->where(function ($sessionQuery) use ($user) {
+                $sessionQuery->where('monitor_id', $user->id)
+                    ->orWhereHas('visit', function ($visitQuery) use ($user) {
+                        $visitQuery->where('jail_officer_id', $user->id);
+                    });
+            })->whereNotNull('visit_id');
+        });
+        
+        $stats = [
+            'total_tunnels' => (clone $allTunnelsQuery)->count(),
+            'valid_tunnels' => (clone $allTunnelsQuery)->where('is_used', false)->where('expires_at', '>=', now())->count(),
+            'used_tunnels' => (clone $allTunnelsQuery)->where('is_used', true)->count(),
+            'expired_tunnels' => (clone $allTunnelsQuery)->where('expires_at', '<', now())->where('is_used', false)->count(),
+        ];
+
+        // Chart data
+        $chartData = [
+            'tunnels_by_status' => [
+                ['status' => 'Valid', 'count' => $stats['valid_tunnels']],
+                ['status' => 'Used', 'count' => $stats['used_tunnels']],
+                ['status' => 'Expired', 'count' => $stats['expired_tunnels']],
+            ],
+            'tunnels_by_day' => collect(range(6, 0))->map(function ($daysAgo) use ($allTunnelsQuery) {
+                $date = now()->subDays($daysAgo);
+                $count = (clone $allTunnelsQuery)->whereDate('created_at', $date)->count();
+                return [
+                    'day' => $date->format('D'),
+                    'count' => $count,
+                ];
+            })->values()->toArray(),
+        ];
+
         return Inertia::render('JailOfficer/InmateTunnels', [
             'tunnels' => $tunnels,
+            'stats' => $stats,
+            'chartData' => $chartData,
             'filters' => [
                 'search' => $request->search,
                 'date_from' => $request->date_from,

@@ -44,8 +44,9 @@ class RegionalOfficeDashboardController extends Controller
             });
 
         // Detailed breakdown per branch
+        // Hierarchy: Branch → Jails → Annexes → Dormitories → Cells → Inmates
         $branchDetails = Branch::where('region_id', $user->region_id)
-            ->with(['jails.dormitories.annexes.cells.inmates'])
+            ->with(['jails.annexes.dormitories.cells.inmates'])
             ->get()
             ->map(function ($branch) {
                 return [
@@ -56,14 +57,14 @@ class RegionalOfficeDashboardController extends Controller
                         return [
                             'name' => $jail->name,
                             'code' => $jail->code,
-                            'dormitories' => $jail->dormitories->map(function ($dorm) {
+                            'annexes' => $jail->annexes->map(function ($annex) {
                                 return [
-                                    'name' => $dorm->name,
-                                    'type' => $dorm->type,
-                                    'annexes' => $dorm->annexes->map(function ($annex) {
+                                    'name' => $annex->name,
+                                    'dormitories' => $annex->dormitories->map(function ($dorm) {
                                         return [
-                                            'name' => $annex->name,
-                                            'cells' => $annex->cells->map(function ($cell) {
+                                            'name' => $dorm->name,
+                                            'type' => $dorm->type,
+                                            'cells' => $dorm->cells->map(function ($cell) {
                                                 return [
                                                     'cell_number' => $cell->cell_number,
                                                     'floor_number' => $cell->floor_number,
@@ -89,12 +90,16 @@ class RegionalOfficeDashboardController extends Controller
             });
 
         // Overview statistics
+        // Hierarchy: Annex → Jail → Branch
+        // Dormitory → Annex → Jail → Branch
+        // Cell → Dormitory → Annex → Jail → Branch
+        // Inmate → Cell → Dormitory → Annex → Jail → Branch
         $overviewStats = [
             'total_branches' => $branches->count(),
-            'total_annexes' => Annex::whereHas('dormitory.jail.branch', fn($q) => $q->where('region_id', $user->region_id))->count(),
-            'total_dormitories' => Dormitory::whereHas('jail.branch', fn($q) => $q->where('region_id', $user->region_id))->count(),
-            'total_cells' => Cell::whereHas('annex.dormitory.jail.branch', fn($q) => $q->where('region_id', $user->region_id))->count(),
-            'total_pdls' => Inmate::whereHas('cell.annex.dormitory.jail.branch', fn($q) => $q->where('region_id', $user->region_id))->count(),
+            'total_annexes' => Annex::whereHas('jail.branch', fn($q) => $q->where('region_id', $user->region_id))->count(),
+            'total_dormitories' => Dormitory::whereHas('annex.jail.branch', fn($q) => $q->where('region_id', $user->region_id))->count(),
+            'total_cells' => Cell::whereHas('dormitory.annex.jail.branch', fn($q) => $q->where('region_id', $user->region_id))->count(),
+            'total_pdls' => Inmate::whereHas('cell.dormitory.annex.jail.branch', fn($q) => $q->where('region_id', $user->region_id))->count(),
             'total_jail_wardens' => User::where('role_id', function($query) {
                     $query->select('id')->from('roles')->where('slug', 'jail_warden');
                 })

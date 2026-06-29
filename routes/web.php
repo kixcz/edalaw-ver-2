@@ -282,6 +282,36 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('branches.update');
         Route::delete('dashboard/branches/{branch}', [\App\Http\Controllers\BranchManagementController::class, 'destroy'])
             ->name('branches.destroy');
+
+        // Branch Management Module (region-scoped CRUD)
+        Route::get('regional-supervisor/branches', [\App\Http\Controllers\RegionalSupervisor\BranchManagementController::class, 'index'])
+            ->name('regional-supervisor.branches.index');
+        Route::post('regional-supervisor/branches', [\App\Http\Controllers\RegionalSupervisor\BranchManagementController::class, 'store'])
+            ->name('regional-supervisor.branches.store');
+        Route::put('regional-supervisor/branches/{branch}', [\App\Http\Controllers\RegionalSupervisor\BranchManagementController::class, 'update'])
+            ->name('regional-supervisor.branches.update');
+        Route::delete('regional-supervisor/branches/{branch}', [\App\Http\Controllers\RegionalSupervisor\BranchManagementController::class, 'destroy'])
+            ->name('regional-supervisor.branches.destroy');
+
+        // Jail Warden Management (scoped to regional supervisor's region)
+        Route::get('regional-supervisor/wardens', [\App\Http\Controllers\RegionalSupervisor\JailWardenManagementController::class, 'index'])
+            ->name('regional-supervisor.wardens.index');
+        Route::post('regional-supervisor/wardens', [\App\Http\Controllers\RegionalSupervisor\JailWardenManagementController::class, 'store'])
+            ->name('regional-supervisor.wardens.store');
+        Route::put('regional-supervisor/wardens/{warden}', [\App\Http\Controllers\RegionalSupervisor\JailWardenManagementController::class, 'update'])
+            ->name('regional-supervisor.wardens.update');
+        Route::delete('regional-supervisor/wardens/{warden}', [\App\Http\Controllers\RegionalSupervisor\JailWardenManagementController::class, 'destroy'])
+            ->name('regional-supervisor.wardens.destroy');
+
+        // Jail Officer Management (scoped to regional supervisor's region)
+        Route::get('regional-supervisor/officers', [\App\Http\Controllers\RegionalSupervisor\JailOfficerManagementController::class, 'index'])
+            ->name('regional-supervisor.officers.index');
+        Route::post('regional-supervisor/officers', [\App\Http\Controllers\RegionalSupervisor\JailOfficerManagementController::class, 'store'])
+            ->name('regional-supervisor.officers.store');
+        Route::put('regional-supervisor/officers/{officer}', [\App\Http\Controllers\RegionalSupervisor\JailOfficerManagementController::class, 'update'])
+            ->name('regional-supervisor.officers.update');
+        Route::delete('regional-supervisor/officers/{officer}', [\App\Http\Controllers\RegionalSupervisor\JailOfficerManagementController::class, 'destroy'])
+            ->name('regional-supervisor.officers.destroy');
     });
 
     // Jail Warden Routes

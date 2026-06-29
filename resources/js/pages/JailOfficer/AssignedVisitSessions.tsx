@@ -1,12 +1,14 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Camera, CheckCircle, Clock, Download, FileText, Image, MoreVertical, XCircle } from 'lucide-react';
+import { Camera, CheckCircle, Clock, Download, FileText, Image, MoreVertical, XCircle, List, BarChart2, Calendar, CheckCircle2, AlertCircle, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell as RechartsCell } from 'recharts';
 
 import { DataTable } from '@/components/data-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Dialog,
     DialogContent,
@@ -35,13 +37,26 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
 import axios from 'axios';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Assigned Visit Sessions', href: '/jail-officer/assigned-visit-sessions' },
-];
+const COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444'];
+
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 type Visit = {
     id: number;
@@ -69,6 +84,8 @@ type Visit = {
 
 type Props = {
     visits: Visit[];
+    stats: { total_visits: number; pending_visits: number; approved_visits: number; rejected_visits: number; completed_visits: number; virtual_visits: number };
+    chartData: { visits_by_status: { status: string; count: number }[]; visits_by_type: { type: string; count: number }[] };
     pagination: {
         current_page: number;
         last_page: number;
@@ -83,31 +100,21 @@ type Props = {
 
 function getStatusBadge(status: string) {
     const map: Record<string, { label: string; className: string }> = {
-        pending: { label: 'Pending', className: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20' },
-        approved: { label: 'Approved', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' },
-        rejected: { label: 'Rejected', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' },
-        completed: { label: 'Completed', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
+        pending: { label: 'Pending', className: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+        approved: { label: 'Approved', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+        rejected: { label: 'Rejected', className: 'bg-red-50 text-red-700 border-red-200' },
+        completed: { label: 'Completed', className: 'bg-blue-50 text-blue-700 border-blue-200' },
     };
-    const config = map[status] ?? { label: status, className: '' };
-    return <Badge variant="secondary" className={config.className}>{config.label}</Badge>;
+    const config = map[status] ?? { label: status, className: 'bg-slate-100 text-slate-500 border-slate-200' };
+    return <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${config.className}`}>{config.label}</span>;
 }
 
 function getVisitTypeBadge(type: string) {
     const isVirtual = type === 'virtual';
     return (
-        <Badge variant="outline" className={isVirtual ? 'bg-purple-500/10 text-purple-600 border-purple-500/20' : 'bg-orange-500/10 text-orange-600 border-orange-500/20'}>
-            {isVirtual ? (
-                <>
-                    <Camera className="mr-1 h-3 w-3" />
-                    Virtual
-                </>
-            ) : (
-                <>
-                    <FileText className="mr-1 h-3 w-3" />
-                    Physical
-                </>
-            )}
-        </Badge>
+        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${isVirtual ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-orange-50 text-orange-700 border-orange-200'}`}>
+            {isVirtual ? 'Virtual' : 'Physical'}
+        </span>
     );
 }
 
@@ -118,15 +125,15 @@ function DocumentCard({ title, path, icon }: { title: string; path: string; icon
     const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension || '');
 
     return (
-        <div className="border border-gray-200 rounded-lg p-4 bg-white hover:border-gray-300 transition-colors">
+        <div className="border border-slate-200 rounded-lg p-4 bg-white hover:border-slate-300 transition-colors">
             <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div className="bg-blue-50 text-blue-600 rounded-lg p-2 flex-shrink-0">
                         {icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm text-gray-900 truncate">{title}</h4>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{fileName}</p>
+                        <h4 className="font-medium text-sm text-slate-900 truncate">{title}</h4>
+                        <p className="text-xs text-slate-500 truncate mt-0.5">{fileName}</p>
                     </div>
                 </div>
                 <a
@@ -140,7 +147,7 @@ function DocumentCard({ title, path, icon }: { title: string; path: string; icon
                 </a>
             </div>
             {isImage && (
-                <div className="mt-3 rounded-lg overflow-hidden border border-gray-100">
+                <div className="mt-3 rounded-lg overflow-hidden border border-slate-100">
                     <img 
                         src={fileUrl} 
                         alt={title}
@@ -155,7 +162,7 @@ function DocumentCard({ title, path, icon }: { title: string; path: string; icon
     );
 }
 
-export default function AssignedVisitSessions({ visits, pagination, filters: initialFilters }: Props) {
+export default function AssignedVisitSessions({ visits, stats, chartData, pagination, filters: initialFilters }: Props) {
     useToast();
     const [statusFilter, setStatusFilter] = useState(initialFilters?.status ?? 'all');
     const [typeFilter, setTypeFilter] = useState(initialFilters?.visit_type ?? 'all');
@@ -174,7 +181,7 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
             cell: ({ row }) => (
                 <div>
                     <div className="font-medium">{row.original.visitor_name}</div>
-                    <div className="text-xs text-muted-foreground">{row.original.visitor_email}</div>
+                    <div className="text-xs text-slate-500">{row.original.visitor_email}</div>
                 </div>
             ),
         },
@@ -185,7 +192,7 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
                 <div>
                     <div className="font-medium">{row.original.inmate_name}</div>
                     {row.original.cell_info && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-slate-500">
                             {row.original.cell_info.cell_number}, {row.original.cell_info.floor}
                         </div>
                     )}
@@ -204,7 +211,7 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
                 return (
                     <div className="space-y-1">
                         <div className="font-medium">{dateStr}</div>
-                        <div className="text-xs text-muted-foreground">{timeStr}</div>
+                        <div className="text-xs text-slate-500">{timeStr}</div>
                     </div>
                 );
             },
@@ -246,7 +253,7 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
                                             setSelectedVisit(visit);
                                             setIsApproveModalOpen(true);
                                         }}
-                                        className="text-green-600 focus:text-green-600"
+                                        className="text-green-700 focus:text-white focus:bg-green-600 [&_svg]:!text-green-600 focus:[&_svg]:!text-white"
                                     >
                                         <CheckCircle className="mr-2 h-4 w-4" />
                                         Approve
@@ -257,7 +264,7 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
                                             form.setData('rejection_reason', '');
                                             setIsRejectModalOpen(true);
                                         }}
-                                        className="text-red-600 focus:text-red-600"
+                                        className="text-red-600 focus:text-white focus:bg-red-600 [&_svg]:!text-red-600 focus:[&_svg]:!text-white"
                                     >
                                         <XCircle className="mr-2 h-4 w-4" />
                                         Reject
@@ -266,13 +273,13 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
                             )}
                             
                             {isApproved && visit.has_session && (
-                                <DropdownMenuItem onClick={() => window.open(`/jail-officer/assigned-sessions/${visit.id}/join`, '_blank')}>
+                                <DropdownMenuItem onClick={() => window.open(`/jail-officer/assigned-sessions/${visit.id}/join`, '_blank')} className="gap-2 cursor-pointer">
                                     <Camera className="mr-2 h-4 w-4" />
                                     Join as Observer
                                 </DropdownMenuItem>
                             )}
                             
-                            <DropdownMenuItem onClick={() => setSelectedVisit(visit)}>
+                            <DropdownMenuItem onClick={() => setSelectedVisit(visit)} className="gap-2 cursor-pointer">
                                 <FileText className="mr-2 h-4 w-4" />
                                 View Details
                             </DropdownMenuItem>
@@ -285,36 +292,16 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
 
     const handleApprove = async () => {
         if (!selectedVisit) return;
-
-        console.log('[Approve] Attempting to approve visit:', selectedVisit.id);
-
         try {
-            const response = await axios.post(`/jail-officer/assigned-visit-sessions/${selectedVisit.id}/approve`);
-            console.log('[Approve] Visit approved successfully', response.data);
-            
-            // Show success message
-            if (response.data?.success) {
-                console.log('[Approve] Success message:', response.data.success);
-            }
-            
-            // Reload the page to reflect the status change
-            console.log('[Approve] Reloading page...');
+            await axios.post(`/jail-officer/assigned-visit-sessions/${selectedVisit.id}/approve`);
             window.location.reload();
         } catch (error: any) {
-            console.error('[Approve] Error:', error);
-            console.error('[Approve] Error response:', error?.response?.data);
-            
-            // Show detailed error message
-            const errorMessage = error?.response?.data?.errors?.approve?.[0] || 
-                                error?.response?.data?.message || 
-                                'Failed to approve visit';
-            alert(errorMessage);
+            alert(error?.response?.data?.errors?.approve?.[0] || error?.response?.data?.message || 'Failed to approve visit');
         }
     };
 
     const handleReject = async () => {
         if (!selectedVisit || !form.data.rejection_reason) return;
-
         try {
             await axios.post(`/jail-officer/assigned-visit-sessions/${selectedVisit.id}/reject`, form.data);
             window.location.reload();
@@ -325,248 +312,290 @@ export default function AssignedVisitSessions({ visits, pagination, filters: ini
 
     const filteredVisits = useMemo(() => {
         let result = visits;
-        
         if (statusFilter !== 'all') {
             result = result.filter(v => v.status === statusFilter);
         }
-        
         if (typeFilter !== 'all') {
             result = result.filter(v => v.visit_type === typeFilter);
         }
-        
         return result;
     }, [visits, statusFilter, typeFilter]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="Assigned Visit Sessions" />
-            <div className="flex flex-col gap-4 p-4">
-                <div>
-                    <h1 className="text-2xl font-semibold">Assigned Visit Sessions</h1>
-                    <p className="text-muted-foreground">Review and manage virtual visit schedules for PDLs in your assigned area.</p>
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-indigo-600 rounded-xl"><Calendar className="w-5 h-5 text-white" /></div>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-900 leading-none">Assigned Visit Sessions</h1>
+                                <p className="text-xs text-slate-500 mt-0.5">Review and manage virtual visit schedules for PDLs in your assigned area</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <div>
-                            <CardTitle>Visit Schedules</CardTitle>
-                            <CardDescription>
-                                {filteredVisits.length} of {visits.length} visit(s) assigned to you
-                            </CardDescription>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <DataTable
-                            columns={columns}
-                            data={filteredVisits}
-                            searchKey="visit_search"
-                            searchPlaceholder="Search by visitor or PDL..."
-                            initialSorting={[{ id: 'scheduled_date', desc: true }]}
-                            headerActions={
-                                <div className="flex gap-2">
-                                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                        <SelectTrigger className="w-[150px]">
-                                            <SelectValue placeholder="Status" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Status</SelectItem>
-                                            <SelectItem value="pending">Pending</SelectItem>
-                                            <SelectItem value="approved">Approved</SelectItem>
-                                            <SelectItem value="rejected">Rejected</SelectItem>
-                                            <SelectItem value="completed">Completed</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    
-                                    <Select value={typeFilter} onValueChange={setTypeFilter}>
-                                        <SelectTrigger className="w-[150px]">
-                                            <SelectValue placeholder="Type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Types</SelectItem>
-                                            <SelectItem value="virtual">Virtual</SelectItem>
-                                            <SelectItem value="physical">Physical</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            }
-                        />
-                    </CardContent>
-                </Card>
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                        <StatCard icon={<Calendar className="w-5 h-5" />} value={stats.total_visits} label="Total Visits" accent="bg-indigo-600" iconBg="bg-indigo-50" iconColor="text-indigo-600" />
+                        <StatCard icon={<Clock className="w-5 h-5" />} value={stats.pending_visits} label="Pending" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
+                        <StatCard icon={<CheckCircle2 className="w-5 h-5" />} value={stats.approved_visits} label="Approved" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
+                        <StatCard icon={<AlertCircle className="w-5 h-5" />} value={stats.rejected_visits} label="Rejected" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
+                        <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats.completed_visits} label="Completed" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
+                        <StatCard icon={<Camera className="w-5 h-5" />} value={stats.virtual_visits} label="Virtual" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
+                    </div>
 
-                {/* Approve Modal */}
-                <Dialog open={isApproveModalOpen} onOpenChange={(open) => {
-                    console.log('[Approve Modal] Open state changed:', open);
-                    setIsApproveModalOpen(open);
-                }}>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <CheckCircle className="h-5 w-5 text-green-600" />
-                                Approve Visit Schedule
-                            </DialogTitle>
-                            <DialogDescription>
-                                Review the visit details and attached documents before approving. This will create a video room and notify the visitor.
-                            </DialogDescription>
-                        </DialogHeader>
-                        
-                        {selectedVisit && (
-                            <div className="py-4 space-y-6">
-                                {/* Visit Details Section */}
-                                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                                    <h3 className="font-semibold text-sm text-gray-900 uppercase tracking-wide">Visit Details</h3>
-                                    <div className="grid grid-cols-2 gap-4 text-sm">
-                                        <div>
-                                            <span className="text-muted-foreground text-xs block mb-1">Visitor</span>
-                                            <div className="font-medium">{selectedVisit.visitor_name}</div>
-                                            <div className="text-xs text-muted-foreground">{selectedVisit.visitor_email}</div>
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground text-xs block mb-1">PDL</span>
-                                            <div className="font-medium">{selectedVisit.inmate_name}</div>
-                                            {selectedVisit.cell_info && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    {selectedVisit.cell_info.cell_number}
-                                                    {selectedVisit.cell_info.floor && `, Floor ${selectedVisit.cell_info.floor}`}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground text-xs block mb-1">Date</span>
-                                            <div className="font-medium">
-                                                {new Date(selectedVisit.scheduled_date).toLocaleDateString('en-US', { 
-                                                    month: 'long', 
-                                                    day: 'numeric', 
-                                                    year: 'numeric' 
-                                                })}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground text-xs block mb-1">Time</span>
-                                            <div className="font-medium">{selectedVisit.scheduled_time}</div>
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground text-xs block mb-1">Visit Type</span>
-                                            <div className="font-medium capitalize">{selectedVisit.visit_type}</div>
-                                        </div>
-                                        {selectedVisit.cell_info?.annex_name && (
-                                            <div>
-                                                <span className="text-muted-foreground text-xs block mb-1">Building</span>
-                                                <div className="font-medium">{selectedVisit.cell_info.annex_name}</div>
+                    {/* Tabs */}
+                    <Tabs defaultValue="records" className="space-y-4">
+                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger value="records" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                                <List className="w-4 h-4" />Visits
+                            </TabsTrigger>
+                            <TabsTrigger value="analytics" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                                <BarChart2 className="w-4 h-4" />Analytics
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="records">
+                            <Card className="border-0 shadow-sm">
+                                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                    <div>
+                                        <h3 className="font-semibold text-slate-800">Visit Records</h3>
+                                        <p className="text-xs text-slate-500 mt-0.5">{filteredVisits.length} of {visits.length} visits</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                            <SelectTrigger className="w-[150px] h-9">
+                                                <SelectValue placeholder="Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Status</SelectItem>
+                                                <SelectItem value="pending">Pending</SelectItem>
+                                                <SelectItem value="approved">Approved</SelectItem>
+                                                <SelectItem value="rejected">Rejected</SelectItem>
+                                                <SelectItem value="completed">Completed</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Select value={typeFilter} onValueChange={setTypeFilter}>
+                                            <SelectTrigger className="w-[150px] h-9">
+                                                <SelectValue placeholder="Type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Types</SelectItem>
+                                                <SelectItem value="virtual">Virtual</SelectItem>
+                                                <SelectItem value="physical">Physical</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div className="p-6">
+                                    <DataTable
+                                        columns={columns}
+                                        data={filteredVisits}
+                                        searchKey="visit_search"
+                                        searchPlaceholder="Search by visitor or PDL..."
+                                        initialSorting={[{ id: 'scheduled_date', desc: true }]}
+                                    />
+                                </div>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="analytics">
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <Card className="border-0 shadow-sm">
+                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
+                                        <h4 className="font-semibold text-slate-800 text-sm">Visits by Status</h4>
+                                        <p className="text-xs text-slate-500 mt-0.5">Distribution of visit statuses</p>
+                                    </div>
+                                    <CardContent className="p-4 pt-5">
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <PieChart>
+                                                <Pie data={chartData.visits_by_status} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={100}>
+                                                    {chartData.visits_by_status.map((_, i) => <RechartsCell key={i} fill={COLORS[i % COLORS.length]} />)}
+                                                </Pie>
+                                                <RechartsTooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                                <Card className="border-0 shadow-sm">
+                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
+                                        <h4 className="font-semibold text-slate-800 text-sm">Visits by Type</h4>
+                                        <p className="text-xs text-slate-500 mt-0.5">Virtual vs Physical distribution</p>
+                                    </div>
+                                    <CardContent className="p-4 pt-5">
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <BarChart data={chartData.visits_by_type} margin={{ top: 5, right: 10, left: -20, bottom: 60 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                                <XAxis dataKey="type" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                                <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                                <RechartsTooltip />
+                                                <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} name="Visits" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+                </div>
+            </div>
+
+            {/* Approve Modal */}
+            <Dialog open={isApproveModalOpen} onOpenChange={setIsApproveModalOpen}>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            Approve Visit Schedule
+                        </DialogTitle>
+                        <DialogDescription>
+                            Review the visit details and attached documents before approving. This will create a video room and notify the visitor.
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    {selectedVisit && (
+                        <div className="py-4 space-y-6">
+                            <div className="bg-slate-50 rounded-lg p-4 space-y-4">
+                                <h3 className="font-semibold text-sm text-slate-900 uppercase tracking-wide">Visit Details</h3>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-slate-500 text-xs block mb-1">Visitor</span>
+                                        <div className="font-medium">{selectedVisit.visitor_name}</div>
+                                        <div className="text-xs text-slate-500">{selectedVisit.visitor_email}</div>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 text-xs block mb-1">PDL</span>
+                                        <div className="font-medium">{selectedVisit.inmate_name}</div>
+                                        {selectedVisit.cell_info && (
+                                            <div className="text-xs text-slate-500">
+                                                {selectedVisit.cell_info.cell_number}
+                                                {selectedVisit.cell_info.floor && `, Floor ${selectedVisit.cell_info.floor}`}
                                             </div>
                                         )}
                                     </div>
-                                    {selectedVisit.notes && (
+                                    <div>
+                                        <span className="text-slate-500 text-xs block mb-1">Date</span>
+                                        <div className="font-medium">
+                                            {new Date(selectedVisit.scheduled_date).toLocaleDateString('en-US', { 
+                                                month: 'long', 
+                                                day: 'numeric', 
+                                                year: 'numeric' 
+                                            })}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 text-xs block mb-1">Time</span>
+                                        <div className="font-medium">{selectedVisit.scheduled_time}</div>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 text-xs block mb-1">Visit Type</span>
+                                        <div className="font-medium capitalize">{selectedVisit.visit_type}</div>
+                                    </div>
+                                    {selectedVisit.cell_info?.annex_name && (
                                         <div>
-                                            <span className="text-muted-foreground text-xs block mb-1">Visitor Notes</span>
-                                            <div className="text-sm bg-white border border-gray-200 rounded p-3 mt-1">
-                                                {selectedVisit.notes}
-                                            </div>
+                                            <span className="text-slate-500 text-xs block mb-1">Building</span>
+                                            <div className="font-medium">{selectedVisit.cell_info.annex_name}</div>
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Documents Section */}
-                                {(selectedVisit.relationship_proof_path || selectedVisit.additional_proof_path) && (
-                                    <div className="space-y-4">
-                                        <h3 className="font-semibold text-sm text-gray-900 uppercase tracking-wide">Attached Documents</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {selectedVisit.relationship_proof_path && (
-                                                <DocumentCard
-                                                    title="Relationship Proof"
-                                                    path={selectedVisit.relationship_proof_path}
-                                                    icon={<Image className="h-4 w-4" />}
-                                                />
-                                            )}
-                                            {selectedVisit.additional_proof_path && (
-                                                <DocumentCard
-                                                    title="Additional Proof"
-                                                    path={selectedVisit.additional_proof_path}
-                                                    icon={<FileText className="h-4 w-4" />}
-                                                />
-                                            )}
+                                {selectedVisit.notes && (
+                                    <div>
+                                        <span className="text-slate-500 text-xs block mb-1">Visitor Notes</span>
+                                        <div className="text-sm bg-white border border-slate-200 rounded p-3 mt-1">
+                                            {selectedVisit.notes}
                                         </div>
                                     </div>
                                 )}
                             </div>
-                        )}
 
-                        <DialogFooter className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-200">
-                            <Button 
-                                variant="outline" 
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    console.log('[Approve Modal] Cancel clicked');
-                                    setIsApproveModalOpen(false);
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button 
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    console.log('[Approve Modal] Approve button clicked');
-                                    handleApprove();
-                                }} 
-                                className="bg-green-600 hover:bg-green-700"
-                                type="button"
-                            >
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Approve Visit
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-
-                {/* Reject Modal */}
-                <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Reject Visit Schedule</DialogTitle>
-                            <DialogDescription>
-                                Please provide a reason for rejecting this visit schedule. The visitor will be notified.
-                            </DialogDescription>
-                        </DialogHeader>
-                        
-                        {selectedVisit && (
-                            <div className="py-4 space-y-4">
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <span className="text-muted-foreground">Visitor:</span>
-                                        <div className="font-medium">{selectedVisit.visitor_name}</div>
-                                    </div>
-                                    <div>
-                                        <span className="text-muted-foreground">PDL:</span>
-                                        <div className="font-medium">{selectedVisit.inmate_name}</div>
+                            {(selectedVisit.relationship_proof_path || selectedVisit.additional_proof_path) && (
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-sm text-slate-900 uppercase tracking-wide">Attached Documents</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {selectedVisit.relationship_proof_path && (
+                                            <DocumentCard
+                                                title="Relationship Proof"
+                                                path={selectedVisit.relationship_proof_path}
+                                                icon={<Image className="h-4 w-4" />}
+                                            />
+                                        )}
+                                        {selectedVisit.additional_proof_path && (
+                                            <DocumentCard
+                                                title="Additional Proof"
+                                                path={selectedVisit.additional_proof_path}
+                                                icon={<FileText className="h-4 w-4" />}
+                                            />
+                                        )}
                                     </div>
                                 </div>
-                                
-                                <div className="space-y-2">
-                                    <Label htmlFor="rejection_reason">Rejection Reason *</Label>
-                                    <Textarea
-                                        id="rejection_reason"
-                                        value={form.data.rejection_reason}
-                                        onChange={(e) => form.setData('rejection_reason', e.target.value)}
-                                        placeholder="Please provide a reason for rejection..."
-                                        rows={4}
-                                    />
+                            )}
+                        </div>
+                    )}
+
+                    <DialogFooter className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-slate-200">
+                        <Button variant="outline" onClick={() => setIsApproveModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleApprove} className="bg-green-600 hover:bg-green-700" type="button">
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Approve Visit
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reject Modal */}
+            <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reject Visit Schedule</DialogTitle>
+                        <DialogDescription>
+                            Please provide a reason for rejecting this visit schedule. The visitor will be notified.
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    {selectedVisit && (
+                        <div className="py-4 space-y-4">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span className="text-slate-500">Visitor:</span>
+                                    <div className="font-medium">{selectedVisit.visitor_name}</div>
+                                </div>
+                                <div>
+                                    <span className="text-slate-500">PDL:</span>
+                                    <div className="font-medium">{selectedVisit.inmate_name}</div>
                                 </div>
                             </div>
-                        )}
+                            
+                            <div className="space-y-2">
+                                <Label htmlFor="rejection_reason">Rejection Reason *</Label>
+                                <Textarea
+                                    id="rejection_reason"
+                                    value={form.data.rejection_reason}
+                                    onChange={(e) => form.setData('rejection_reason', e.target.value)}
+                                    placeholder="Please provide a reason for rejection..."
+                                    rows={4}
+                                />
+                            </div>
+                        </div>
+                    )}
 
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsRejectModalOpen(false)}>
-                                Cancel
-                            </Button>
-                            <Button variant="destructive" onClick={handleReject} disabled={!form.data.rejection_reason}>
-                                <XCircle className="mr-2 h-4 w-4" />
-                                Reject Visit
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsRejectModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleReject} disabled={!form.data.rejection_reason}>
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Reject Visit
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

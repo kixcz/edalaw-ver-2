@@ -76,10 +76,38 @@ class ChatRecordingsController extends Controller
             ];
         });
 
+        // Calculate stats
+        $stats = [
+            'total_sessions' => $sessions->count(),
+            'total_messages' => $sessions->sum('total_messages'),
+            'flagged_sessions' => $sessions->where('flagged_count', '>', 0)->count(),
+            'visit_sessions' => $sessions->where('session_type', 'visit')->count(),
+            'eburol_sessions' => $sessions->where('session_type', 'eburol')->count(),
+            'avg_duration' => $sessions->avg('duration_seconds') > 0 
+                ? gmdate('H:i:s', $sessions->avg('duration_seconds')) 
+                : '00:00:00',
+        ];
+
+        // Chart data
+        $chartData = [
+            'sessions_by_type' => [
+                ['type' => 'Visits', 'count' => $stats['visit_sessions']],
+                ['type' => 'E-Burols', 'count' => $stats['eburol_sessions']],
+            ],
+            'messages_by_session' => $sessions->sortByDesc('total_messages')->take(10)->map(function ($session) {
+                return [
+                    'session' => substr($session['room_id'], 0, 20) . '...',
+                    'count' => $session['total_messages'],
+                ];
+            })->values()->toArray(),
+        ];
+
         $viewPrefix = $isSuperAdmin ? 'Admin' : 'JailOfficer';
 
         return Inertia::render("{$viewPrefix}/ChatRecordings", [
             'sessions' => $sessions,
+            'stats' => $stats,
+            'chartData' => $chartData,
             'filters' => [
                 'type' => $request->input('type'),
                 'has_flagged' => $request->boolean('has_flagged'),

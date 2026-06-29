@@ -1,11 +1,13 @@
 import { Head } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { FileText, Filter, Search } from 'lucide-react';
+import { FileText, Filter, Search, List, BarChart2, ClipboardList, Layers, Activity } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell as RechartsCell } from 'recharts';
 
 import { DataTable } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -15,18 +17,25 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-    {
-        title: 'History Logs',
-        href: '#',
-    },
-];
+const COLORS = ['#6366f1', '#06b6d4', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 type AuditLog = {
     id: number;
@@ -44,23 +53,20 @@ type AuditLog = {
 
 type Props = {
     audit_logs: AuditLog[];
-    stats: {
-        total: number;
-        by_module: Record<string, number>;
-        by_action: Record<string, number>;
-    };
+    stats: { total: number; by_module: Record<string, number>; by_action: Record<string, number> };
+    chartData: { logs_by_module: { module: string; count: number }[]; logs_by_action: { action: string; count: number }[] };
 };
 
 function getActionBadge(action: string) {
-    const actionColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-        eburol_approved: 'default',
-        eburol_rejected: 'destructive',
-        eburol_status_updated: 'secondary',
-        visit_approved: 'default',
-        visit_rejected: 'destructive',
-        visit_status_updated: 'secondary',
-        visit_rescheduled: 'outline',
-        appeal_reviewed: 'secondary',
+    const actionColors: Record<string, string> = {
+        eburol_approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        eburol_rejected: 'bg-red-50 text-red-700 border-red-200',
+        eburol_status_updated: 'bg-blue-50 text-blue-700 border-blue-200',
+        visit_approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        visit_rejected: 'bg-red-50 text-red-700 border-red-200',
+        visit_status_updated: 'bg-blue-50 text-blue-700 border-blue-200',
+        visit_rescheduled: 'bg-amber-50 text-amber-700 border-amber-200',
+        appeal_reviewed: 'bg-purple-50 text-purple-700 border-purple-200',
     };
 
     const actionLabels: Record<string, string> = {
@@ -74,28 +80,23 @@ function getActionBadge(action: string) {
         appeal_reviewed: 'Appeal Reviewed',
     };
 
-    return (
-        <Badge variant={actionColors[action] || 'secondary'}>
-            {actionLabels[action] || action.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-        </Badge>
-    );
+    const className = actionColors[action] || 'bg-slate-100 text-slate-600 border-slate-200';
+    const label = actionLabels[action] || action.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    return <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${className}`}>{label}</span>;
 }
 
 function getModuleBadge(module: string) {
-    const moduleColors: Record<string, 'default' | 'secondary' | 'outline'> = {
-        'E-Burol Management': 'default',
-        'Visit Schedule Management': 'secondary',
-        'Appeal Processing': 'outline',
+    const moduleColors: Record<string, string> = {
+        'E-Burol Management': 'bg-cyan-50 text-cyan-700 border-cyan-200',
+        'Visit Schedule Management': 'bg-blue-50 text-blue-700 border-blue-200',
+        'Appeal Processing': 'bg-purple-50 text-purple-700 border-purple-200',
     };
 
-    return (
-        <Badge variant={moduleColors[module] || 'secondary'}>
-            {module}
-        </Badge>
-    );
+    const className = moduleColors[module] || 'bg-slate-100 text-slate-600 border-slate-200';
+    return <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${className}`}>{module}</span>;
 }
 
-export default function AuditLogs({ audit_logs, stats }: Props) {
+export default function AuditLogs({ audit_logs, stats, chartData }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
     const [moduleFilter, setModuleFilter] = useState<string>('all');
     const [actionFilter, setActionFilter] = useState<string>('all');
@@ -108,7 +109,7 @@ export default function AuditLogs({ audit_logs, stats }: Props) {
                 cell: ({ row }) => (
                     <div>
                         <div className="font-medium">{row.original.created_at}</div>
-                        <div className="text-xs text-muted-foreground">{row.original.created_at_human}</div>
+                        <div className="text-xs text-slate-500">{row.original.created_at_human}</div>
                     </div>
                 ),
             },
@@ -129,7 +130,7 @@ export default function AuditLogs({ audit_logs, stats }: Props) {
                     <div className="max-w-md">
                         <div className="font-medium">{row.original.description}</div>
                         {row.original.metadata && Object.keys(row.original.metadata).length > 0 && (
-                            <div className="text-xs text-muted-foreground mt-1">
+                            <div className="text-xs text-slate-500 mt-1">
                                 {row.original.metadata.rejection_reason && (
                                     <div>Reason: {String(row.original.metadata.rejection_reason).substring(0, 100)}</div>
                                 )}
@@ -154,7 +155,7 @@ export default function AuditLogs({ audit_logs, stats }: Props) {
                 cell: ({ row }) => (
                     <div>
                         <div className="font-medium">{row.original.auditable_type}</div>
-                        <div className="text-xs text-muted-foreground">ID: {row.original.auditable_id}</div>
+                        <div className="text-xs text-slate-500">ID: {row.original.auditable_id}</div>
                     </div>
                 ),
             },
@@ -191,105 +192,132 @@ export default function AuditLogs({ audit_logs, stats }: Props) {
     }, [stats.by_action]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="History Logs" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold">History Logs</h1>
-                        <p className="text-muted-foreground">View all your transaction history and audit logs</p>
+        <AppLayout>
+            <Head title="Audit Logs" />
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-slate-700 rounded-xl"><ClipboardList className="w-5 h-5 text-white" /></div>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-900 leading-none">Audit Logs</h1>
+                                <p className="text-xs text-slate-500 mt-0.5">View all your transaction history and audit logs</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Actions</CardTitle>
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.total}</div>
-                            <p className="text-xs text-muted-foreground">All logged transactions</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Modules</CardTitle>
-                            <Filter className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{modules.length}</div>
-                            <p className="text-xs text-muted-foreground">Different modules accessed</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Action Types</CardTitle>
-                            <Filter className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{actions.length}</div>
-                            <p className="text-xs text-muted-foreground">Different action types</p>
-                        </CardContent>
-                    </Card>
-                </div>
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <StatCard icon={<FileText className="w-5 h-5" />} value={stats.total} label="Total Actions" accent="bg-slate-700" iconBg="bg-slate-100" iconColor="text-slate-700" />
+                        <StatCard icon={<Layers className="w-5 h-5" />} value={modules.length} label="Modules" accent="bg-cyan-600" iconBg="bg-cyan-50" iconColor="text-cyan-600" />
+                        <StatCard icon={<Activity className="w-5 h-5" />} value={actions.length} label="Action Types" accent="bg-indigo-600" iconBg="bg-indigo-50" iconColor="text-indigo-600" />
+                    </div>
 
-                {/* Data Table */}
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Audit Log History</CardTitle>
-                                <CardDescription>
-                                    Complete history of all your transactions and actions
-                                </CardDescription>
+                    {/* Tabs */}
+                    <Tabs defaultValue="records" className="space-y-4">
+                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger value="records" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                                <List className="w-4 h-4" />Logs
+                            </TabsTrigger>
+                            <TabsTrigger value="analytics" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                                <BarChart2 className="w-4 h-4" />Analytics
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="records">
+                            <Card className="border-0 shadow-sm">
+                                <div className="px-6 py-4 border-b border-slate-100">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative flex-1">
+                                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                            <Input
+                                                placeholder="Search logs..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="pl-9"
+                                            />
+                                        </div>
+                                        <Select value={moduleFilter} onValueChange={setModuleFilter}>
+                                            <SelectTrigger className="w-[200px]">
+                                                <SelectValue placeholder="Filter by Module" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Modules</SelectItem>
+                                                {modules.map((module) => (
+                                                    <SelectItem key={module} value={module}>
+                                                        {module} ({stats.by_module[module]})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Select value={actionFilter} onValueChange={setActionFilter}>
+                                            <SelectTrigger className="w-[200px]">
+                                                <SelectValue placeholder="Filter by Action" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Actions</SelectItem>
+                                                {actions.map((action) => (
+                                                    <SelectItem key={action} value={action}>
+                                                        {action.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())} ({stats.by_action[action]})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div className="px-6 py-4 border-b border-slate-100">
+                                    <h3 className="font-semibold text-slate-800">Audit Log History</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">{filteredLogs.length} of {stats.total} logs</p>
+                                </div>
+                                <div className="p-6">
+                                    <DataTable columns={columns} data={filteredLogs} />
+                                </div>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="analytics">
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <Card className="border-0 shadow-sm">
+                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
+                                        <h4 className="font-semibold text-slate-800 text-sm">Logs by Module</h4>
+                                        <p className="text-xs text-slate-500 mt-0.5">Distribution across modules</p>
+                                    </div>
+                                    <CardContent className="p-4 pt-5">
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <PieChart>
+                                                <Pie data={chartData.logs_by_module} dataKey="count" nameKey="module" cx="50%" cy="50%" outerRadius={100}>
+                                                    {chartData.logs_by_module.map((_, i) => <RechartsCell key={i} fill={COLORS[i % COLORS.length]} />)}
+                                                </Pie>
+                                                <RechartsTooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                                <Card className="border-0 shadow-sm">
+                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
+                                        <h4 className="font-semibold text-slate-800 text-sm">Logs by Action</h4>
+                                        <p className="text-xs text-slate-500 mt-0.5">Top action types</p>
+                                    </div>
+                                    <CardContent className="p-4 pt-5">
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <BarChart data={chartData.logs_by_action} margin={{ top: 5, right: 10, left: -20, bottom: 60 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                                <XAxis dataKey="action" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" />
+                                                <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                                <RechartsTooltip />
+                                                <Bar dataKey="count" fill="#334155" radius={[4, 4, 0, 0]} name="Logs" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-4 mt-4">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search logs..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9"
-                                />
-                            </div>
-                            <Select value={moduleFilter} onValueChange={setModuleFilter}>
-                                <SelectTrigger className="w-[200px]">
-                                    <SelectValue placeholder="Filter by Module" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Modules</SelectItem>
-                                    {modules.map((module) => (
-                                        <SelectItem key={module} value={module}>
-                                            {module} ({stats.by_module[module]})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select value={actionFilter} onValueChange={setActionFilter}>
-                                <SelectTrigger className="w-[200px]">
-                                    <SelectValue placeholder="Filter by Action" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Actions</SelectItem>
-                                    {actions.map((action) => (
-                                        <SelectItem key={action} value={action}>
-                                            {action.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())} ({stats.by_action[action]})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <DataTable columns={columns} data={filteredLogs} />
-                    </CardContent>
-                </Card>
+                        </TabsContent>
+                    </Tabs>
+                </div>
             </div>
         </AppLayout>
     );
 }
-

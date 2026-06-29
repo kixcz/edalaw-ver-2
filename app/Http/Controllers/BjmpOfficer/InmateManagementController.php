@@ -42,9 +42,34 @@ class InmateManagementController extends Controller
         // Get all active cells for dropdown
         $cells = Cell::active()->orderBy('cell_number')->get(['id', 'cell_number', 'capacity']);
 
+        // Summary stats
+        $stats = [
+            'total_pdls' => Inmate::count(),
+            'active_pdls' => Inmate::where('status', 'active')->count(),
+            'inactive_pdls' => Inmate::where('status', 'inactive')->count(),
+            'released_pdls' => Inmate::where('status', 'released')->count(),
+        ];
+
+        // Chart data
+        $chartData = [
+            'pdls_by_status' => [
+                ['status' => 'Active', 'count' => $stats['active_pdls']],
+                ['status' => 'Inactive', 'count' => $stats['inactive_pdls']],
+                ['status' => 'Released', 'count' => $stats['released_pdls']],
+            ],
+            'pdls_by_cell' => Cell::withCount(['inmates' => fn($q) => $q->where('status', 'active')])
+                ->having('inmates_count', '>', 0)
+                ->orderBy('inmates_count', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(fn($c) => ['cell' => $c->cell_number, 'count' => $c->inmates_count]),
+        ];
+
         return Inertia::render('BjmpOfficer/InmateManagement', [
             'inmates' => $inmates,
             'cells' => $cells,
+            'stats' => $stats,
+            'chartData' => $chartData,
             'filters' => [
                 'search' => $search ?? '',
                 'cell_id' => $cellId ? (int) $cellId : null,

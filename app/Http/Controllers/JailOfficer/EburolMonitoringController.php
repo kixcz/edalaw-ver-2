@@ -43,8 +43,41 @@ class EburolMonitoringController extends Controller
                 ];
             });
 
-        return Inertia::render('MonitoringOfficer/EburolMonitoring', [
+        // Calculate stats
+        $stats = [
+            'total_eburols' => $eburols->count(),
+            'pending_eburols' => $eburols->where('status', 'pending')->count(),
+            'approved_eburols' => $eburols->where('status', 'approved')->count(),
+            'rejected_eburols' => $eburols->where('status', 'rejected')->count(),
+            'completed_eburols' => $eburols->where('status', 'completed')->count(),
+            'active_tunnels' => $eburols->where('inmate_tunnel_status', 'active')->count(),
+        ];
+
+        // Chart data
+        $chartData = [
+            'eburols_by_status' => [
+                ['status' => 'Pending', 'count' => $stats['pending_eburols']],
+                ['status' => 'Approved', 'count' => $stats['approved_eburols']],
+                ['status' => 'Completed', 'count' => $stats['completed_eburols']],
+                ['status' => 'Rejected', 'count' => $stats['rejected_eburols']],
+            ],
+            'eburols_by_period' => [
+                ['period' => 'This Week', 'count' => $eburols->filter(function ($e) {
+                    return now()->between($e['wake_start_date'], $e['wake_end_date'])->isSameWeek(now());
+                })->count()],
+                ['period' => 'Next Week', 'count' => $eburols->filter(function ($e) {
+                    return now()->addWeek()->between($e['wake_start_date'], $e['wake_end_date']);
+                })->count()],
+                ['period' => 'Future', 'count' => $eburols->filter(function ($e) {
+                    return strtotime($e['wake_start_date']) > now()->addWeek()->timestamp;
+                })->count()],
+            ],
+        ];
+
+        return Inertia::render('JailOfficer/EburolMonitoring', [
             'eburols' => $eburols,
+            'stats' => $stats,
+            'chartData' => $chartData,
         ]);
     }
 }

@@ -71,8 +71,38 @@ class ChatLogsController extends Controller
             ];
         });
 
+        // Calculate stats (use all chat logs, not just paginated ones)
+        $allLogs = ChatLog::query();
+        $stats = [
+            'total_messages' => $allLogs->count(),
+            'flagged_messages' => (clone $allLogs)->where('flagged', true)->count(),
+            'visitor_messages' => (clone $allLogs)->where('sender', 'visitor')->count(),
+            'inmate_messages' => (clone $allLogs)->where('sender', 'inmate')->count(),
+            'monitor_messages' => (clone $allLogs)->where('sender', 'monitor')->count(),
+            'today_messages' => (clone $allLogs)->whereDate('sent_at', today())->count(),
+        ];
+
+        // Chart data
+        $chartData = [
+            'messages_by_sender' => [
+                ['sender' => 'Visitor', 'count' => $stats['visitor_messages']],
+                ['sender' => 'Inmate', 'count' => $stats['inmate_messages']],
+                ['sender' => 'Monitor', 'count' => $stats['monitor_messages']],
+            ],
+            'messages_by_day' => collect(range(6, 0))->map(function ($daysAgo) {
+                $date = now()->subDays($daysAgo);
+                $count = ChatLog::whereDate('sent_at', $date)->count();
+                return [
+                    'day' => $date->format('D'),
+                    'count' => $count,
+                ];
+            })->values()->toArray(),
+        ];
+
         return Inertia::render('JailOfficer/ChatLogs', [
             'chatLogs' => $formattedLogs,
+            'stats' => $stats,
+            'chartData' => $chartData,
             'pagination' => [
                 'current_page' => $chatLogs->currentPage(),
                 'last_page' => $chatLogs->lastPage(),

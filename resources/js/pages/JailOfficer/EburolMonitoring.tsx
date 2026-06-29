@@ -1,18 +1,33 @@
 import { Head } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Heart } from 'lucide-react';
+import { Heart, List, BarChart2, CheckCircle, Clock, AlertCircle, CheckCircle2, Users } from 'lucide-react';
 import { useMemo } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell as RechartsCell } from 'recharts';
 
 import { DataTable } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'E-Burol Monitoring', href: '/jail-officer/eburol-monitoring' },
-];
+const COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444'];
+
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 type Eburol = {
     id: number;
@@ -31,20 +46,22 @@ type Eburol = {
 
 type Props = {
     eburols: Eburol[];
+    stats: { total_eburols: number; pending_eburols: number; approved_eburols: number; rejected_eburols: number; completed_eburols: number; active_tunnels: number };
+    chartData: { eburols_by_status: { status: string; count: number }[]; eburols_by_period: { period: string; count: number }[] };
 };
 
 function getStatusBadge(status: string) {
     const map: Record<string, { label: string; className: string }> = {
-        pending: { label: 'Pending', className: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20' },
-        approved: { label: 'Approved', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' },
-        rejected: { label: 'Rejected', className: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' },
-        completed: { label: 'Completed', className: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
+        pending: { label: 'Pending', className: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+        approved: { label: 'Approved', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+        rejected: { label: 'Rejected', className: 'bg-red-50 text-red-700 border-red-200' },
+        completed: { label: 'Completed', className: 'bg-blue-50 text-blue-700 border-blue-200' },
     };
-    const config = map[status] ?? { label: status, className: '' };
-    return <Badge variant="secondary" className={config.className}>{config.label}</Badge>;
+    const config = map[status] ?? { label: status, className: 'bg-slate-100 text-slate-500 border-slate-200' };
+    return <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${config.className}`}>{config.label}</span>;
 }
 
-export default function EburolMonitoring({ eburols }: Props) {
+export default function EburolMonitoring({ eburols, stats, chartData }: Props) {
     const eburolColumns: ColumnDef<Eburol>[] = useMemo(() => [
         {
             accessorKey: 'visitor_name',
@@ -52,7 +69,7 @@ export default function EburolMonitoring({ eburols }: Props) {
             cell: ({ row }) => (
                 <div className="space-y-0.5">
                     <div className="font-medium">{row.original.visitor_name}</div>
-                    <div className="text-xs text-muted-foreground">{row.original.visitor_email}</div>
+                    <div className="text-xs text-slate-500">{row.original.visitor_email}</div>
                 </div>
             ),
         },
@@ -83,7 +100,7 @@ export default function EburolMonitoring({ eburols }: Props) {
             cell: ({ row }) => {
                 const code = row.original.inmate_tunnel_code;
                 const status = row.original.inmate_tunnel_status;
-                if (!code) return <span className="text-muted-foreground">—</span>;
+                if (!code) return <span className="text-slate-400">—</span>;
                 const statusLabel = status === 'active' ? 'Active' : status === 'expired' ? 'Expired' : status === 'used' ? 'Used' : '—';
                 const statusVariant = status === 'active' ? 'default' : status === 'expired' ? 'destructive' : 'secondary';
                 return (
@@ -101,35 +118,100 @@ export default function EburolMonitoring({ eburols }: Props) {
     ], []);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="E-Burol Monitoring" />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-6">
-                <div>
-                    <h1 className="text-2xl font-semibold">E-Burol Monitoring</h1>
-                    <p className="text-muted-foreground">
-                        E-burol schedules you are responsible for overseeing
-                    </p>
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-purple-600 rounded-xl"><Heart className="w-5 h-5 text-white" /></div>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-900 leading-none">E-Burol Monitoring</h1>
+                                <p className="text-xs text-slate-500 mt-0.5">E-burol schedules you are responsible for overseeing</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Heart className="h-5 w-5" />
-                            Assigned E-Burol Schedules
-                        </CardTitle>
-                        <CardDescription>
-                            E-burol schedules you have been assigned to oversee
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <DataTable columns={eburolColumns} data={eburols} />
-                        {eburols.length === 0 && (
-                            <p className="py-8 text-center text-muted-foreground">
-                                No e-burol schedules assigned to you yet.
-                            </p>
-                        )}
-                    </CardContent>
-                </Card>
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                        <StatCard icon={<Heart className="w-5 h-5" />} value={stats.total_eburols} label="Total E-Burols" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
+                        <StatCard icon={<Clock className="w-5 h-5" />} value={stats.pending_eburols} label="Pending" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
+                        <StatCard icon={<CheckCircle2 className="w-5 h-5" />} value={stats.approved_eburols} label="Approved" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
+                        <StatCard icon={<AlertCircle className="w-5 h-5" />} value={stats.rejected_eburols} label="Rejected" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
+                        <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats.completed_eburols} label="Completed" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
+                        <StatCard icon={<Users className="w-5 h-5" />} value={stats.active_tunnels} label="Active Tunnels" accent="bg-indigo-600" iconBg="bg-indigo-50" iconColor="text-indigo-600" />
+                    </div>
+
+                    {/* Tabs */}
+                    <Tabs defaultValue="records" className="space-y-4">
+                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger value="records" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                                <List className="w-4 h-4" />E-Burols
+                            </TabsTrigger>
+                            <TabsTrigger value="analytics" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                                <BarChart2 className="w-4 h-4" />Analytics
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="records">
+                            <Card className="border-0 shadow-sm">
+                                <div className="px-6 py-4 border-b border-slate-100">
+                                    <h3 className="font-semibold text-slate-800">E-Burol Records</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">{eburols.length} e-burol schedules</p>
+                                </div>
+                                <div className="p-6">
+                                    <DataTable columns={eburolColumns} data={eburols} />
+                                    {eburols.length === 0 && (
+                                        <p className="py-8 text-center text-slate-400">
+                                            No e-burol schedules assigned to you yet.
+                                        </p>
+                                    )}
+                                </div>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="analytics">
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <Card className="border-0 shadow-sm">
+                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
+                                        <h4 className="font-semibold text-slate-800 text-sm">E-Burols by Status</h4>
+                                        <p className="text-xs text-slate-500 mt-0.5">Distribution of e-burol statuses</p>
+                                    </div>
+                                    <CardContent className="p-4 pt-5">
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <PieChart>
+                                                <Pie data={chartData.eburols_by_status} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={100}>
+                                                    {chartData.eburols_by_status.map((_, i) => <RechartsCell key={i} fill={COLORS[i % COLORS.length]} />)}
+                                                </Pie>
+                                                <RechartsTooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                                <Card className="border-0 shadow-sm">
+                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
+                                        <h4 className="font-semibold text-slate-800 text-sm">E-Burols by Period</h4>
+                                        <p className="text-xs text-slate-500 mt-0.5">Timeline distribution</p>
+                                    </div>
+                                    <CardContent className="p-4 pt-5">
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <BarChart data={chartData.eburols_by_period} margin={{ top: 5, right: 10, left: -20, bottom: 60 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                                <XAxis dataKey="period" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                                <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                                <RechartsTooltip />
+                                                <Bar dataKey="count" fill="#9333ea" radius={[4, 4, 0, 0]} name="E-Burols" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+                </div>
             </div>
         </AppLayout>
     );

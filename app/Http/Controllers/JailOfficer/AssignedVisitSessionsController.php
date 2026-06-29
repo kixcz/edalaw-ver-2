@@ -113,8 +113,34 @@ class AssignedVisitSessionsController extends Controller
             return $data;
         });
 
+        // Calculate stats
+        $stats = [
+            'total_visits' => $visits->total(),
+            'pending_visits' => $visits->where('status.value', 'pending')->count(),
+            'approved_visits' => $visits->where('status.value', 'approved')->count(),
+            'rejected_visits' => $visits->where('status.value', 'rejected')->count(),
+            'completed_visits' => $visits->where('status.value', 'completed')->count(),
+            'virtual_visits' => $visits->where('visit_type.value', 'virtual')->count(),
+        ];
+
+        // Chart data
+        $chartData = [
+            'visits_by_status' => [
+                ['status' => 'Pending', 'count' => $stats['pending_visits']],
+                ['status' => 'Approved', 'count' => $stats['approved_visits']],
+                ['status' => 'Completed', 'count' => $stats['completed_visits']],
+                ['status' => 'Rejected', 'count' => $stats['rejected_visits']],
+            ],
+            'visits_by_type' => [
+                ['type' => 'Virtual', 'count' => $stats['virtual_visits']],
+                ['type' => 'Physical', 'count' => $visits->where('visit_type.value', 'physical')->count()],
+            ],
+        ];
+
         return Inertia::render('JailOfficer/AssignedVisitSessions', [
             'visits' => $visitsData,
+            'stats' => $stats,
+            'chartData' => $chartData,
             'pagination' => [
                 'current_page' => $visits->currentPage(),
                 'last_page' => $visits->lastPage(),
@@ -135,14 +161,27 @@ class AssignedVisitSessionsController extends Controller
     {
         $user = $request->user();
         
+        // Load required relationships for assignment check
+        $visit->load(['inmate.cell.dormitory']);
+        
         \Log::info('[Approve] Starting approval process', [
             'visit_id' => $visit->id,
             'visit_type' => $visit->visit_type->value,
             'current_status' => $visit->status->value,
+            'jail_officer_id' => $visit->jail_officer_id,
+            'inmate_id' => $visit->inmate_id,
+            'cell_id' => $visit->inmate?->cell_id,
         ]);
         
         // Verify JO is assigned to this visit (via scope or direct assignment)
         $isAssigned = $this->isJailOfficerAssignedToVisit($user, $visit);
+        
+        \Log::info('[Approve] Assignment check result', [
+            'is_assigned' => $isAssigned,
+            'user_id' => $user->id,
+            'user_role' => $user->role?->slug,
+        ]);
+        
         if (!$isAssigned && $user->role?->slug !== 'super_admin') {
             \Log::error('[Approve] User not assigned to visit', ['user_id' => $user->id]);
             abort(403, 'You are not assigned to this visit.');
@@ -223,7 +262,10 @@ class AssignedVisitSessionsController extends Controller
                 // scheduled_date is already a Carbon instance, so we need to extract just the date part
                 $dateString = $visit->scheduled_date->format('Y-m-d');
                 $scheduledStart = \Carbon\Carbon::parse($dateString . ' ' . $visit->scheduled_time);
-                $scheduledEnd = $scheduledStart->copy()->addMinutes(10);
+                
+                // Get duration from TimeSlotCapacity (same as VisitSessionService)
+                $durationMinutes = $this->getDurationForTime($scheduledStart, $visit->visit_type->value);
+                $scheduledEnd = $scheduledStart->copy()->addMinutes($durationMinutes);
                 
                 \Log::info('[Approve] Creating VisitSession', [
                     'visit_id' => $visit->id,
@@ -236,7 +278,6 @@ class AssignedVisitSessionsController extends Controller
                 $visitSession = VisitSession::create([
                     'visit_id' => $visit->id,
                     'room_id' => $roomId,
-                    'session_type' => 'visit',
                     'scheduled_start' => $scheduledStart,
                     'scheduled_end' => $scheduledEnd,
                     'status' => 'scheduled',
@@ -304,6 +345,9 @@ class AssignedVisitSessionsController extends Controller
     {
         $user = $request->user();
         
+        // Load required relationships for assignment check
+        $visit->load(['inmate.cell.dormitory']);
+        
         // Verify JO is assigned to this visit
         $isAssigned = $this->isJailOfficerAssignedToVisit($user, $visit);
         if (!$isAssigned && $user->role?->slug !== 'super_admin') {
@@ -347,6 +391,7 @@ class AssignedVisitSessionsController extends Controller
     {
         // Direct assignment
         if ($visit->jail_officer_id === $user->id) {
+            \Log::info('[AssignCheck] Direct assignment match', ['jail_officer_id' => $visit->jail_officer_id]);
             return true;
         }
 
@@ -354,11 +399,21 @@ class AssignedVisitSessionsController extends Controller
         if ($visit->inmate) {
             $scopeIds = $user->jailOfficerScopes()->where('is_active', true);
             
+            \Log::info('[AssignCheck] Checking scope-based assignment', [
+                'inmate_id' => $visit->inmate->id,
+                'cell_id' => $visit->inmate->cell_id,
+                'has_cell' => !is_null($visit->inmate->cell),
+                'cell_relationship_loaded' => $visit->relationLoaded('inmate.cell'),
+            ]);
+            
             // Check cell
             if ($visit->inmate->cell && $scopeIds->clone()
                 ->where('scope_type', 'cell')
                 ->pluck('cell_id')
                 ->contains($visit->inmate->cell->id)) {
+                \Log::info('[AssignCheck] Matched via cell scope', [
+                    'cell_id' => $visit->inmate->cell->id,
+                ]);
                 return true;
             }
 
@@ -367,21 +422,58 @@ class AssignedVisitSessionsController extends Controller
                 ->where('scope_type', 'dormitory')
                 ->pluck('dormitory_id')
                 ->contains($visit->inmate->cell->dormitory->id)) {
+                \Log::info('[AssignCheck] Matched via dormitory scope', [
+                    'dormitory_id' => $visit->inmate->cell->dormitory->id,
+                ]);
                 return true;
             }
 
-            // Check building/annex (via cell's direct building or through dormitory)
+            // Check building/annex (via dormitory's annex)
             if ($visit->inmate->cell) {
-                $cellAnnexId = $visit->inmate->cell->annex_id ?? $visit->inmate->cell->dormitory?->annex_id;
+                // Cell -> Dormitory -> Annex (cells don't have direct annex_id)
+                $cellAnnexId = $visit->inmate->cell->dormitory?->annex_id;
+                \Log::info('[AssignCheck] Checking annex scope', [
+                    'dormitory_annex_id' => $cellAnnexId,
+                    'cell_id' => $visit->inmate->cell->id,
+                    'dormitory_id' => $visit->inmate->cell->dormitory_id,
+                ]);
+                
                 if ($cellAnnexId && $scopeIds->clone()
-                    ->where('scope_type', 'building')
+                    ->whereIn('scope_type', ['building', 'annex'])
                     ->pluck('building_id')
                     ->contains($cellAnnexId)) {
+                    \Log::info('[AssignCheck] Matched via annex scope', [
+                        'annex_id' => $cellAnnexId,
+                    ]);
                     return true;
                 }
             }
+        } else {
+            \Log::warning('[AssignCheck] Visit has no inmate', ['visit_id' => $visit->id]);
         }
 
+        \Log::info('[AssignCheck] No assignment found', ['visit_id' => $visit->id]);
         return false;
+    }
+
+    /**
+     * Get duration minutes for a given time based on TimeSlotCapacity settings.
+     */
+    private function getDurationForTime(\Carbon\Carbon $scheduledStart, string $visitType): int
+    {
+        // Find the TimeSlotCapacity record that matches this time
+        $timeSlot = $scheduledStart->format('H:i');
+        
+        $capacity = \App\Models\TimeSlotCapacity::where('visit_type', $visitType)
+            ->where('time_slot', '<=', $timeSlot)
+            ->orderBy('time_slot', 'desc')
+            ->first();
+        
+        // If no specific capacity found, get default from first record or use fallback
+        if (! $capacity) {
+            $capacity = \App\Models\TimeSlotCapacity::where('visit_type', $visitType)->first();
+        }
+        
+        return $capacity?->duration_minutes ?? ($visitType === 'virtual' ? 20 : 30);
     }
 }

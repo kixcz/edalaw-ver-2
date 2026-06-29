@@ -98,7 +98,7 @@ class JailManagementController extends Controller
      */
     public function show(Jail $jail)
     {
-        $jail->load(['dormitories.annexes.cells.inmates' => function ($q) {
+        $jail->load(['annexes.dormitories.cells.inmates' => function ($q) {
             $q->where('status', 'active');
         }]);
 

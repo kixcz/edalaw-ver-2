@@ -1,12 +1,14 @@
 import { Head, Link, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Download, Eye, Flag, MessageSquare, MoreVertical, X } from 'lucide-react';
+import { Download, Eye, Flag, MessageSquare, MoreVertical, X, List, BarChart2, Archive, MessageCircle, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell as RechartsCell } from 'recharts';
 
 import { DataTable } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,20 +24,25 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Chat Recordings', href: '/jail-officer/chat-recordings' },
-];
+const COLORS = ['#0d9488', '#f59e0b', '#3b82f6', '#ef4444'];
 
-type ExportRow = {
-    id: number;
-    format: string;
-    generated_at: string;
-    generated_by_name: string | null;
-    download_url: string;
-};
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 type Session = {
     id: number;
@@ -80,10 +87,12 @@ type ChatSessionData = {
 
 type Props = {
     sessions: Session[];
+    stats: { total_sessions: number; total_messages: number; flagged_sessions: number; visit_sessions: number; eburol_sessions: number; avg_duration: string };
+    chartData: { sessions_by_type: { type: string; count: number }[]; messages_by_session: { session: string; count: number }[] };
     filters: { type?: string; has_flagged?: boolean };
 };
 
-export default function ChatRecordings({ sessions, filters }: Props) {
+export default function ChatRecordings({ sessions, stats, chartData, filters }: Props) {
     const [selectedSession, setSelectedSession] = useState<Session | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [chatData, setChatData] = useState<ChatSessionData | null>(null);
@@ -95,18 +104,11 @@ export default function ChatRecordings({ sessions, filters }: Props) {
         setIsModalOpen(true);
         
         try {
-            // Fetch chat logs from API
             const url = `/api/chat-recordings/session/${session.room_id}`;
-            console.log('Fetching from:', url);
             const response = await fetch(url);
-            console.log('Response status:', response.status);
             const result = await response.json();
-            console.log('API Result:', result);
             if (result.success) {
                 setChatData(result.data);
-                console.log('Chat data set:', result.data.chatLogs.length, 'messages');
-            } else {
-                console.error('API returned success=false:', result);
             }
         } catch (error) {
             console.error('Failed to load chat logs:', error);
@@ -160,15 +162,15 @@ export default function ChatRecordings({ sessions, filters }: Props) {
                 return `${secs}s`;
             }
         },
-        { accessorKey: 'status', header: 'Status', cell: ({ row }) => <Badge variant="secondary">{row.original.status}</Badge> },
+        { accessorKey: 'status', header: 'Status', cell: ({ row }) => <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">{row.original.status}</span> },
         { accessorKey: 'total_messages', header: 'Messages', cell: ({ row }) => row.original.total_messages },
         {
             accessorKey: 'flagged_count',
             header: 'Flagged',
             cell: ({ row }) => (
                 row.original.flagged_count > 0
-                    ? <Badge variant="destructive">{row.original.flagged_count}</Badge>
-                    : <span className="text-muted-foreground">0</span>
+                    ? <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-700 border border-red-200">{row.original.flagged_count}</span>
+                    : <span className="text-slate-400">0</span>
             ),
         },
         {
@@ -199,28 +201,101 @@ export default function ChatRecordings({ sessions, filters }: Props) {
     ], []);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Chat Recordings" />
-            <div className="flex flex-col gap-4 p-4">
-                <div>
-                    <h1 className="text-2xl font-semibold">Chat Recordings</h1>
-                    <p className="text-muted-foreground">Session chat logs, flagged messages, and export files.</p>
+        <AppLayout>
+            <Head title="Chat Archive" />
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-cyan-600 rounded-xl"><Archive className="w-5 h-5 text-white" /></div>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-900 leading-none">Chat Archive</h1>
+                                <p className="text-xs text-slate-500 mt-0.5">Session chat logs, flagged messages, and export files</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Sessions with chat</CardTitle>
-                        <CardDescription>{sessions.length} session(s)</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <DataTable
-                            columns={columns}
-                            data={sessions}
-                            searchKey="chat_search"
-                            searchPlaceholder="Search by room ID, visitor, PDL..."
-                            initialSorting={[{ id: 'scheduled_start', desc: true }]}
-                        />
-                    </CardContent>
-                </Card>
+
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                        <StatCard icon={<Archive className="w-5 h-5" />} value={stats.total_sessions} label="Total Sessions" accent="bg-cyan-600" iconBg="bg-cyan-50" iconColor="text-cyan-600" />
+                        <StatCard icon={<MessageCircle className="w-5 h-5" />} value={stats.total_messages} label="Total Messages" accent="bg-teal-600" iconBg="bg-teal-50" iconColor="text-teal-600" />
+                        <StatCard icon={<AlertTriangle className="w-5 h-5" />} value={stats.flagged_sessions} label="Flagged" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
+                        <StatCard icon={<MessageSquare className="w-5 h-5" />} value={stats.visit_sessions} label="Visits" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
+                        <StatCard icon={<MessageSquare className="w-5 h-5" />} value={stats.eburol_sessions} label="E-Burols" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
+                        <StatCard icon={<Clock className="w-5 h-5" />} value={stats.avg_duration} label="Avg Duration" accent="bg-indigo-600" iconBg="bg-indigo-50" iconColor="text-indigo-600" />
+                    </div>
+
+                    {/* Tabs */}
+                    <Tabs defaultValue="records" className="space-y-4">
+                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger value="records" className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                                <List className="w-4 h-4" />Sessions
+                            </TabsTrigger>
+                            <TabsTrigger value="analytics" className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                                <BarChart2 className="w-4 h-4" />Analytics
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="records">
+                            <Card className="border-0 shadow-sm">
+                                <div className="px-6 py-4 border-b border-slate-100">
+                                    <h3 className="font-semibold text-slate-800">Chat Sessions</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">{sessions.length} sessions with chat logs</p>
+                                </div>
+                                <div className="p-6">
+                                    <DataTable
+                                        columns={columns}
+                                        data={sessions}
+                                        searchKey="chat_search"
+                                        searchPlaceholder="Search by room ID, visitor, PDL..."
+                                        initialSorting={[{ id: 'scheduled_start', desc: true }]}
+                                    />
+                                </div>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="analytics">
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <Card className="border-0 shadow-sm">
+                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
+                                        <h4 className="font-semibold text-slate-800 text-sm">Sessions by Type</h4>
+                                        <p className="text-xs text-slate-500 mt-0.5">Visit vs E-Burol distribution</p>
+                                    </div>
+                                    <CardContent className="p-4 pt-5">
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <PieChart>
+                                                <Pie data={chartData.sessions_by_type} dataKey="count" nameKey="type" cx="50%" cy="50%" outerRadius={100}>
+                                                    {chartData.sessions_by_type.map((_, i) => <RechartsCell key={i} fill={COLORS[i % COLORS.length]} />)}
+                                                </Pie>
+                                                <RechartsTooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                                <Card className="border-0 shadow-sm">
+                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
+                                        <h4 className="font-semibold text-slate-800 text-sm">Messages per Session</h4>
+                                        <p className="text-xs text-slate-500 mt-0.5">Top 10 sessions by message count</p>
+                                    </div>
+                                    <CardContent className="p-4 pt-5">
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <BarChart data={chartData.messages_by_session} margin={{ top: 5, right: 10, left: -20, bottom: 60 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                                <XAxis dataKey="session" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" />
+                                                <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                                <RechartsTooltip />
+                                                <Bar dataKey="count" fill="#0891b2" radius={[4, 4, 0, 0]} name="Messages" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+                </div>
             </div>
 
             {/* Floating Modal for Chat Details */}
@@ -231,10 +306,10 @@ export default function ChatRecordings({ sessions, filters }: Props) {
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
-                        <div className="flex items-center justify-between p-4 border-b bg-muted/50">
+                        <div className="flex items-center justify-between p-4 border-b bg-slate-50">
                             <div>
                                 <h2 className="text-xl font-semibold">Chat Session</h2>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-slate-500">
                                     Room: <code className="text-xs">{selectedSession.room_id}</code>
                                 </p>
                             </div>
@@ -244,10 +319,10 @@ export default function ChatRecordings({ sessions, filters }: Props) {
                         </div>
 
                         {/* Modal Content - Chat Messages */}
-                        <div className="flex-1 overflow-y-auto p-4 bg-background">
+                        <div className="flex-1 overflow-y-auto p-4 bg-white">
                             {isLoading ? (
                                 <div className="flex items-center justify-center py-12">
-                                    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+                                    <div className="animate-spin h-8 w-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
                                 </div>
                             ) : chatData?.chatLogs && chatData.chatLogs.length > 0 ? (
                                 <div className="rounded-md border">
@@ -262,8 +337,8 @@ export default function ChatRecordings({ sessions, filters }: Props) {
                                         </TableHeader>
                                         <TableBody>
                                             {chatData.chatLogs.map((log) => (
-                                                <TableRow key={log.id} className="hover:bg-muted/50">
-                                                    <TableCell className="text-muted-foreground whitespace-nowrap">
+                                                <TableRow key={log.id} className="hover:bg-slate-50">
+                                                    <TableCell className="text-slate-500 whitespace-nowrap">
                                                         {log.sent_at ? new Date(log.sent_at).toLocaleString([], { 
                                                             dateStyle: 'short',
                                                             timeStyle: 'short'
@@ -271,17 +346,10 @@ export default function ChatRecordings({ sessions, filters }: Props) {
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex items-center gap-2">
-                                                            <Badge 
-                                                                variant={
-                                                                    ['visitor', 'guest'].includes(log.sender.toLowerCase()) ? 'default' :
-                                                                    log.sender.toLowerCase() === 'inmate' || log.sender.toLowerCase() === 'pdl' ? 'secondary' :
-                                                                    'outline'
-                                                                }
-                                                                className="text-xs"
-                                                            >
+                                                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${['visitor', 'guest'].includes(log.sender.toLowerCase()) ? 'bg-blue-100 text-blue-800' : log.sender.toLowerCase() === 'inmate' || log.sender.toLowerCase() === 'pdl' ? 'bg-orange-100 text-orange-800' : 'bg-emerald-100 text-emerald-800'}`}>
                                                                 {log.sender_label}
-                                                            </Badge>
-                                                            <span className="text-xs text-muted-foreground">
+                                                            </span>
+                                                            <span className="text-xs text-slate-500">
                                                                 {log.sender_name}
                                                             </span>
                                                         </div>
@@ -291,12 +359,12 @@ export default function ChatRecordings({ sessions, filters }: Props) {
                                                     </TableCell>
                                                     <TableCell className="text-center">
                                                         {log.flagged ? (
-                                                            <Badge variant="destructive" className="text-xs">
-                                                                <Flag className="h-3 w-3 mr-1" />
+                                                            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-700 border border-red-200">
+                                                                <Flag className="h-3 w-3 mr-1 inline" />
                                                                 Yes
-                                                            </Badge>
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-muted-foreground text-xs">—</span>
+                                                            <span className="text-slate-400 text-xs">—</span>
                                                         )}
                                                     </TableCell>
                                                 </TableRow>
@@ -305,7 +373,7 @@ export default function ChatRecordings({ sessions, filters }: Props) {
                                     </Table>
                                 </div>
                             ) : (
-                                <div className="text-center py-12 text-muted-foreground">
+                                <div className="text-center py-12 text-slate-400">
                                     <MessageSquare className="mx-auto h-16 w-16 mb-4 opacity-20" />
                                     <p>No chat messages in this session</p>
                                 </div>
@@ -313,8 +381,8 @@ export default function ChatRecordings({ sessions, filters }: Props) {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-4 border-t bg-muted/30 flex justify-between items-center">
-                            <div className="text-sm text-muted-foreground">
+                        <div className="p-4 border-t bg-slate-50 flex justify-between items-center">
+                            <div className="text-sm text-slate-500">
                                 {chatData?.chatLogs?.length || 0} message(s)
                             </div>
                             <div className="flex gap-2">

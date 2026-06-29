@@ -7,8 +7,10 @@ use App\Models\Cell;
 use App\Models\CellScheduleTemplate;
 use App\Models\Annex;
 use App\Models\Dormitory;
+use App\Models\Inmate;
 use App\Models\Jail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,7 +19,7 @@ class CellManagementController extends Controller
    
     public function index(Request $request): Response
     {
-        $query = Cell::with(['annex.dormitory.jail', 'inmates' => function ($q) {
+        $query = Cell::with(['dormitory.annex.jail', 'inmates' => function ($q) {
             $q->where('status', 'active');
         }]);
 
@@ -26,17 +28,17 @@ class CellManagementController extends Controller
         }
 
         if ($annexId = $request->input('annex_id')) {
-            $query->where('annex_id', $annexId);
-        }
-
-        if ($dormitoryId = $request->input('dormitory_id')) {
-            $query->whereHas('annex', function ($q) use ($dormitoryId) {
-                $q->where('dormitory_id', $dormitoryId);
+            $query->whereHas('dormitory', function ($q) use ($annexId) {
+                $q->where('annex_id', $annexId);
             });
         }
 
+        if ($dormitoryId = $request->input('dormitory_id')) {
+            $query->where('dormitory_id', $dormitoryId);
+        }
+
         if ($jailId = $request->input('jail_id')) {
-            $query->whereHas('annex.dormitory', function ($q) use ($jailId) {
+            $query->whereHas('dormitory.annex', function ($q) use ($jailId) {
                 $q->where('jail_id', $jailId);
             });
         }
@@ -48,18 +50,49 @@ class CellManagementController extends Controller
         $cells = $query->orderBy('cell_number')->paginate(10)->withQueryString();
 
         $jails = Jail::orderBy('name')->get(['id', 'name', 'code']);
-        $dormitories = Dormitory::with('jail')
+        $dormitories = Dormitory::with('annex')
+            ->orderBy('name')
+            ->get(['id', 'annex_id', 'name']);
+        $annexes = Annex::with('jail')
             ->orderBy('name')
             ->get(['id', 'jail_id', 'name']);
-        $annexes = Annex::with('dormitory')
-            ->orderBy('name')
-            ->get(['id', 'dormitory_id', 'name']);
+
+        // Summary stats
+        $totalCapacity = Cell::sum('capacity');
+        $occupiedBeds = Inmate::where('status', 'active')->count();
+        
+        $stats = [
+            'total_cells' => Cell::count(),
+            'active_cells' => Cell::where('status', 'active')->count(),
+            'total_capacity' => $totalCapacity,
+            'occupied_beds' => $occupiedBeds,
+            'occupancy_rate' => $totalCapacity > 0 ? round(($occupiedBeds / $totalCapacity) * 100, 1) : 0,
+        ];
+
+        // Chart data
+        $chartData = [
+            'cells_by_status' => [
+                ['status' => 'Active', 'count' => Cell::where('status', 'active')->count()],
+                ['status' => 'Inactive', 'count' => Cell::where('status', 'inactive')->count()],
+            ],
+            'occupancy_by_dormitory' => Dormitory::with(['annex', 'cells' => function($q) {
+                $q->with(['inmates' => function($iq) {
+                    $iq->where('status', 'active');
+                }]);
+            }])->get()->map(fn($d) => [
+                'name' => $d->name,
+                'capacity' => $d->cells->sum('capacity'),
+                'occupied' => $d->cells->sum(fn($c) => $c->inmates->count())
+            ])->filter(fn($d) => $d['capacity'] > 0),
+        ];
 
         return Inertia::render('BjmpOfficer/CellManagement', [
             'cells' => $cells,
             'jails' => $jails,
             'dormitories' => $dormitories,
             'annexes' => $annexes,
+            'stats' => $stats,
+            'chartData' => $chartData,
             'filters' => [
                 'search' => $search ?? '',
                 'annex_id' => $annexId ? (int) $annexId : null,
@@ -73,7 +106,7 @@ class CellManagementController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'annex_id' => 'required|exists:annexes,id',
+            'dormitory_id' => 'required|exists:dormitories,id',
             'cell_number' => 'required|string|max:50|unique:cells',
             'capacity' => 'required|integer|min:1|max:50',
             'status' => 'required|in:active,inactive',
@@ -89,7 +122,7 @@ class CellManagementController extends Controller
     public function update(Request $request, Cell $cell)
     {
         $validated = $request->validate([
-            'annex_id' => 'required|exists:annexes,id',
+            'dormitory_id' => 'required|exists:dormitories,id',
             'cell_number' => 'required|string|max:50|unique:cells,cell_number,' . $cell->id,
             'capacity' => 'required|integer|min:1|max:50',
             'status' => 'required|in:active,inactive',

@@ -548,7 +548,7 @@ export function AppSidebar() {
 
             // PDLs Management - always show if officer has any scope
             facilityItems.push({
-                title: 'PDL Management',
+                title: 'PDLs',
                 href: '/jail-officer/inmates-hierarchical',
                 icon: PersonStanding,
             });
@@ -598,6 +598,11 @@ export function AppSidebar() {
                 label: 'Session Monitoring',
                 items: [
                     {
+                        title: 'Assigned Sessions',
+                        href: '/jail-officer/assigned-sessions',
+                        icon: Video,
+                    },
+                    {
                         title: 'Chat Logs',
                         href: '/jail-officer/chat-logs',
                         icon: MessageCircle,
@@ -640,7 +645,6 @@ export function AppSidebar() {
         ];
     }
 
-    // National Office navigation with management modules
     let nationalOfficeNavGroups:
         | Array<{ label: string; items: NavItem[] }>
         | undefined;
@@ -778,6 +782,60 @@ export function AppSidebar() {
         ];
     }
 
+    // Regional Supervisor navigation with management modules
+    let regionalSupervisorNavGroups:
+        | Array<{ label: string; items: NavItem[] }>
+        | undefined;
+    if (userRole === 'regional_supervisor') {
+        regionalSupervisorNavGroups = [
+            {
+                label: 'Main',
+                items: [
+                    {
+                        title: 'Dashboard',
+                        href: '/dashboard/regional-supervisor',
+                        icon: LayoutGrid,
+                    },
+                ],
+            },
+            {
+                label: 'Administrative Management',
+                items: [
+                    {
+                        title: 'Branches',
+                        href: '/regional-supervisor/branches',
+                        icon: Building2,
+                    },
+                ],
+            },
+            {
+                label: 'Personnel Management',
+                items: [
+                    {
+                        title: 'Jail Wardens',
+                        href: '/regional-supervisor/wardens',
+                        icon: Shield,
+                    },
+                    {
+                        title: 'Jail Officers',
+                        href: '/regional-supervisor/officers',
+                        icon: Users,
+                    },
+                ],
+            },
+            {
+                label: 'Configuration',
+                items: [
+                    {
+                        title: 'Settings',
+                        href: '/settings',
+                        icon: Settings,
+                    },
+                ],
+            },
+        ];
+    }
+
     return (
         <Sidebar
             ref={sidebarRef}
@@ -813,6 +871,8 @@ export function AppSidebar() {
                     <NavMain groups={jailOfficerNavGroups} />
                 ) : userRole === 'jail_warden' && jailWardenNavGroups ? (
                     <NavMain groups={jailWardenNavGroups} />
+                ) : userRole === 'regional_supervisor' && regionalSupervisorNavGroups ? (
+                    <NavMain groups={regionalSupervisorNavGroups} />
                 ) : (
                     <NavMain items={mainNavItems} />
                 )}

@@ -18,7 +18,7 @@ class CallLogController extends Controller
         $now = now();
         
         // Fetch visit sessions for the current user (both visits and eburol)
-        $callLogs = VisitSession::with(['visit', 'eburol', 'inmateTunnels.inmate'])
+        $callLogs = VisitSession::with(['visit', 'eburol', 'inmateTunnels.visitSession'])
             ->whereHas('visit', fn($q) => $q->where('user_id', auth()->id()))
             ->orWhereHas('eburol', fn($q) => $q->where('user_id', auth()->id()))
             ->orderBy('scheduled_start', 'desc')

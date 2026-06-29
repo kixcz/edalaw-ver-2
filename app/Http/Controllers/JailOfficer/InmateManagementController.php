@@ -19,7 +19,13 @@ class InmateManagementController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Inmate::with(['cell.annex.dormitory.jail']);
+        $user = $request->user();
+        
+        // Get officer's authorized cell IDs based on scope
+        $authorizedCellIds = $user->getAuthorizedCellIds();
+        
+        $query = Inmate::with(['cell.dormitory.annex.jail'])
+            ->whereIn('cell_id', $authorizedCellIds);
 
         // Search filter
         if ($search = $request->input('search')) {
@@ -35,23 +41,23 @@ class InmateManagementController extends Controller
             $query->where('cell_id', $cellId);
         }
 
-        // Filter by annex (through cell)
+        // Filter by annex (through cell's dormitory)
         if ($annexId = $request->input('annex_id')) {
-            $query->whereHas('cell', function ($q) use ($annexId) {
+            $query->whereHas('cell.dormitory', function ($q) use ($annexId) {
                 $q->where('annex_id', $annexId);
             });
         }
 
-        // Filter by dormitory (through cell and annex)
+        // Filter by dormitory (through cell)
         if ($dormitoryId = $request->input('dormitory_id')) {
-            $query->whereHas('cell.annex', function ($q) use ($dormitoryId) {
+            $query->whereHas('cell', function ($q) use ($dormitoryId) {
                 $q->where('dormitory_id', $dormitoryId);
             });
         }
 
-        // Filter by jail (through cell, annex, and dormitory)
+        // Filter by jail (through cell, dormitory, and annex)
         if ($jailId = $request->input('jail_id')) {
-            $query->whereHas('cell.annex.dormitory', function ($q) use ($jailId) {
+            $query->whereHas('cell.dormitory.annex', function ($q) use ($jailId) {
                 $q->where('jail_id', $jailId);
             });
         }
@@ -66,20 +72,45 @@ class InmateManagementController extends Controller
         // Get all jails, dormitories, annexes, and cells for dropdowns
         $jails = Jail::active()->orderBy('name')->get(['id', 'name', 'code']);
         $dormitories = Dormitory::active()
+            ->when($jailId, fn($q) => $q->whereHas('annex', fn($aq) => $aq->where('jail_id', $jailId)))
+            ->with('annex')
+            ->orderBy('name')
+            ->get(['id', 'annex_id', 'name']);
+        $annexes = Annex::active()
             ->when($jailId, fn($q) => $q->where('jail_id', $jailId))
             ->with('jail')
             ->orderBy('name')
             ->get(['id', 'jail_id', 'name']);
-        $annexes = Annex::active()
+        $cells = Cell::active()
+            ->whereIn('id', $authorizedCellIds)
             ->when($dormitoryId, fn($q) => $q->where('dormitory_id', $dormitoryId))
             ->with('dormitory')
-            ->orderBy('name')
-            ->get(['id', 'dormitory_id', 'name']);
-        $cells = Cell::active()
-            ->when($annexId, fn($q) => $q->where('annex_id', $annexId))
-            ->with('annex')
             ->orderBy('cell_number')
-            ->get(['id', 'annex_id', 'cell_number', 'capacity']);
+            ->get(['id', 'dormitory_id', 'cell_number', 'capacity']);
+
+        // Summary stats
+        $stats = [
+            'total_pdls' => Inmate::whereIn('cell_id', $authorizedCellIds)->count(),
+            'active_pdls' => Inmate::whereIn('cell_id', $authorizedCellIds)->where('status', 'active')->count(),
+            'inactive_pdls' => Inmate::whereIn('cell_id', $authorizedCellIds)->where('status', 'inactive')->count(),
+            'released_pdls' => Inmate::whereIn('cell_id', $authorizedCellIds)->where('status', 'released')->count(),
+        ];
+
+        // Chart data
+        $chartData = [
+            'pdls_by_status' => [
+                ['status' => 'Active', 'count' => $stats['active_pdls']],
+                ['status' => 'Inactive', 'count' => $stats['inactive_pdls']],
+                ['status' => 'Released', 'count' => $stats['released_pdls']],
+            ],
+            'pdls_by_cell' => Cell::whereIn('id', $authorizedCellIds)
+                ->withCount(['inmates' => fn($q) => $q->where('status', 'active')])
+                ->having('inmates_count', '>', 0)
+                ->orderBy('inmates_count', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(fn($c) => ['cell' => $c->cell_number, 'count' => $c->inmates_count]),
+        ];
 
         return Inertia::render('BjmpOfficer/InmateManagement', [
             'inmates' => $inmates,
@@ -87,6 +118,8 @@ class InmateManagementController extends Controller
             'dormitories' => $dormitories,
             'annexes' => $annexes,
             'cells' => $cells,
+            'stats' => $stats,
+            'chartData' => $chartData,
             'filters' => [
                 'search' => $search ?? '',
                 'jail_id' => $jailId ? (int) $jailId : null,
@@ -114,7 +147,7 @@ class InmateManagementController extends Controller
         ]);
 
         // Check if cell has available capacity
-        $cell = Cell::with('annex')->find($validated['cell_id']);
+        $cell = Cell::with('dormitory.annex')->find($validated['cell_id']);
         if (! $cell->hasAvailableCapacity()) {
             return redirect()->back()->with('error', 'Selected cell is at full capacity.');
         }
@@ -141,7 +174,7 @@ class InmateManagementController extends Controller
 
         // Check if cell has available capacity (if changing cells)
         if ($validated['cell_id'] != $inmate->cell_id) {
-            $cell = Cell::with('annex')->find($validated['cell_id']);
+            $cell = Cell::with('dormitory.annex')->find($validated['cell_id']);
             if (! $cell->hasAvailableCapacity()) {
                 return redirect()->back()->with('error', 'Selected cell is at full capacity.');
             }

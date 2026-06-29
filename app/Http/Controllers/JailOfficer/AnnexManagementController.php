@@ -4,7 +4,9 @@ namespace App\Http\Controllers\JailOfficer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Annex;
+use App\Models\Cell;
 use App\Models\Dormitory;
+use App\Models\Inmate;
 use App\Models\Jail;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,22 +19,17 @@ class AnnexManagementController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Annex::with(['dormitory.jail', 'cells' => function ($q) {
+        $query = Annex::with(['jail', 'dormitories' => function ($q) {
+            $q->withCount(['cells']);
+        }, 'cells' => function ($q) {
             $q->withCount(['inmates' => function ($iq) {
                 $iq->where('status', 'active');
             }]);
         }]);
 
-        // Filter by dormitory
-        if ($dormitoryId = $request->input('dormitory_id')) {
-            $query->where('dormitory_id', $dormitoryId);
-        }
-
-        // Filter by jail (through dormitory)
+        // Filter by jail
         if ($jailId = $request->input('jail_id')) {
-            $query->whereHas('dormitory', function ($q) use ($jailId) {
-                $q->where('jail_id', $jailId);
-            });
+            $query->where('jail_id', $jailId);
         }
 
         // Status filter
@@ -42,18 +39,39 @@ class AnnexManagementController extends Controller
 
         $annexes = $query->orderBy('name')->paginate(10)->withQueryString();
 
-        // Get all jails and dormitories for dropdowns
+        // Get all jails for dropdowns
         $jails = Jail::orderBy('name')->get(['id', 'name', 'code']);
-        $dormitories = Dormitory::with('annex')
-            ->orderBy('name')
-            ->get(['id', 'annex_id', 'name']);
+
+        // Summary stats
+        $stats = [
+            'total_annexes' => Annex::count(),
+            'active_annexes' => Annex::where('status', 'active')->count(),
+            'total_dormitories' => Dormitory::count(),
+            'total_cells' => Cell::count(),
+            'total_pdls' => Inmate::where('status', 'active')->count(),
+        ];
+
+        // Chart data
+        $chartData = [
+            'annexes_by_jail' => Jail::withCount('annexes')->get()->map(fn($j) => [
+                'name' => $j->name,
+                'annexes' => $j->annexes_count
+            ]),
+            'occupancy_by_annex' => Annex::with(['cells.inmates' => function($q) {
+                $q->where('status', 'active');
+            }])->get()->map(fn($a) => [
+                'name' => $a->name,
+                'capacity' => $a->cells->sum('capacity'),
+                'occupied' => $a->cells->sum(fn($c) => $c->inmates->count())
+            ]),
+        ];
 
         return Inertia::render('JailOfficer/AnnexManagement', [
             'annexes' => $annexes,
             'jails' => $jails,
-            'dormitories' => $dormitories,
+            'stats' => $stats,
+            'chartData' => $chartData,
             'filters' => [
-                'dormitory_id' => $dormitoryId ? (int) $dormitoryId : null,
                 'jail_id' => $jailId ? (int) $jailId : null,
                 'status' => $status ?? 'all',
             ],
@@ -66,7 +84,7 @@ class AnnexManagementController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'dormitory_id' => 'required|exists:dormitories,id',
+            'jail_id' => 'required|exists:jails,id',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
@@ -83,7 +101,7 @@ class AnnexManagementController extends Controller
     public function update(Request $request, Annex $annex)
     {
         $validated = $request->validate([
-            'dormitory_id' => 'required|exists:dormitories,id',
+            'jail_id' => 'required|exists:jails,id',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',

@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\UpdateSessionActivity::class,
+            \App\Http\Middleware\TrackUserActivity::class,
         ]);
 
         $middleware->alias([

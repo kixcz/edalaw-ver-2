@@ -107,8 +107,34 @@ class AssignedSessionsController extends Controller
                 ];
             });
 
-        return Inertia::render('MonitoringOfficer/AssignedSessions', [
+        // Calculate stats
+        $stats = [
+            'total_sessions' => $sessions->count(),
+            'active_sessions' => $sessions->where('status', 'active')->count(),
+            'scheduled_sessions' => $sessions->where('status', 'scheduled')->count(),
+            'completed_sessions' => $sessions->whereIn('status', ['completed', 'terminated'])->count(),
+            'visit_sessions' => $sessions->where('type', 'visit')->count(),
+            'eburol_sessions' => $sessions->where('type', 'eburol')->count(),
+        ];
+
+        // Chart data
+        $chartData = [
+            'sessions_by_status' => [
+                ['status' => 'Active', 'count' => $stats['active_sessions']],
+                ['status' => 'Scheduled', 'count' => $stats['scheduled_sessions']],
+                ['status' => 'Completed', 'count' => $sessions->where('status', 'completed')->count()],
+                ['status' => 'Terminated', 'count' => $sessions->where('status', 'terminated')->count()],
+            ],
+            'sessions_by_type' => [
+                ['type' => 'Visits', 'count' => $stats['visit_sessions']],
+                ['type' => 'E-Burols', 'count' => $stats['eburol_sessions']],
+            ],
+        ];
+
+        return Inertia::render('JailOfficer/AssignedSessions', [
             'sessions' => $sessions,
+            'stats' => $stats,
+            'chartData' => $chartData,
             'filters' => [
                 'type' => $typeFilter ?? 'all',
             ],

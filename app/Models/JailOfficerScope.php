@@ -101,7 +101,7 @@ class JailOfficerScope extends Model
     public function getScopeDescriptionAttribute(): string
     {
         return match($this->scope_type) {
-            'building' => "Building Level: {$this->building?->name}",
+            'building', 'annex' => "Building Level: {$this->building?->name}",
             'dormitory' => "Dormitory Level: {$this->dormitory?->name}",
             'cell' => "Cell Level: {$this->cell?->cell_number}",
             default => 'Unknown Scope',
@@ -123,7 +123,7 @@ class JailOfficerScope extends Model
     public function getScopeableEntity(): Annex|Dormitory|Cell|null
     {
         return match($this->scope_type) {
-            'building' => $this->building,
+            'building', 'annex' => $this->building,
             'dormitory' => $this->dormitory,
             'cell' => $this->cell,
             default => null,
@@ -142,7 +142,7 @@ class JailOfficerScope extends Model
     {
         return match($this->scope_type) {
             'dormitory' => $this->getCellsFromDormitory(),
-            'building' => $this->getCellsFromBuilding(),
+            'building', 'annex' => $this->getCellsFromBuilding(),
             'cell' => $this->cell_id ? [$this->cell_id] : [],
             default => [],
         };
@@ -160,7 +160,7 @@ class JailOfficerScope extends Model
     {
         return match($this->scope_type) {
             'dormitory' => $this->getBuildingsFromDormitory(),
-            'building' => $this->building_id ? [$this->building_id] : [],
+            'building', 'annex' => $this->building_id ? [$this->building_id] : [],
             'cell' => $this->getBuildingFromCell(),
             default => [],
         };
@@ -186,7 +186,7 @@ class JailOfficerScope extends Model
     {
         return match($this->scope_type) {
             'dormitory' => $this->dormitory_id ? [$this->dormitory_id] : [],
-            'building' => $this->getDormitoryFromBuilding(),
+            'building', 'annex' => $this->getDormitoryFromBuilding(),
             'cell' => $this->getDormitoryFromCell(),
             default => [],
         };

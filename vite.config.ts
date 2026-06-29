@@ -11,7 +11,7 @@ try {
     wayfinderPlugin = wayfinder.wayfinder({
         formVariants: true,
     });
-} catch (e) {
+} catch (e) { 
     // Wayfinder not available, will continue without it
     console.warn('Wayfinder plugin not available');
 }
@@ -31,6 +31,23 @@ export default defineConfig({
         tailwindcss(),
         ...(wayfinderPlugin ? [wayfinderPlugin] : []),
     ],
+    server: {
+        host: '0.0.0.0',
+        port: 5173,
+        strictPort: true,
+
+        origin: 'http://10.24.227.208:5173',
+
+        cors: {
+            origin: 'http://10.24.227.208:8000',
+            credentials: true,
+        },
+
+        hmr: {
+            host: '10.24.227.208',
+            protocol: 'ws',
+        },
+    },
     esbuild: {
         jsx: 'automatic',
     },
