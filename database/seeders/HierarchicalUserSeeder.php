@@ -18,11 +18,10 @@ class HierarchicalUserSeeder extends Seeder
     {
         // Get roles
         $nationalRole = Role::where('slug', 'national')->first();
-        $superAdminRole = Role::where('slug', 'super_admin')->first();
         $jailWardenRole = Role::where('slug', 'jail_warden')->first();
         $jailOfficerRole = Role::where('slug', 'jail_officer')->first();
 
-        if (!$nationalRole || !$superAdminRole || !$jailWardenRole || !$jailOfficerRole) {
+        if (!$nationalRole || !$jailWardenRole || !$jailOfficerRole) {
             $this->command->error('Roles not found. Please run RoleSeeder first.');
             return;
         }
@@ -40,7 +39,7 @@ class HierarchicalUserSeeder extends Seeder
 
         // Create Jail Warden, Super Admin and Jail Officers for each branch
         foreach ($branches as $branch) {
-            $this->createBranchUsers($branch, $superAdminRole, $jailWardenRole, $jailOfficerRole);
+            $this->createBranchUsers($branch, $jailWardenRole, $jailOfficerRole);
         }
 
         $this->command->info('Hierarchical users seeded successfully.');
@@ -76,7 +75,7 @@ class HierarchicalUserSeeder extends Seeder
     /**
      * Create Jail Warden, Super Admin and Jail Officers for a branch.
      */
-    private function createBranchUsers($branch, $superAdminRole, $jailWardenRole, $jailOfficerRole): void
+    private function createBranchUsers($branch, $jailWardenRole, $jailOfficerRole): void
     {
         // Create Jail Warden for this branch (head of facility)
         $warden = User::firstOrCreate(
@@ -109,7 +108,7 @@ class HierarchicalUserSeeder extends Seeder
                 'first_name' => Str::title(fake()->firstName()),
                 'last_name' => Str::title(fake()->lastName()),
                 'middle_name' => Str::title(fake()->firstName()),
-                'role_id' => $superAdminRole->id,
+                'role_id' => $jailWardenRole->id,
                 'branch_id' => $branch->id, // Assigned to specific branch
                 'contact_number' => fake()->phoneNumber(),
                 'approval_status' => 'approved',

@@ -308,12 +308,15 @@ class AssignedSessionsController extends Controller
         }
 
         $participantId = 'monitor-'.$request->user()->id.'-'.$session->id;
-        $result = $videoSdk->generateJoinTokenForPrebuiltApp($session->room_id, $participantId, ['allow_join'], 120);
+        $result = $videoSdk->generateJoinTokenForPrebuiltApp($session->room_id, $participantId, ['allow_join', 'allow_mod'], 120);
 
         if (! ($result['success'] ?? false) || empty($result['token'])) {
             return redirect()->route('monitoring-officer.assigned-sessions.index')
                 ->with('error', 'Unable to generate join link. Please try again.');
         }
+
+        $token = preg_replace('/^Bearer\s+/i', '', (string) $result['token']);
+        $token = trim($token);
 
         // Use embedded VideoRoom for both v1 and v2 to ensure proper token handling
         return view('visitor.video-room', [
@@ -322,6 +325,7 @@ class AssignedSessionsController extends Controller
             'participant_name'   => $request->user()->name ?? 'Monitor',
             'participant_id'     => $participantId,
             'is_observer'        => true,
+            'token'              => $token,
         ]);
     }
 }

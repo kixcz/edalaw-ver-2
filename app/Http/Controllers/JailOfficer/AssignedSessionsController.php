@@ -28,7 +28,7 @@ class AssignedSessionsController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        $isSuperAdmin = $user->role?->slug === 'super_admin';
+        $isSuperAdmin = $user->role?->slug === 'jail_warden';
 
         $query = VisitSession::with(['visit.user', 'eburol.user', 'visit.inmate.cell', 'eburol', 'visit']);
         
@@ -150,7 +150,7 @@ class AssignedSessionsController extends Controller
     public function generateTunnel(Request $request, VisitSession $session): JsonResponse
     {
         $user = $request->user();
-        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'jail_warden') {
             abort(403);
         }
         if (! $session->isWithinScheduleForTunnel()) {
@@ -190,7 +190,7 @@ class AssignedSessionsController extends Controller
     public function startSession(Request $request, VisitSession $session): RedirectResponse|JsonResponse
     {
         $user = $request->user();
-        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'jail_warden') {
             abort(403);
         }
         if ($session->status === 'active') {
@@ -236,7 +236,7 @@ class AssignedSessionsController extends Controller
     public function endSession(Request $request, VisitSession $session): RedirectResponse|JsonResponse
     {
         $user = $request->user();
-        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'jail_warden') {
             abort(403);
         }
         if ($session->isCompleted()) {
@@ -295,7 +295,7 @@ class AssignedSessionsController extends Controller
     public function killSession(Request $request, VisitSession $session): JsonResponse
     {
         $user = $request->user();
-        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'jail_warden') {
             abort(403);
         }
         
@@ -365,7 +365,7 @@ class AssignedSessionsController extends Controller
     public function muteAudio(Request $request, VisitSession $session): JsonResponse
     {
         $user = $request->user();
-        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'jail_warden') {
             abort(403);
         }
         
@@ -403,7 +403,7 @@ class AssignedSessionsController extends Controller
     public function unmuteAudio(Request $request, VisitSession $session): JsonResponse
     {
         $user = $request->user();
-        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'jail_warden') {
             abort(403);
         }
         
@@ -441,7 +441,7 @@ class AssignedSessionsController extends Controller
     public function disableCamera(Request $request, VisitSession $session): JsonResponse
     {
         $user = $request->user();
-        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'jail_warden') {
             abort(403);
         }
         
@@ -479,7 +479,7 @@ class AssignedSessionsController extends Controller
     public function enableCamera(Request $request, VisitSession $session): JsonResponse
     {
         $user = $request->user();
-        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'jail_warden') {
             abort(403);
         }
         
@@ -517,7 +517,7 @@ class AssignedSessionsController extends Controller
     public function lockChat(Request $request, VisitSession $session): JsonResponse
     {
         $user = $request->user();
-        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'jail_warden') {
             abort(403);
         }
         if ($session->isCompleted()) {
@@ -552,7 +552,7 @@ class AssignedSessionsController extends Controller
     public function unlockChat(Request $request, VisitSession $session): JsonResponse
     {
         $user = $request->user();
-        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
+        if ($session->monitor_id !== $user->id && $user->role?->slug !== 'jail_warden') {
             abort(403);
         }
         if ($session->isCompleted()) {
@@ -603,7 +603,7 @@ class AssignedSessionsController extends Controller
 
         // Jail officers can join as observers if they are assigned to the visit
         $isAssignedOfficer = $session->visit && $session->visit->jail_officer_id === $user->id;
-        $isSuperAdmin = $user->role?->slug === 'super_admin';
+        $isSuperAdmin = $user->role?->slug === 'jail_warden';
         if (! $isAssignedOfficer && ! $isSuperAdmin) {
             abort(403, 'You are not assigned to this visit. Only the assigned jail officer can join as observer.');
         }
@@ -634,7 +634,7 @@ class AssignedSessionsController extends Controller
 
         // Generate token like VideoRoomController does
         $videoSdk = new VideoSdkService;
-        $result = $videoSdk->generateJoinTokenForPrebuiltApp($session->room_id, $participantId, ['allow_join'], 120);
+        $result = $videoSdk->generateJoinTokenForPrebuiltApp($session->room_id, $participantId, ['allow_join', 'allow_mod'], 120);
         
         if (! ($result['success'] ?? false) || empty($result['token'])) {
             return redirect()->route('jail-officer.assigned-sessions.index')
@@ -651,6 +651,7 @@ class AssignedSessionsController extends Controller
             'participant_id'     => $participantId,
             'is_observer'        => true,
             'scheduled_end'      => $session->scheduled_end?->format('Y-m-d H:i:s'),
+            'token'              => $token,
         ]);
     }
 }

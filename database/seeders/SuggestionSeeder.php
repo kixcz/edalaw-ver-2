@@ -46,7 +46,7 @@ class SuggestionSeeder extends Seeder
                     SuggestionStatus::Resolved->value,
                     SuggestionStatus::Dismissed->value,
                 ]),
-                'submitted_at' => fake()->dateTimeBetween('-6 months', 'now'),
+                'created_at' => fake()->dateTimeBetween('-6 months', 'now'),
                 'reviewed_at' => fake()->optional(0.5)->dateTimeBetween('-3 months', 'now'),
                 'admin_response' => fake()->optional(0.4)->paragraph(),
             ]);

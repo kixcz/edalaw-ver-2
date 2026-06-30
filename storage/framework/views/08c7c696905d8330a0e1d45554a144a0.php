@@ -1,6 +1,4 @@
-@extends('layouts.visitor')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container-fluid" style="height: 100vh; overflow: hidden;">
     <!-- Video Container -->
     <div id="video-container" style="height: 100vh; background: #000;"></div>
@@ -54,11 +52,11 @@
 <script>
 // Global variables for chat
 let chatModalOpen = false;
-const CURRENT_USER_ID = @json(auth()->id());
-const CURRENT_USER_NAME = @json($participant_name ?? 'Guest');
-const CURRENT_USER_ROLE = @json(auth()->user()->role->slug ?? 'visitor');
-const IS_OBSERVER = {{ $is_observer ? 'true' : 'false' }};
-const ROOM_ID = @json($room_id);
+const CURRENT_USER_ID = <?php echo json_encode(auth()->id(), 15, 512) ?>;
+const CURRENT_USER_NAME = <?php echo json_encode($participant_name ?? 'Guest', 15, 512) ?>;
+const CURRENT_USER_ROLE = <?php echo json_encode(auth()->user()->role->slug ?? 'visitor', 15, 512) ?>;
+const IS_OBSERVER = <?php echo e($is_observer ? 'true' : 'false'); ?>;
+const ROOM_ID = <?php echo json_encode($room_id, 15, 512) ?>;
 
 // Helper function to check if current user is a jail officer
 function isJailOfficer() {
@@ -66,12 +64,12 @@ function isJailOfficer() {
 }
 
 // Video SDK variables
-const meetingId = '{{ $room_id }}';
-const apiKey = '{{ config('services.videosdk.api_key') }}'; // Use server API key, not JWT
-const participantName = '{{ $participant_name }}';
-const participantId = '{{ $participant_id }}';
-const isObserver = {{ $is_observer ? 'true' : 'false' }};
-const scheduledEnd = '{{ $scheduled_end ?? "" }}';
+const meetingId = '<?php echo e($room_id); ?>';
+const apiKey = '<?php echo e(config('services.videosdk.api_key')); ?>'; // Use server API key, not JWT
+const participantName = '<?php echo e($participant_name); ?>';
+const participantId = '<?php echo e($participant_id); ?>';
+const isObserver = <?php echo e($is_observer ? 'true' : 'false'); ?>;
+const scheduledEnd = '<?php echo e($scheduled_end ?? ""); ?>';
 
 console.log("💬 [CHAT] Initialized - User:", CURRENT_USER_ID, "Room:", ROOM_ID);
 console.log("📹 [VIDEO] Meeting:", meetingId, "Participant:", participantName, "Observer:", isObserver);
@@ -665,7 +663,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Session timer countdown - always visible in bottom left
 function updateTimer() {
-    const scheduledEnd = @json($scheduled_end ?? null);
+    const scheduledEnd = <?php echo json_encode($scheduled_end ?? null, 15, 512) ?>;
     
     if (!scheduledEnd) {
         return; // No end time set
@@ -702,7 +700,7 @@ function updateTimer() {
         }
         
         // Notify server that session ended due to time
-        const sessionId = @json($session->id ?? null);
+        const sessionId = <?php echo json_encode($session->id ?? null, 15, 512) ?>;
         if (sessionId) {
             fetch(`/visit/session/${sessionId}/time-ended`, {
                 method: 'POST',
@@ -817,13 +815,13 @@ setInterval(function() {
 
 <script>
 // VideoSDK initialization
-const MEETING_ID = @json($room_id);
-const API_KEY = @json(env('VIDEOSDK_API_KEY'));
-const TOKEN = @json($token ?? null);
-const USER_NAME = @json($participant_name ?? 'Guest');
-const SESSION_ID = @json($session->id ?? null);
-const PARTICIPANT_ID = @json($participant_id ?? null);
-const TUNNEL_TOKEN = @json($tunnel?->tunnel_token ?? null); 
+const MEETING_ID = <?php echo json_encode($room_id, 15, 512) ?>;
+const API_KEY = <?php echo json_encode(env('VIDEOSDK_API_KEY'), 15, 512) ?>;
+const TOKEN = <?php echo json_encode($token ?? null, 15, 512) ?>;
+const USER_NAME = <?php echo json_encode($participant_name ?? 'Guest', 15, 512) ?>;
+const SESSION_ID = <?php echo json_encode($session->id ?? null, 15, 512) ?>;
+const PARTICIPANT_ID = <?php echo json_encode($participant_id ?? null, 15, 512) ?>;
+const TUNNEL_TOKEN = <?php echo json_encode($tunnel?->tunnel_token ?? null, 15, 512) ?>; 
 
 function initVideoCall() {
     if (typeof VideoSDKMeeting !== 'function') {
@@ -908,4 +906,6 @@ function initVideoCall() {
 
 window.addEventListener('load', initVideoCall);
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.visitor', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Sandbox\web app\eDalaw\edalaw-ver-2\resources\views/visitor/video-room.blade.php ENDPATH**/ ?>

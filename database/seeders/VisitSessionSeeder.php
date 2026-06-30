@@ -171,8 +171,8 @@ class VisitSessionSeeder extends Seeder
     {
         // Try to get existing inmate from this jail
         $inmate = Inmate::whereHas('cell', function ($q) use ($jail) {
-            $q->whereHas('annex', function ($q) use ($jail) {
-                $q->whereHas('dormitory', function ($q) use ($jail) {
+            $q->whereHas('dormitory', function ($q) use ($jail) {
+                $q->whereHas('annex', function ($q) use ($jail) {
                     $q->where('jail_id', $jail->id);
                 });
             });
@@ -184,7 +184,7 @@ class VisitSessionSeeder extends Seeder
 
         // Create new inmate if none exists
         // Get a random cell from this jail
-        $cell = Cell::whereHas('annex.dormitory', function ($q) use ($jail) {
+        $cell = Cell::whereHas('dormitory.annex', function ($q) use ($jail) {
             $q->where('jail_id', $jail->id);
         })->inRandomOrder()->first();
 

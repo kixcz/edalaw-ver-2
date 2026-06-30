@@ -5,6 +5,7 @@ import {
   useParticipant,
   VideoPlayer,
 } from "@videosdk.live/react-sdk";
+import axios from "axios";
 
 type Props = {
   room_id: string;
@@ -40,10 +41,10 @@ function ParticipantTile({ participantId }: { participantId: string }) {
 }
 
 /* Meeting initializer */
-function MeetingInitializer({ onLeave }: { onLeave: () => void }) {
+function MeetingInitializer({ roomId, isObserver, onLeave }: { roomId: string; isObserver?: boolean; onLeave: () => void }) {
   const joinCalled = useRef(false);
   const [joined, setJoined] = useState(false);
-  const { join, leave, participants } = useMeeting({
+  const { join, leave, participants, muteMic, unmuteMic, disableWebcam, enableWebcam } = useMeeting({
     onMeetingJoined: () => setJoined(true),
     onMeetingLeft: () => onLeave(),
     onError: (error) => console.error("[VideoRoom] Meeting error:", error),
@@ -55,6 +56,37 @@ function MeetingInitializer({ onLeave }: { onLeave: () => void }) {
       join();
     }
   }, [join]);
+
+  useEffect(() => {
+    if (isObserver) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(`/video/media-commands/${roomId}`);
+        const data = response.data;
+        
+        if (data.success && data.commands && data.commands.length > 0) {
+          for (const cmd of data.commands) {
+            if (cmd.command === "mute_audio") {
+              muteMic();
+            } else if (cmd.command === "unmute_audio") {
+              unmuteMic();
+            } else if (cmd.command === "disable_camera") {
+              disableWebcam();
+            } else if (cmd.command === "enable_camera") {
+              enableWebcam();
+            }
+
+            await axios.post(`/video/media-commands/${cmd.id}/executed`);
+          }
+        }
+      } catch (err) {
+        console.error("Error polling media commands:", err);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [roomId, isObserver, muteMic, unmuteMic, disableWebcam, enableWebcam]);
 
   if (!joined)
     return (
@@ -98,7 +130,7 @@ export default function VideoRoom(props: Props) {
         }}
         token={props.token} // <- use server JWT
       >
-        <MeetingInitializer onLeave={() => (window.location.href = "/dashboard")} />
+        <MeetingInitializer roomId={props.room_id} isObserver={props.is_observer} onLeave={() => (window.location.href = "/dashboard")} />
       </MeetingProvider>
     </div>
   );

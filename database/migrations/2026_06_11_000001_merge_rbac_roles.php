@@ -17,6 +17,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Ensure target roles exist
+        DB::table('roles')->updateOrInsert(
+            ['slug' => 'jail_warden'],
+            ['name' => 'Jail Warden', 'created_at' => now(), 'updated_at' => now()]
+        );
+        DB::table('roles')->updateOrInsert(
+            ['slug' => 'jail_officer'],
+            ['name' => 'Jail Officer', 'created_at' => now(), 'updated_at' => now()]
+        );
+
         // Get role IDs
         $superAdminRole = DB::table('roles')->where('slug', 'super_admin')->first();
         $jailWardenRole = DB::table('roles')->where('slug', 'jail_warden')->first();

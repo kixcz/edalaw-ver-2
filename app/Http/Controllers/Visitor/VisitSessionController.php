@@ -142,6 +142,7 @@ class VisitSessionController extends Controller
             'participant_id'     => $participantId,
             'is_observer'        => false,
             'scheduled_end'      => $session->scheduled_end?->format('Y-m-d H:i:s'),
+            'token'              => $tokenResult['token'],
         ]);
     }
 

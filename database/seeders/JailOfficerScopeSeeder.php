@@ -64,7 +64,7 @@ class JailOfficerScopeSeeder extends Seeder
      */
     private function assignAnnexScope($officer, $warden): void
     {
-        $annexes = Annex::whereHas('dormitory.jail', function ($query) use ($officer) {
+        $annexes = Annex::whereHas('jail', function ($query) use ($officer) {
             $query->where('branch_id', $officer->branch_id);
         })->get();
 
@@ -77,8 +77,8 @@ class JailOfficerScopeSeeder extends Seeder
         JailOfficerScope::create([
             'jail_officer_id' => $officer->id,
             'assigned_by' => $warden->id,
-            'scope_type' => 'annex',
-            'annex_id' => $annex->id,
+            'scope_type' => 'building',
+            'building_id' => $annex->id,
             'is_active' => true,
         ]);
     }
@@ -88,7 +88,7 @@ class JailOfficerScopeSeeder extends Seeder
      */
     private function assignDormitoryScope($officer, $warden): void
     {
-        $dormitories = Dormitory::whereHas('jail', function ($query) use ($officer) {
+        $dormitories = Dormitory::whereHas('annex.jail', function ($query) use ($officer) {
             $query->where('branch_id', $officer->branch_id);
         })->get();
 
@@ -112,7 +112,7 @@ class JailOfficerScopeSeeder extends Seeder
      */
     private function assignCellScope($officer, $warden): void
     {
-        $cells = Cell::whereHas('annex.dormitory.jail', function ($query) use ($officer) {
+        $cells = Cell::whereHas('dormitory.annex.jail', function ($query) use ($officer) {
             $query->where('branch_id', $officer->branch_id);
         })->get();
 

@@ -219,7 +219,7 @@ class JailOfficerScopeResolver
             return collect();
         }
 
-        return Cell::with(['building.dormitory', 'inmates'])
+        return Cell::with(['dormitory.building', 'inmates'])
             ->whereIn('id', $cellIds)
             ->get();
     }
@@ -276,7 +276,7 @@ class JailOfficerScopeResolver
             return collect();
         }
 
-        return Inmate::with(['cell.building.dormitory'])
+        return Inmate::with(['cell.dormitory.building'])
             ->whereIn('cell_id', $cellIds)
             ->get();
     }

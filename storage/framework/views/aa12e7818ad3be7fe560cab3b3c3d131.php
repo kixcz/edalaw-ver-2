@@ -46,4 +46,4 @@
         <?php if (!isset($__inertiaSsrDispatched)) { $__inertiaSsrDispatched = true; $__inertiaSsrResponse = app(\Inertia\Ssr\Gateway::class)->dispatch($page); }  if ($__inertiaSsrResponse) { echo $__inertiaSsrResponse->body; } elseif (config('inertia.use_script_element_for_initial_page')) { ?><script data-page="app" type="application/json"><?php echo json_encode($page); ?></script><div id="app"></div><?php } else { ?><div id="app" data-page="<?php echo e(json_encode($page)); ?>"></div><?php } ?>
     </body>
 </html>
-<?php /**PATH C:\Users\panal\Documents\projects\edalaw (defective)\resources\views/app.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\Sandbox\web app\eDalaw\edalaw-ver-2\resources\views/app.blade.php ENDPATH**/ ?>

@@ -68,7 +68,7 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
     const deleteForm = useForm({});
     const transferForm = useForm({ cell_id: '' });
 
-    const handleSearch = () => router.get('/bjmp-officer/inmates', { search: searchQuery, cell_id: cellFilter !== 'all' ? cellFilter : '', status: statusFilter !== 'all' ? statusFilter : '' }, { preserveState: true, preserveScroll: true });
+    const handleSearch = () => router.get('/jail-officer/inmates', { search: searchQuery, cell_id: cellFilter !== 'all' ? cellFilter : '', status: statusFilter !== 'all' ? statusFilter : '' }, { preserveState: true, preserveScroll: true });
     const openCreate = () => { setSelected(null); createForm.reset(); setIsCreateOpen(true); };
     const openEdit = (i: Inmate) => {
         setSelected(i);
@@ -129,11 +129,11 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                                         <div className="relative">
                                             <Input placeholder="Search PDLs..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} className="w-[200px] h-9 pl-3" />
                                         </div>
-                                        <Select value={cellFilter} onValueChange={(v) => { setCellFilter(v); router.get('/bjmp-officer/inmates', { search: searchQuery, cell_id: v !== 'all' ? v : '', status: statusFilter !== 'all' ? statusFilter : '' }, { preserveState: true, preserveScroll: true }); }}>
+                                        <Select value={cellFilter} onValueChange={(v) => { setCellFilter(v); router.get('/jail-officer/inmates', { search: searchQuery, cell_id: v !== 'all' ? v : '', status: statusFilter !== 'all' ? statusFilter : '' }, { preserveState: true, preserveScroll: true }); }}>
                                             <SelectTrigger className="w-[180px] h-9"><SelectValue placeholder="All Cells" /></SelectTrigger>
                                             <SelectContent><SelectItem value="all">All Cells</SelectItem>{cells.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.cell_number}</SelectItem>)}</SelectContent>
                                         </Select>
-                                        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); router.get('/bjmp-officer/inmates', { search: searchQuery, cell_id: cellFilter !== 'all' ? cellFilter : '', status: v !== 'all' ? v : '' }, { preserveState: true, preserveScroll: true }); }}>
+                                        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); router.get('/jail-officer/inmates', { search: searchQuery, cell_id: cellFilter !== 'all' ? cellFilter : '', status: v !== 'all' ? v : '' }, { preserveState: true, preserveScroll: true }); }}>
                                             <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Status" /></SelectTrigger>
                                             <SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem><SelectItem value="released">Released</SelectItem></SelectContent>
                                         </Select>
@@ -185,8 +185,8 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                                     <div className="px-6 pb-4 flex items-center justify-between pt-4 border-t border-slate-100">
                                         <p className="text-sm text-slate-500">Page {inmates.current_page} of {inmates.last_page} ({inmates.total} total)</p>
                                         <div className="flex gap-1">
-                                            {inmates.current_page > 1 && <Button variant="outline" size="sm" onClick={() => router.get(`/bjmp-officer/inmates?page=${inmates.current_page - 1}`)}>Previous</Button>}
-                                            {inmates.current_page < inmates.last_page && <Button variant="outline" size="sm" onClick={() => router.get(`/bjmp-officer/inmates?page=${inmates.current_page + 1}`)}>Next</Button>}
+                                            {inmates.current_page > 1 && <Button variant="outline" size="sm" onClick={() => router.get(`/jail-officer/inmates?page=${inmates.current_page - 1}`)}>Previous</Button>}
+                                            {inmates.current_page < inmates.last_page && <Button variant="outline" size="sm" onClick={() => router.get(`/jail-officer/inmates?page=${inmates.current_page + 1}`)}>Next</Button>}
                                         </div>
                                     </div>
                                 )}
@@ -239,7 +239,7 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader><DialogTitle className="flex items-center gap-2"><Users className="w-5 h-5 text-red-600" />Add PDL</DialogTitle></DialogHeader>
-                        <form onSubmit={(e) => { e.preventDefault(); createForm.post('/bjmp-officer/inmates', { onSuccess: () => setIsCreateOpen(false) }); }} className="space-y-4">
+                        <form onSubmit={(e) => { e.preventDefault(); createForm.post('/jail-officer/inmates', { onSuccess: () => setIsCreateOpen(false) }); }} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div><Label className="text-xs font-semibold uppercase">First Name</Label><Input value={createForm.data.first_name} onChange={(e) => createForm.setData('first_name', e.target.value)} required /></div>
                                 <div><Label className="text-xs font-semibold uppercase">Last Name</Label><Input value={createForm.data.last_name} onChange={(e) => createForm.setData('last_name', e.target.value)} required /></div>
@@ -267,7 +267,7 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                 <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader><DialogTitle className="flex items-center gap-2"><Pencil className="w-5 h-5 text-green-600" />Edit PDL</DialogTitle></DialogHeader>
-                        <form onSubmit={(e) => { e.preventDefault(); editForm.put(`/bjmp-officer/inmates/${selected.id}`, { onSuccess: () => setIsEditOpen(false) }); }} className="space-y-4">
+                        <form onSubmit={(e) => { e.preventDefault(); editForm.put(`/jail-officer/inmates/${selected.id}`, { onSuccess: () => setIsEditOpen(false) }); }} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div><Label className="text-xs font-semibold uppercase">First Name</Label><Input value={editForm.data.first_name} onChange={(e) => editForm.setData('first_name', e.target.value)} required /></div>
                                 <div><Label className="text-xs font-semibold uppercase">Last Name</Label><Input value={editForm.data.last_name} onChange={(e) => editForm.setData('last_name', e.target.value)} required /></div>
@@ -301,7 +301,7 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader><DialogTitle className="flex items-center gap-2"><ArrowRightLeft className="w-5 h-5 text-blue-600" />Transfer PDL</DialogTitle></DialogHeader>
                         <p className="text-sm text-slate-600">Transfer <strong>{selected.first_name} {selected.last_name}</strong> from <strong>{selected.cell?.cell_number}</strong> to:</p>
-                        <form onSubmit={(e) => { e.preventDefault(); transferForm.post(`/bjmp-officer/inmates/${selected.id}/transfer`, { onSuccess: () => setIsTransferOpen(false) }); }} className="space-y-4">
+                        <form onSubmit={(e) => { e.preventDefault(); transferForm.post(`/jail-officer/inmates/${selected.id}/transfer`, { onSuccess: () => setIsTransferOpen(false) }); }} className="space-y-4">
                             <div><Label className="text-xs font-semibold uppercase">New Cell</Label>
                                 <Select value={transferForm.data.cell_id} onValueChange={(v) => transferForm.setData('cell_id', v)}>
                                     <SelectTrigger><SelectValue placeholder="Select new cell" /></SelectTrigger>
@@ -325,7 +325,7 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                         <p className="text-sm text-slate-600">Are you sure you want to delete <strong>{selected.first_name} {selected.last_name}</strong>? This cannot be undone.</p>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-                            <Button type="button" variant="destructive" disabled={deleteForm.processing} onClick={() => deleteForm.delete(`/bjmp-officer/inmates/${selected.id}`, { onSuccess: () => setIsDeleteOpen(false) })}>
+                            <Button type="button" variant="destructive" disabled={deleteForm.processing} onClick={() => deleteForm.delete(`/jail-officer/inmates/${selected.id}`, { onSuccess: () => setIsDeleteOpen(false) })}>
                                 {deleteForm.processing ? 'Deleting...' : 'Delete'}
                             </Button>
                         </DialogFooter>

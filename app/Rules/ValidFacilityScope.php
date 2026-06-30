@@ -114,24 +114,33 @@ class ValidFacilityScope implements ValidationRule
      */
     protected static function isNewScopeChildOfExisting(string $newScopeType, ?int $newBuildingId, ?int $newDormitoryId, ?int $newCellId, JailOfficerScope $existingScope): bool
     {
-        // If existing is dormitory, new cannot be building/annex or cell in that dormitory
-        if ($existingScope->scope_type === 'dormitory') {
-            if (($newScopeType === 'building' || $newScopeType === 'annex') && $newBuildingId) {
-                $building = \App\Models\Annex::find($newBuildingId);
-                return $building && $building->dormitory_id === $existingScope->dormitory_id;
+        // New scope: cell
+        if ($newScopeType === 'cell' && $newCellId) {
+            $cell = Cell::find($newCellId);
+            if (!$cell) return false;
+
+            // Existing: building/annex (parent of cell)
+            if (($existingScope->scope_type === 'building' || $existingScope->scope_type === 'annex') && $existingScope->building_id) {
+                // Cell -> Dormitory -> Annex/Building
+                return $cell->dormitory && $cell->dormitory->annex_id === $existingScope->building_id;
             }
-            
-            if ($newScopeType === 'cell' && $newCellId) {
-                $cell = Cell::with('annex')->find($newCellId);
-                return $cell && $cell->annex && $cell->annex->dormitory_id === $existingScope->dormitory_id;
+
+            // Existing: dormitory (parent of cell)
+            if ($existingScope->scope_type === 'dormitory' && $existingScope->dormitory_id) {
+                // Cell -> Dormitory
+                return $cell->dormitory_id === $existingScope->dormitory_id;
             }
         }
 
-        // If existing is building/annex, new cannot be cell in that building
-        if ($existingScope->scope_type === 'building' || $existingScope->scope_type === 'annex') {
-            if ($newScopeType === 'cell' && $newCellId) {
-                $cell = Cell::find($newCellId);
-                return $cell && $cell->annex_id === $existingScope->building_id;
+        // New scope: dormitory
+        if ($newScopeType === 'dormitory' && $newDormitoryId) {
+            $dormitory = Dormitory::find($newDormitoryId);
+            if (!$dormitory) return false;
+
+            // Existing: building/annex (parent of dormitory)
+            if (($existingScope->scope_type === 'building' || $existingScope->scope_type === 'annex') && $existingScope->building_id) {
+                // Dormitory -> Annex/Building
+                return $dormitory->annex_id === $existingScope->building_id;
             }
         }
 
@@ -143,24 +152,33 @@ class ValidFacilityScope implements ValidationRule
      */
     protected static function isNewScopeParentOfExisting(string $newScopeType, ?int $newBuildingId, ?int $newDormitoryId, ?int $newCellId, JailOfficerScope $existingScope): bool
     {
-        // If new is dormitory, existing cannot be building/annex or cell in that dormitory
-        if ($newScopeType === 'dormitory') {
-            if (($existingScope->scope_type === 'building' || $existingScope->scope_type === 'annex') && $existingScope->building_id) {
-                $building = \App\Models\Annex::find($existingScope->building_id);
-                return $building && $building->dormitory_id === $newDormitoryId;
+        // Existing scope: cell
+        if ($existingScope->scope_type === 'cell' && $existingScope->cell_id) {
+            $cell = Cell::find($existingScope->cell_id);
+            if (!$cell) return false;
+
+            // New: building/annex (parent of cell)
+            if (($newScopeType === 'building' || $newScopeType === 'annex') && $newBuildingId) {
+                // Cell -> Dormitory -> Annex/Building
+                return $cell->dormitory && $cell->dormitory->annex_id === $newBuildingId;
             }
-            
-            if ($existingScope->scope_type === 'cell' && $existingScope->cell_id) {
-                $cell = Cell::with('annex')->find($existingScope->cell_id);
-                return $cell && $cell->annex && $cell->annex->dormitory_id === $newDormitoryId;
+
+            // New: dormitory (parent of cell)
+            if ($newScopeType === 'dormitory' && $newDormitoryId) {
+                // Cell -> Dormitory
+                return $cell->dormitory_id === $newDormitoryId;
             }
         }
 
-        // If new is building/annex, existing cannot be cell in that building
-        if ($newScopeType === 'building' || $newScopeType === 'annex') {
-            if ($existingScope->scope_type === 'cell' && $existingScope->cell_id) {
-                $cell = Cell::find($existingScope->cell_id);
-                return $cell && $cell->annex_id === $newBuildingId;
+        // Existing scope: dormitory
+        if ($existingScope->scope_type === 'dormitory' && $existingScope->dormitory_id) {
+            $dormitory = Dormitory::find($existingScope->dormitory_id);
+            if (!$dormitory) return false;
+
+            // New: building/annex (parent of dormitory)
+            if (($newScopeType === 'building' || $newScopeType === 'annex') && $newBuildingId) {
+                // Dormitory -> Annex/Building
+                return $dormitory->annex_id === $newBuildingId;
             }
         }
 
