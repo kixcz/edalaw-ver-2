@@ -11,7 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { RelationshipPicker } from '@/components/RelationshipPicker';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Clock, Plus, Scale, User, Video, X, CalendarClock, FileText, MoreVertical, FileOutput, VideoIcon, Search, Building, AlertCircle, CheckCircle2, Upload, Eye, ShieldCheck, Download, Image } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Scale, User, Video, X, CalendarClock, FileText, MoreVertical, FileOutput, VideoIcon, Search, Building, AlertCircle, CheckCircle2, Upload, Eye, ShieldCheck, Download, Image, CalendarDays, Hourglass, CircleCheck, CircleX, Monitor, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table';
@@ -105,7 +105,33 @@ type Props = {
     visits: Visit[];
     bookedTimeSlots?: string[];
     today_unavailable?: boolean;
+    stats?: {
+        total_visits: number;
+        pending_visits: number;
+        approved_visits: number;
+        rejected_visits: number;
+        completed_visits: number;
+        virtual_visits: number;
+        physical_visits: number;
+    };
 };
+
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -234,7 +260,7 @@ function formatTimeUntil(scheduledStart: string): string {
 }
 
 
-export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Props) {
+export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats }: Props) {
     const { props } = usePage<{ bookedTimeSlots?: string[] }>();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
@@ -1065,30 +1091,38 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Visit Management" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold">Visit Management</h1>
-                        <p className="text-muted-foreground">
-                            View and manage your visit schedule requests
-                        </p>
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-emerald-600 rounded-xl"><CalendarDays className="w-5 h-5 text-white" /></div>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-900 leading-none">Visit Management</h1>
+                                <p className="text-xs text-slate-500 mt-0.5">Apply for and manage your visit schedules</p>
+                            </div>
+                        </div>
+                        <Button onClick={() => setIsModalOpen(true)} className="h-9"><Plus className="h-4 w-4 mr-2" />Apply for Visit</Button>
                     </div>
-                    <Button onClick={() => setIsModalOpen(true)}>
-                        <Plus className="mr-2 size-4" />
-                        Apply for Schedule
-                    </Button>
                 </div>
 
-                {/* Table */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>My Visits</CardTitle>
-                        <CardDescription>
-                            {filteredVisits.length} of {visits.length} visit{visits.length !== 1 ? 's' : ''}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <DataTable
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<CalendarDays className="w-5 h-5" />} value={stats?.total_visits || 0} label="Total Visits" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
+                        <StatCard icon={<Hourglass className="w-5 h-5" />} value={stats?.pending_visits || 0} label="Pending" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
+                        <StatCard icon={<CircleCheck className="w-5 h-5" />} value={stats?.approved_visits || 0} label="Approved" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
+                        <StatCard icon={<CircleX className="w-5 h-5" />} value={stats?.rejected_visits || 0} label="Rejected" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
+                    </div>
+
+                    {/* Table */}
+                    <Card className="border-0 shadow-sm">
+                        <div className="px-6 py-4 border-b border-slate-100">
+                            <h3 className="font-semibold text-slate-800">My Visits</h3>
+                            <p className="text-xs text-slate-500 mt-0.5">{filteredVisits.length} of {visits.length} visit{visits.length !== 1 ? 's' : ''}</p>
+                        </div>
+                        <div className="p-6">
+                            <DataTable
                             columns={columns}
                             data={filteredVisits}
                             searchKey="inmate_first_name"
@@ -1132,8 +1166,8 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                                 </button>
                             }
                         />
-                    </CardContent>
-                </Card>
+                        </div>
+                    </Card>
 
                 <Dialog open={videoTermsModalOpen} onOpenChange={setVideoTermsModalOpen}>
                     <DialogContent className="sm:max-w-2xl border-l-4 border-l-orange-500">
@@ -2159,6 +2193,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [] }: Pro
                         </form>
                     </DialogContent>
                 </Dialog>
+                </div>
             </div>
         </AppLayout>
     );

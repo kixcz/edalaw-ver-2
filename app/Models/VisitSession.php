@@ -6,11 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
-use App\Traits\HasBranchScope;
 
 class VisitSession extends Model
 {
-    use HasBranchScope;
+    // Removed HasBranchScope trait - scoping is done through visit relationship
     /**
      * The attributes that are mass assignable.
      *

@@ -107,8 +107,17 @@ class EburolController extends Controller
                 ];
             });
 
+        // Calculate stats (max 4 KPIs)
+        $stats = [
+            'total_eburols' => $eburols->count(),
+            'pending_eburols' => $eburols->where('status', EburolStatus::Pending)->count(),
+            'approved_eburols' => $eburols->where('status', EburolStatus::Approved)->count(),
+            'rejected_eburols' => $eburols->where('status', EburolStatus::Rejected)->count(),
+        ];
+
         return Inertia::render('Visitor/EburolManagement', [
             'eburols' => $eburols,
+            'stats' => $stats,
         ]);
     }
 

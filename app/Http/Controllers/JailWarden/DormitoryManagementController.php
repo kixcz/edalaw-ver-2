@@ -48,6 +48,28 @@ class DormitoryManagementController extends Controller
                 'created_at' => $dorm->created_at,
             ]);
 
+        // Calculate stats
+        $stats = [
+            'total_dormitories' => $dormitories->total(),
+            'active_dormitories' => $dormitories->where('status', 'active')->count(),
+            'inactive_dormitories' => $dormitories->where('status', 'inactive')->count(),
+            'total_cells' => $dormitories->sum('cells_count'),
+        ];
+
+        // Chart data
+        $chartData = [
+            'dormitories_by_status' => [
+                ['status' => 'Active', 'count' => $stats['active_dormitories']],
+                ['status' => 'Inactive', 'count' => $stats['inactive_dormitories']],
+            ],
+            'dormitories_by_type' => $dormitories->groupBy('type')->map(function ($group, $type) {
+                return [
+                    'type' => $type ?? 'Unknown',
+                    'count' => $group->count(),
+                ];
+            })->values()->toArray(),
+        ];
+
         return Inertia::render('JailWarden/DormitoryManagement/Index', [
             'dormitories' => $dormitories,
             'annexes' => Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
@@ -55,6 +77,8 @@ class DormitoryManagementController extends Controller
                 ->where('annexes.status', 'active')
                 ->orderBy('annexes.name')
                 ->get(['annexes.id', 'annexes.name']),
+            'stats' => $stats,
+            'chartData' => $chartData,
         ]);
     }
 

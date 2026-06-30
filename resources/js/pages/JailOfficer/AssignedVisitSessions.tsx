@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Camera, CheckCircle, Clock, Download, FileText, Image, MoreVertical, XCircle, List, BarChart2, Calendar, CheckCircle2, AlertCircle, Users } from 'lucide-react';
+import { Camera, CheckCircle, Clock, Download, FileText, Image, MoreVertical, XCircle, List, BarChart2, Calendar, CheckCircle2, AlertCircle, Users, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell as RechartsCell } from 'recharts';
 
@@ -272,11 +272,35 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                                 </>
                             )}
                             
-                            {isApproved && visit.has_session && (
-                                <DropdownMenuItem onClick={() => window.open(`/jail-officer/assigned-sessions/${visit.id}/join`, '_blank')} className="gap-2 cursor-pointer">
-                                    <Camera className="mr-2 h-4 w-4" />
-                                    Join as Observer
-                                </DropdownMenuItem>
+                            {isApproved && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuLabel className="text-xs text-slate-500 font-normal">Media Controls</DropdownMenuLabel>
+                                    <DropdownMenuItem 
+                                        onClick={() => {
+                                            const videoWindow = window.open('', '_blank');
+                                            if (videoWindow) {
+                                                videoWindow.postMessage({ type: 'toggle-mic' }, '*');
+                                            }
+                                        }}
+                                        className="cursor-pointer"
+                                    >
+                                        <Mic className="mr-2 h-4 w-4" />
+                                        Allow Microphone
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                        onClick={() => {
+                                            const videoWindow = window.open('', '_blank');
+                                            if (videoWindow) {
+                                                videoWindow.postMessage({ type: 'toggle-camera' }, '*');
+                                            }
+                                        }}
+                                        className="cursor-pointer"
+                                    >
+                                        <Video className="mr-2 h-4 w-4" />
+                                        Allow Camera
+                                    </DropdownMenuItem>
+                                </>
                             )}
                             
                             <DropdownMenuItem onClick={() => setSelectedVisit(visit)} className="gap-2 cursor-pointer">

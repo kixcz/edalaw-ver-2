@@ -50,6 +50,28 @@ class CellManagementController extends Controller
                 'created_at' => $cell->created_at,
             ]);
 
+        // Calculate stats
+        $stats = [
+            'total_cells' => $cells->total(),
+            'active_cells' => $cells->where('status', 'active')->count(),
+            'inactive_cells' => $cells->where('status', 'inactive')->count(),
+            'total_capacity' => $cells->sum('capacity'),
+        ];
+
+        // Chart data
+        $chartData = [
+            'cells_by_status' => [
+                ['status' => 'Active', 'count' => $stats['active_cells']],
+                ['status' => 'Inactive', 'count' => $stats['inactive_cells']],
+            ],
+            'cells_by_annex' => $cells->groupBy('annex.name')->map(function ($group, $annexName) {
+                return [
+                    'annex' => $annexName ?? 'Unassigned',
+                    'count' => $group->count(),
+                ];
+            })->values()->toArray(),
+        ];
+
         return Inertia::render('JailWarden/CellManagement/Index', [
             'cells' => $cells,
             'annexes' => Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
@@ -58,6 +80,8 @@ class CellManagementController extends Controller
                 ->select('annexes.*')
                 ->orderBy('annexes.name')
                 ->get(['annexes.id', 'annexes.name']),
+            'stats' => $stats,
+            'chartData' => $chartData,
         ]);
     }
 

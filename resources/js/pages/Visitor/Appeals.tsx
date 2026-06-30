@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { FileText, Scale, Plus, Clock, CheckCircle, XCircle, ShieldCheck } from 'lucide-react';
+import { FileText, Scale, Plus, Clock, CheckCircle, XCircle, ShieldCheck, Gavel, Hourglass, CircleCheck, CircleX } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -93,7 +93,30 @@ type Props = {
     appeals: Appeal[];
     rejected_visits: RejectedItem[];
     rejected_eburols: RejectedItem[];
+    stats?: {
+        total_appeals: number;
+        pending_appeals: number;
+        approved_appeals: number;
+        rejected_appeals: number;
+    };
 };
+
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 function getStatusBadge(status: string) {
     const badges: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string; label: string }> = {
@@ -159,7 +182,7 @@ function getRequestStatusBadge(status: string) {
     );
 }
 
-export default function Appeals({ appeals, rejected_visits, rejected_eburols }: Props) {
+export default function Appeals({ appeals, rejected_visits, rejected_eburols, stats }: Props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<RejectedItem | null>(null);
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -437,27 +460,39 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols }: 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Appeal Management" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold">Appeal Management</h1>
-                        <p className="text-muted-foreground">
-                            Appeal rejected visit schedules or e-burol applications
-                        </p>
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-slate-700 rounded-xl"><Gavel className="w-5 h-5 text-white" /></div>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-900 leading-none">Appeal Management</h1>
+                                <p className="text-xs text-slate-500 mt-0.5">Appeal rejected visit schedules or e-burol applications</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Rejected Items Available for Appeal */}
-                {allRejectedItems.length > 0 && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Rejected Requests Available for Appeal</CardTitle>
-                            <CardDescription>
-                                You can appeal these rejected requests. Appeals must be submitted within 24-48 hours after rejection.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<Gavel className="w-5 h-5" />} value={stats?.total_appeals || 0} label="Total Appeals" accent="bg-slate-700" iconBg="bg-slate-50" iconColor="text-slate-700" />
+                        <StatCard icon={<Hourglass className="w-5 h-5" />} value={stats?.pending_appeals || 0} label="Pending" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
+                        <StatCard icon={<CircleCheck className="w-5 h-5" />} value={stats?.approved_appeals || 0} label="Approved" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
+                        <StatCard icon={<CircleX className="w-5 h-5" />} value={stats?.rejected_appeals || 0} label="Rejected" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
+                    </div>
+
+                    {/* Rejected Items Available for Appeal */}
+                    {allRejectedItems.length > 0 && (
+                        <Card className="border-0 shadow-sm">
+                            <CardContent>
+                            <div className="px-6 py-4 border-b border-slate-100">
+                                <h3 className="font-semibold text-slate-800">Rejected Requests Available for Appeal</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">You can appeal these rejected requests within 24-48 hours</p>
+                            </div>
+                            <div className="p-6">
+                                <div className="space-y-4">
                                 {allRejectedItems.map((item) => (
                                     <Card key={`${item.type}-${item.id}`} className={`border-l-4 ${item.can_appeal ? 'border-l-orange-500' : 'border-l-gray-400 opacity-60'}`}>
                                         <CardHeader>
@@ -509,6 +544,7 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols }: 
                                         </CardHeader>
                                     </Card>
                                 ))}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -735,7 +771,9 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols }: 
                         </form>
                     </DialogContent>
                 </Dialog>
+                </div>
             </div>
+       
         </AppLayout>
     );
 }

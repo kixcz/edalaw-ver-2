@@ -156,10 +156,19 @@ class AppealController extends Controller
                 ];
             });
 
+        // Calculate stats (max 4 KPIs)
+        $stats = [
+            'total_appeals' => $appeals->count(),
+            'pending_appeals' => $appeals->where('status', AppealStatus::Pending)->count(),
+            'approved_appeals' => $appeals->where('status', AppealStatus::Approved)->count(),
+            'rejected_appeals' => $appeals->where('status', AppealStatus::Rejected)->count(),
+        ];
+
         return Inertia::render('Visitor/Appeals', [
             'appeals' => $appeals,
             'rejected_visits' => $rejectedVisits,
             'rejected_eburols' => $rejectedEburols,
+            'stats' => $stats,
         ]);
     }
 

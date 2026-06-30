@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Calendar, Clock, FileText, MapPin, Scale, User, Users, MoreVertical, Eye, Edit, CalendarClock, Trash2, Filter, Video, Search, AlertCircle, CheckCircle2, Building, Upload, ShieldCheck } from 'lucide-react';
+import { Calendar, Clock, FileText, MapPin, Scale, User, Users, MoreVertical, Eye, Edit, CalendarClock, Trash2, Filter, Video, Search, AlertCircle, CheckCircle2, Building, Upload, ShieldCheck, FileHeart, Hourglass, CircleCheck, CircleX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -98,7 +98,30 @@ type InmateSearchResult = {
 
 type Props = {
     eburols: Eburol[];
-};
+    stats?: {
+        total_eburols: number;
+        pending_eburols: number;
+        approved_eburols: number;
+        rejected_eburols: number;
+    };
+}
+
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -153,7 +176,7 @@ function getStatusBadge(status: string) {
     }
 }
 
-export default function EburolManagement({ eburols }: Props) {
+export default function EburolManagement({ eburols, stats }: Props) {
     const [showForm, setShowForm] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -845,21 +868,40 @@ export default function EburolManagement({ eburols }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="E-Burol Management" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold">E-Burol Management</h1>
-                        <p className="text-muted-foreground">
-                            Apply for e-burol schedule to allow inmates to attend wakes of deceased family members
-                        </p>
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-purple-600 rounded-xl"><FileHeart className="w-5 h-5 text-white" /></div>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-900 leading-none">E-Burol Management</h1>
+                                <p className="text-xs text-slate-500 mt-0.5">Apply for e-burol schedules for deceased family members</p>
+                            </div>
+                        </div>
+                        <Button onClick={() => setShowForm(true)} className="h-9">Apply for E-Burol</Button>
                     </div>
-                    <Button onClick={() => setShowForm(true)}>
-                        Apply for E-Burol
-                    </Button>
                 </div>
 
-                {/* Apply for E-Burol Modal */}
-                <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) form.reset(); }}>
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<FileHeart className="w-5 h-5" />} value={stats?.total_eburols || 0} label="Total E-Burols" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
+                        <StatCard icon={<Hourglass className="w-5 h-5" />} value={stats?.pending_eburols || 0} label="Pending" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
+                        <StatCard icon={<CircleCheck className="w-5 h-5" />} value={stats?.approved_eburols || 0} label="Approved" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
+                        <StatCard icon={<CircleX className="w-5 h-5" />} value={stats?.rejected_eburols || 0} label="Rejected" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
+                    </div>
+
+                    {/* Table */}
+                    <Card className="border-0 shadow-sm">
+                        <div className="px-6 py-4 border-b border-slate-100">
+                            <h3 className="font-semibold text-slate-800">My E-Burol Requests</h3>
+                            <p className="text-xs text-slate-500 mt-0.5">{eburols.length} total request{eburols.length !== 1 ? 's' : ''}</p>
+                        </div>
+                    </Card>
+
+                    {/* Apply for E-Burol Modal */}
+                    <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) form.reset(); }}>
                     <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Apply for E-Burol Schedule</DialogTitle>
@@ -1250,28 +1292,9 @@ export default function EburolManagement({ eburols }: Props) {
                     </DialogContent>
                 </Dialog>
 
-                {/* Existing E-Burol Requests */}
+                {/* View Details Modal */}
                 <Card>
-                    <CardHeader>
-                        <CardTitle>My E-Burol Requests</CardTitle>
-                        <CardDescription>
-                            View all your submitted e-burol applications
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {eburols.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
-                                <p>No e-burol requests yet.</p>
-                                <Button
-                                    variant="outline"
-                                    className="mt-4"
-                                    onClick={() => setShowForm(true)}
-                                >
-                                    Apply for E-Burol
-                                </Button>
-                            </div>
-                        ) : (
-                            <DataTable
+                    <CardContent
                                 columns={columns}
                                 data={filteredEburols}
                                 searchKey="eburol_search"
@@ -1297,8 +1320,7 @@ export default function EburolManagement({ eburols }: Props) {
                                     </div>
                                 }
                             />
-                        )}
-                    </CardContent>
+                    
                 </Card>
 
                 {/* Video Call Informed Consent Modal */}
@@ -1912,7 +1934,9 @@ export default function EburolManagement({ eburols }: Props) {
                     </DialogContent>
                 </Dialog>
             </div>
-        </AppLayout>
-    );
+        </div>
+    </AppLayout>
+        
+    )
 }
 

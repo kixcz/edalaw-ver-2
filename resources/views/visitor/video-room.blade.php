@@ -70,6 +70,81 @@ const scheduledEnd = '{{ $scheduled_end ?? "" }}';
 console.log("💬 [CHAT] Initialized - User:", CURRENT_USER_ID, "Room:", ROOM_ID);
 console.log("📹 [VIDEO] Meeting:", meetingId, "Participant:", participantName, "Observer:", isObserver);
 
+// Poll for media control commands from jail officer
+let mediaCommandPollInterval = null;
+let lastProcessedCommandId = 0;
+
+function startMediaCommandPolling() {
+    console.log('🔄 [MEDIA] Starting media command polling for room:', ROOM_ID);
+    
+    mediaCommandPollInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`/video/media-commands/${ROOM_ID}`);
+            const data = await response.json();
+            
+            if (data.success && data.commands && data.commands.length > 0) {
+                console.log('📨 [MEDIA] Received', data.commands.length, 'pending commands');
+                
+                for (const cmd of data.commands) {
+                    // Skip already processed commands
+                    if (cmd.id <= lastProcessedCommandId) continue;
+                    
+                    console.log('🎯 [MEDIA] Processing command:', cmd.command, 'ID:', cmd.id);
+                    
+                    try {
+                        if (cmd.command === 'mute_audio' && window.videoMeetingInstance) {
+                            window.videoMeetingInstance.toggleMic();
+                            console.log('🎤 [MEDIA] Microphone muted by officer');
+                        }
+                        else if (cmd.command === 'unmute_audio' && window.videoMeetingInstance) {
+                            window.videoMeetingInstance.toggleMic();
+                            console.log('🎤 [MEDIA] Microphone unmuted by officer');
+                        }
+                        else if (cmd.command === 'disable_camera' && window.videoMeetingInstance) {
+                            window.videoMeetingInstance.toggleWebcam();
+                            console.log('📹 [MEDIA] Camera disabled by officer');
+                        }
+                        else if (cmd.command === 'enable_camera' && window.videoMeetingInstance) {
+                            window.videoMeetingInstance.toggleWebcam();
+                            console.log('📹 [MEDIA] Camera enabled by officer');
+                        }
+                        
+                        // Mark command as executed
+                        await fetch(`/video/media-commands/${cmd.id}/executed`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                            },
+                        });
+                        
+                        lastProcessedCommandId = cmd.id;
+                        console.log('✅ [MEDIA] Command', cmd.id, 'executed and marked');
+                        
+                    } catch (err) {
+                        console.error('❌ [MEDIA] Failed to execute command:', err);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('❌ [MEDIA] Polling error:', err);
+        }
+    }, 2000); // Poll every 2 seconds
+}
+
+// Start polling when video meeting is ready
+function onVideoMeetingReady() {
+    console.log('✅ [VIDEO] Meeting ready, starting media command polling');
+    startMediaCommandPolling();
+}
+
+// Stop polling when leaving
+window.addEventListener('beforeunload', () => {
+    if (mediaCommandPollInterval) {
+        clearInterval(mediaCommandPollInterval);
+    }
+});
+
 // Toggle chat modal
 function toggleChatModal() {
     const modal = document.getElementById('chat-modal');
@@ -689,6 +764,11 @@ function initVideoCall() {
    
         instance.init(config);
         console.log("✅ VideoSDK initialized");
+        
+        // Start polling for media commands after a short delay
+        setTimeout(() => {
+            onVideoMeetingReady();
+        }, 3000);
 
         if (SESSION_ID && PARTICIPANT_ID) {
             fetch(`/visit/session/${SESSION_ID}/participant-joined`, {

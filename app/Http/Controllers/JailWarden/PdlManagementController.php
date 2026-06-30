@@ -87,9 +87,33 @@ class PdlManagementController extends Controller
                 'value' => (string) $cell->id,
             ]);
 
+        // Calculate stats
+        $stats = [
+            'total_pdls' => $inmates->total(),
+            'active_pdls' => $inmates->where('status', 'active')->count(),
+            'inactive_pdls' => $inmates->where('status', 'inactive')->count(),
+            'assigned_cells' => $inmates->pluck('cell.id')->filter()->unique()->count(),
+        ];
+
+        // Chart data
+        $chartData = [
+            'pdls_by_status' => [
+                ['status' => 'Active', 'count' => $stats['active_pdls']],
+                ['status' => 'Inactive', 'count' => $stats['inactive_pdls']],
+            ],
+            'pdls_by_annex' => $inmates->groupBy('cell.annex.name')->map(function ($group, $annexName) {
+                return [
+                    'annex' => $annexName ?? 'Unassigned',
+                    'count' => $group->count(),
+                ];
+            })->values()->toArray(),
+        ];
+
         return Inertia::render('JailWarden/PdlManagement/Index', [
             'inmates' => $inmates,
             'cells' => $cells,
+            'stats' => $stats,
+            'chartData' => $chartData,
         ]);
     }
 

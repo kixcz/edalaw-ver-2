@@ -44,6 +44,29 @@ class AnnexManagementController extends Controller
                 'created_at' => $annex->created_at,
             ]);
 
+        // Calculate stats
+        $stats = [
+            'total_annexes' => $annexes->total(),
+            'active_annexes' => $annexes->where('status', 'active')->count(),
+            'inactive_annexes' => $annexes->where('status', 'inactive')->count(),
+            'total_cells' => $annexes->sum('cells_count'),
+            'total_dormitories' => $annexes->sum('dormitories_count'),
+        ];
+
+        // Chart data
+        $chartData = [
+            'annexes_by_status' => [
+                ['status' => 'Active', 'count' => $stats['active_annexes']],
+                ['status' => 'Inactive', 'count' => $stats['inactive_annexes']],
+            ],
+            'annexes_by_jail' => $annexes->groupBy('jail.name')->map(function ($group, $jailName) {
+                return [
+                    'jail' => $jailName ?? 'Unassigned',
+                    'count' => $group->count(),
+                ];
+            })->values()->toArray(),
+        ];
+
         return Inertia::render('JailWarden/AnnexManagement/Index', [
             'annexes' => $annexes,
             'jails' => Jail::where('branch_id', $user->branch_id)
@@ -54,6 +77,8 @@ class AnnexManagementController extends Controller
                 'id' => $user->branch->id,
                 'name' => $user->branch->name,
             ],
+            'stats' => $stats,
+            'chartData' => $chartData,
         ]);
     }
 

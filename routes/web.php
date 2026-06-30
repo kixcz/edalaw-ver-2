@@ -206,6 +206,10 @@ Route::get('/video/chat/history/{roomId}', [App\Http\Controllers\VideoChatContro
 Route::get('/video/chat/sync/{sessionId}', [App\Http\Controllers\VideoChatController::class, 'syncFromCloud']);
 Route::get('/video/chat/export/{sessionId}', [App\Http\Controllers\VideoChatController::class, 'exportChat'])->name('video.chat.export');
 
+// Media control polling endpoint - video room polls for pending commands
+Route::get('/video/media-commands/{roomId}', [App\Http\Controllers\VideoChatController::class, 'getPendingMediaCommands'])->name('video.media-commands');
+Route::post('/video/media-commands/{commandId}/executed', [App\Http\Controllers\VideoChatController::class, 'markCommandExecuted'])->name('video.media-commands.executed');
+
 // Chat Message Flagging (jail officer only) - FOR MONITORING SESSIONS ONLY
 // Note: For visit session chat flagging, use: /visit/session/{session}/chat/{chatLog}/flag
 Route::post('/video/chat/{session}/messages/{message}/flag', [App\Http\Controllers\ChatMessageFlagController::class, 'flag'])

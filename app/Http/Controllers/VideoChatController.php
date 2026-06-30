@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\VideoChatLog;
 use App\Models\ChatLog;
 use App\Models\VisitSession;
+use App\Models\SessionMediaCommand;
 use App\Events\VisitSessionMessageSent;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -543,5 +544,45 @@ public function syncSessionChat($sessionId)
         ];
 
         return JWT::encode($payload, $apiSecret, 'HS256');
+    }
+
+    /**
+     * Get pending media commands for a room (polling endpoint)
+     */
+    public function getPendingMediaCommands(string $roomId)
+    {
+        $commands = SessionMediaCommand::forRoom($roomId)
+            ->pending()
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'commands' => $commands->map(function ($cmd) {
+                return [
+                    'id' => $cmd->id,
+                    'command' => $cmd->command,
+                    'room_id' => $cmd->room_id,
+                    'issued_by' => $cmd->issued_by,
+                    'created_at' => $cmd->created_at->toIso8601String(),
+                ];
+            }),
+        ]);
+    }
+
+    /**
+     * Mark a media command as executed
+     */
+    public function markCommandExecuted(int $commandId)
+    {
+        $command = SessionMediaCommand::find($commandId);
+        
+        if (!$command) {
+            return response()->json(['success' => false, 'error' => 'Command not found'], 404);
+        }
+
+        $command->markAsExecuted();
+
+        return response()->json(['success' => true]);
     }
 }

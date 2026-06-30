@@ -161,10 +161,22 @@ class ScheduleController extends Controller
         
         $todayUnavailable = now()->format('H:i') > $dayCutoff;
         
+        // Calculate stats
+        $stats = [
+            'total_visits' => $visits->count(),
+            'pending_visits' => $visits->where('status', VisitStatus::Pending)->count(),
+            'approved_visits' => $visits->where('status', VisitStatus::Approved)->count(),
+            'rejected_visits' => $visits->where('status', VisitStatus::Rejected)->count(),
+            'completed_visits' => $visits->where('status', VisitStatus::Completed)->count(),
+            'virtual_visits' => $visits->where('visit_type', VisitType::Virtual)->count(),
+            'physical_visits' => $visits->where('visit_type', VisitType::Physical)->count(),
+        ];
+        
         return Inertia::render('Visitor/ScheduleManagement', [
             'visits' => $visits,
             'bookedTimeSlots' => $bookedTimeSlots,
             'today_unavailable' => $todayUnavailable,
+            'stats' => $stats,
         ]);
     }
 

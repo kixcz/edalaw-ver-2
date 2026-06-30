@@ -5,6 +5,7 @@ namespace App\Http\Controllers\JailOfficer;
 use App\Events\VisitSessionChatLockChanged;
 use App\Http\Controllers\Controller;
 use App\Models\InmateTunnel;
+use App\Models\SessionMediaCommand;
 use App\Models\SystemLog;
 use App\Models\VisitSession;
 use App\Services\VideoSdkService;
@@ -277,7 +278,15 @@ class AssignedSessionsController extends Controller
         if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
             abort(403);
         }
-        if ($session->status !== 'active') {
+        
+        // Calculate actual status (same logic as index method)
+        $status = $session->status;
+        $scheduleEnded = now()->isAfter($session->scheduled_end);
+        if ($status === 'scheduled' && $session->isWithinSchedule() && !$scheduleEnded) {
+            $status = 'active';
+        }
+        
+        if ($status !== 'active') {
             return response()->json(['error' => 'Session is not active.'], 422);
         }
 
@@ -326,14 +335,25 @@ class AssignedSessionsController extends Controller
         if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
             abort(403);
         }
-        if ($session->status !== 'active') {
+        
+        // Calculate actual status (same logic as index method)
+        $status = $session->status;
+        $scheduleEnded = now()->isAfter($session->scheduled_end);
+        if ($status === 'scheduled' && $session->isWithinSchedule() && !$scheduleEnded) {
+            $status = 'active';
+        }
+        
+        if ($status !== 'active') {
             return response()->json(['error' => 'Session is not active.'], 422);
         }
 
-        // Note: VideoSDK doesn't have direct API to mute all participants
-        // This would need to be implemented via WebSocket broadcast to clients
-        // For now, we'll log the action and rely on client-side implementation
-        
+        // Create media command for polling
+        SessionMediaCommand::create([
+            'room_id' => $session->room_id,
+            'command' => 'mute_audio',
+            'issued_by' => $user->id,
+        ]);
+
         SystemLog::create([
             'visit_session_id' => $session->id,
             'action' => 'mute_all_audio',
@@ -341,9 +361,6 @@ class AssignedSessionsController extends Controller
             'metadata' => ['target' => 'all_participants'],
         ]);
 
-        // Broadcast event to notify clients to mute audio
-        // Client-side implementation needed in video-room.blade.php
-        
         return response()->json(['message' => 'Audio mute command sent to all participants.', 'muted' => true]);
     }
 
@@ -356,9 +373,24 @@ class AssignedSessionsController extends Controller
         if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
             abort(403);
         }
-        if ($session->status !== 'active') {
+        
+        // Calculate actual status (same logic as index method)
+        $status = $session->status;
+        $scheduleEnded = now()->isAfter($session->scheduled_end);
+        if ($status === 'scheduled' && $session->isWithinSchedule() && !$scheduleEnded) {
+            $status = 'active';
+        }
+        
+        if ($status !== 'active') {
             return response()->json(['error' => 'Session is not active.'], 422);
         }
+
+        // Create media command for polling
+        SessionMediaCommand::create([
+            'room_id' => $session->room_id,
+            'command' => 'unmute_audio',
+            'issued_by' => $user->id,
+        ]);
 
         SystemLog::create([
             'visit_session_id' => $session->id,
@@ -379,9 +411,24 @@ class AssignedSessionsController extends Controller
         if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
             abort(403);
         }
-        if ($session->status !== 'active') {
+        
+        // Calculate actual status (same logic as index method)
+        $status = $session->status;
+        $scheduleEnded = now()->isAfter($session->scheduled_end);
+        if ($status === 'scheduled' && $session->isWithinSchedule() && !$scheduleEnded) {
+            $status = 'active';
+        }
+        
+        if ($status !== 'active') {
             return response()->json(['error' => 'Session is not active.'], 422);
         }
+
+        // Create media command for polling
+        SessionMediaCommand::create([
+            'room_id' => $session->room_id,
+            'command' => 'disable_camera',
+            'issued_by' => $user->id,
+        ]);
 
         SystemLog::create([
             'visit_session_id' => $session->id,
@@ -402,9 +449,24 @@ class AssignedSessionsController extends Controller
         if ($session->monitor_id !== $user->id && $user->role?->slug !== 'super_admin') {
             abort(403);
         }
-        if ($session->status !== 'active') {
+        
+        // Calculate actual status (same logic as index method)
+        $status = $session->status;
+        $scheduleEnded = now()->isAfter($session->scheduled_end);
+        if ($status === 'scheduled' && $session->isWithinSchedule() && !$scheduleEnded) {
+            $status = 'active';
+        }
+        
+        if ($status !== 'active') {
             return response()->json(['error' => 'Session is not active.'], 422);
         }
+
+        // Create media command for polling
+        SessionMediaCommand::create([
+            'room_id' => $session->room_id,
+            'command' => 'enable_camera',
+            'issued_by' => $user->id,
+        ]);
 
         SystemLog::create([
             'visit_session_id' => $session->id,

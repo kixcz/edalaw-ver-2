@@ -43,9 +43,23 @@ class AuditLogController extends Controller
             'by_action' => $auditLogs->groupBy('action')->map(fn ($group) => $group->count())->toArray(),
         ];
 
-        return Inertia::render('BjmpOfficer/AuditLogs', [
+        // Chart data
+        $chartData = [
+            'logs_by_module' => collect($stats['by_module'])->map(function ($count, $module) {
+                return ['module' => $module, 'count' => $count];
+            })->values()->toArray(),
+            'logs_by_action' => collect($stats['by_action'])->map(function ($count, $action) {
+                return [
+                    'action' => str_replace('_', ' ', $action),
+                    'count' => $count,
+                ];
+            })->sortByDesc('count')->take(10)->values()->toArray(),
+        ];
+
+        return Inertia::render('JailOfficer/AuditLogs', [
             'audit_logs' => $auditLogs,
             'stats' => $stats,
+            'chartData' => $chartData,
         ]);
     }
 }

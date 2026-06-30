@@ -90,9 +90,32 @@ class JailOfficerManagementController extends Controller
                 ->get(),
         ];
 
+        // Calculate stats
+        $stats = [
+            'total_officers' => $officers->count(),
+            'active_assignments' => $officers->sum(fn($o) => $o['scopes']->where('is_active', true)->count()),
+            'annex_scopes' => $officers->sum(fn($o) => $o['scopes']->where('scope_type', 'annex')->count()),
+            'dormitory_scopes' => $officers->sum(fn($o) => $o['scopes']->where('scope_type', 'dormitory')->count()),
+        ];
+
+        // Chart data
+        $chartData = [
+            'officers_by_scope_type' => [
+                ['type' => 'Annex', 'count' => $stats['annex_scopes']],
+                ['type' => 'Dormitory', 'count' => $stats['dormitory_scopes']],
+                ['type' => 'Cell', 'count' => $officers->sum(fn($o) => $o['scopes']->where('scope_type', 'cell')->count())],
+            ],
+            'assignment_status' => [
+                ['status' => 'Active', 'count' => $stats['active_assignments']],
+                ['status' => 'Inactive', 'count' => $officers->sum(fn($o) => $o['scopes']->where('is_active', false)->count())],
+            ],
+        ];
+
         return Inertia::render('JailWarden/JailOfficerManagement/Index', [
             'officers' => $officers,
             'facilities' => $facilities,
+            'stats' => $stats,
+            'chartData' => $chartData,
         ]);
     }
 
