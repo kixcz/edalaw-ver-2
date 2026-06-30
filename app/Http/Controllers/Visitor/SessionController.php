@@ -37,8 +37,17 @@ class SessionController extends Controller
                 ];
             });
 
+        // Calculate stats (max 4 KPIs)
+        $stats = [
+            'total_sessions' => $sessions->count(),
+            'active_sessions' => $sessions->where('is_active', true)->count(),
+            'current_session' => $sessions->where('is_current', true)->count(),
+            'other_sessions' => $sessions->where('is_current', false)->count(),
+        ];
+
         return Inertia::render('Visitor/Sessions', [
             'sessions' => $sessions,
+            'stats' => $stats,
         ]);
     }
 

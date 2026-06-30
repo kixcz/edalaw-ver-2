@@ -67,6 +67,11 @@ function getActionBadge(action: string) {
         visit_status_updated: 'bg-blue-50 text-blue-700 border-blue-200',
         visit_rescheduled: 'bg-amber-50 text-amber-700 border-amber-200',
         appeal_reviewed: 'bg-purple-50 text-purple-700 border-purple-200',
+        session_started: 'bg-green-50 text-green-700 border-green-200',
+        session_ended: 'bg-slate-50 text-slate-700 border-slate-200',
+        session_killed: 'bg-red-50 text-red-700 border-red-200',
+        chat_locked: 'bg-orange-50 text-orange-700 border-orange-200',
+        chat_unlocked: 'bg-teal-50 text-teal-700 border-teal-200',
     };
 
     const actionLabels: Record<string, string> = {
@@ -78,6 +83,11 @@ function getActionBadge(action: string) {
         visit_status_updated: 'Visit Status Updated',
         visit_rescheduled: 'Visit Rescheduled',
         appeal_reviewed: 'Appeal Reviewed',
+        session_started: 'Session Started',
+        session_ended: 'Session Ended',
+        session_killed: 'Session Terminated',
+        chat_locked: 'Chat Locked',
+        chat_unlocked: 'Chat Unlocked',
     };
 
     const className = actionColors[action] || 'bg-slate-100 text-slate-600 border-slate-200';
@@ -89,7 +99,9 @@ function getModuleBadge(module: string) {
     const moduleColors: Record<string, string> = {
         'E-Burol Management': 'bg-cyan-50 text-cyan-700 border-cyan-200',
         'Visit Schedule Management': 'bg-blue-50 text-blue-700 border-blue-200',
+        'Visit Management': 'bg-blue-50 text-blue-700 border-blue-200',
         'Appeal Processing': 'bg-purple-50 text-purple-700 border-purple-200',
+        'Session Monitoring': 'bg-indigo-50 text-indigo-700 border-indigo-200',
     };
 
     const className = moduleColors[module] || 'bg-slate-100 text-slate-600 border-slate-200';
@@ -126,28 +138,31 @@ export default function AuditLogs({ audit_logs, stats, chartData }: Props) {
             {
                 accessorKey: 'description',
                 header: 'Description',
-                cell: ({ row }) => (
-                    <div className="max-w-md">
-                        <div className="font-medium">{row.original.description}</div>
-                        {row.original.metadata && Object.keys(row.original.metadata).length > 0 && (
-                            <div className="text-xs text-slate-500 mt-1">
-                                {row.original.metadata.rejection_reason && (
-                                    <div>Reason: {String(row.original.metadata.rejection_reason).substring(0, 100)}</div>
-                                )}
-                                {row.original.metadata.old_status && row.original.metadata.new_status && (
-                                    <div>
-                                        Status: {String(row.original.metadata.old_status)} → {String(row.original.metadata.new_status)}
-                                    </div>
-                                )}
-                                {row.original.metadata.old_date && row.original.metadata.new_date && (
-                                    <div>
-                                        Rescheduled: {String(row.original.metadata.old_date)} {String(row.original.metadata.old_time)} → {String(row.original.metadata.new_date)} {String(row.original.metadata.new_time)}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                ),
+                cell: ({ row }) => {
+                    const metadata = row.original.metadata as Record<string, string | number | boolean | null> | null;
+                    return (
+                        <div className="max-w-md">
+                            <div className="font-medium">{row.original.description}</div>
+                            {metadata && Object.keys(metadata).length > 0 && (
+                                <div className="text-xs text-slate-500 mt-1">
+                                    {metadata.rejection_reason && (
+                                        <div>Reason: {String(metadata.rejection_reason).substring(0, 100)}</div>
+                                    )}
+                                    {metadata.old_status && metadata.new_status && (
+                                        <div>
+                                            Status: {String(metadata.old_status)} → {String(metadata.new_status)}
+                                        </div>
+                                    )}
+                                    {metadata.old_date && metadata.new_date && (
+                                        <div>
+                                            Rescheduled: {String(metadata.old_date)} {String(metadata.old_time ?? '')} → {String(metadata.new_date)} {String(metadata.new_time ?? '')}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+                },
             },
             {
                 accessorKey: 'auditable_type',

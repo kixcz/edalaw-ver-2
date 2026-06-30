@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import type { ElementType } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { toast } from 'sonner';
 
 interface DashboardProps {
@@ -446,47 +447,41 @@ export default function Dashboard({
                                     </CardHeader>
                                     <CardContent>
                                         {visitVolume.length > 0 ? (
-                                            <div className="space-y-4">
-                                                <div className="flex h-72 items-end gap-3 rounded-2xl border bg-background p-5">
-                                                    {visitVolume.map((day) => {
-                                                        const pct = Math.max(
-                                                            (day.count /
-                                                                maxVisit) *
-                                                                100,
-                                                            4,
-                                                        );
-                                                        return (
-                                                            <div
-                                                                key={day.date}
-                                                                className="flex flex-1 flex-col items-center gap-2"
-                                                            >
-                                                                <div className="text-xs font-medium">
-                                                                    {day.count}
-                                                                </div>
-                                                                <div className="flex h-52 w-full items-end rounded-full bg-muted">
-                                                                    <div
-                                                                        className="w-full rounded-full bg-foreground"
-                                                                        style={{
-                                                                            height: `${pct}%`,
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                                <div className="text-[11px] text-muted-foreground">
-                                                                    {new Date(
-                                                                        day.date,
-                                                                    ).toLocaleDateString(
-                                                                        'en-US',
-                                                                        {
-                                                                            month: 'short',
-                                                                            day: 'numeric',
-                                                                        },
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
+                                            <ResponsiveContainer width="100%" height={280}>
+                                                <LineChart data={visitVolume} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                                    <XAxis
+                                                        dataKey="date"
+                                                        tick={{ fontSize: 11, fill: '#64748b' }}
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tickFormatter={(value) =>
+                                                            new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                                        }
+                                                    />
+                                                    <YAxis
+                                                        tick={{ fontSize: 11, fill: '#64748b' }}
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        allowDecimals={false}
+                                                    />
+                                                    <Tooltip
+                                                        labelFormatter={(value) =>
+                                                            new Date(value).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                                                        }
+                                                        contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                                    />
+                                                    <Line
+                                                        type="monotone"
+                                                        dataKey="count"
+                                                        stroke="#8b5cf6"
+                                                        strokeWidth={2}
+                                                        dot={{ fill: '#8b5cf6', r: 4 }}
+                                                        activeDot={{ r: 6, fill: '#7c3aed' }}
+                                                        name="Visits"
+                                                    />
+                                                </LineChart>
+                                            </ResponsiveContainer>
                                         ) : (
                                             <EmptyState message="No visit data for this period" />
                                         )}
@@ -1395,42 +1390,41 @@ function LegacyOfficerDashboard({
                                 </h2>
                             </div>
                             {visitVolume.length > 0 ? (
-                                <div className="space-y-2.5">
-                                    {visitVolume.map((day) => {
-                                        const pct = Math.round(
-                                            (day.count / maxVisit) * 100,
-                                        );
-                                        return (
-                                            <div
-                                                key={day.date}
-                                                className="flex items-center gap-3"
-                                            >
-                                                <span className="w-16 flex-shrink-0 text-[11px] text-gray-600">
-                                                    {new Date(
-                                                        day.date,
-                                                    ).toLocaleDateString(
-                                                        'en-US',
-                                                        {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                        },
-                                                    )}
-                                                </span>
-                                                <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
-                                                    <div
-                                                        className="h-full rounded-full bg-gray-600 transition-all duration-500"
-                                                        style={{
-                                                            width: `${pct}%`,
-                                                        }}
-                                                    />
-                                                </div>
-                                                <span className="w-8 text-right text-xs font-medium text-gray-700">
-                                                    {day.count}
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <LineChart data={visitVolume} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                        <XAxis
+                                            dataKey="date"
+                                            tick={{ fontSize: 10, fill: '#64748b' }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tickFormatter={(value) =>
+                                                new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                            }
+                                        />
+                                        <YAxis
+                                            tick={{ fontSize: 10, fill: '#64748b' }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            allowDecimals={false}
+                                        />
+                                        <Tooltip
+                                            labelFormatter={(value) =>
+                                                new Date(value).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                                            }
+                                            contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="count"
+                                            stroke="#475569"
+                                            strokeWidth={2}
+                                            dot={{ fill: '#475569', r: 3 }}
+                                            activeDot={{ r: 5, fill: '#334155' }}
+                                            name="Visits"
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
                             ) : (
                                 <EmptyState message="No visit data for this period" />
                             )}

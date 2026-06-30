@@ -514,8 +514,8 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
             {/* Schedule builder modal                                            */}
             {/* ---------------------------------------------------------------- */}
             <Dialog open={builderOpen} onOpenChange={setBuilderOpen}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                    <DialogHeader className="shrink-0">
                         <DialogTitle>Schedule builder</DialogTitle>
                         <DialogDescription>
                             Build a weekly availability pattern, then apply it to one cell,
@@ -523,7 +523,7 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-5 py-2">
+                    <div className="space-y-5 py-2 overflow-y-auto flex-1 min-h-0 pr-1">
                         <DayGrid week={builderWeek} onToggle={toggleBuilderDay} onBulk={bulkBuilder} />
 
                         {builderHasAny && (
@@ -592,7 +592,7 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
                         </div>
                     </div>
 
-                    <DialogFooter className="gap-2 sm:justify-between">
+                    <DialogFooter className="gap-2 sm:justify-between shrink-0 border-t pt-3 mt-1">
                         <p className="text-xs text-muted-foreground">
                             Applying updates the table only — nothing is saved until you click
                             "Save changes."

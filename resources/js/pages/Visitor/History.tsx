@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { FileText, Filter, Search, ShieldCheck } from 'lucide-react';
+import { FileText, Filter, Search, ShieldCheck, History as HistoryIcon, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { DataTable } from '@/components/data-table';
@@ -50,6 +50,23 @@ type Props = {
         by_action: Record<string, number>;
     };
 };
+
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 function getActionBadge(action: string) {
     const actionColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -200,13 +217,28 @@ export default function History({ audit_logs, stats }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Transaction History" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold">Transaction History</h1>
-                        <p className="text-muted-foreground">View all your transaction history and activities</p>
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-slate-700 rounded-xl"><HistoryIcon className="w-5 h-5 text-white" /></div>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-900 leading-none">Transaction History</h1>
+                                <p className="text-xs text-slate-500 mt-0.5">View all your transaction history and activities</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<HistoryIcon className="w-5 h-5" />} value={stats?.total || 0} label="Total Transactions" accent="bg-slate-700" iconBg="bg-slate-50" iconColor="text-slate-700" />
+                        <StatCard icon={<Clock className="w-5 h-5" />} value={stats?.by_action?.['visit_submitted'] || 0} label="Visit Requests" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
+                        <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats?.by_action?.['eburol_submitted'] || 0} label="E-Burols" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
+                        <StatCard icon={<XCircle className="w-5 h-5" />} value={stats?.by_action?.['suggestion_submitted'] || 0} label="Feedback" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
+                    </div>
 
                 {/* Privacy Notice */}
                 <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
@@ -312,6 +344,7 @@ export default function History({ audit_logs, stats }: Props) {
                         <DataTable columns={columns} data={filteredLogs} />
                     </CardContent>
                 </Card>
+                </div>
             </div>
         </AppLayout>
     );

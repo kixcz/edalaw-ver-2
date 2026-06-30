@@ -4,7 +4,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Users, Calendar, FileText, CheckCircle, AlertCircle, X, ShieldCheck, Video, Building, Clock } from 'lucide-react';
+import { User, Users, Calendar, FileText, CheckCircle, AlertCircle, X, ShieldCheck, Video, Building, Clock, UserCheck, ClockIcon, CheckCircle2, XCircle } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -44,8 +44,28 @@ interface Props {
     taggedInmates: TaggedInmate[];
     stats: {
         total_tagged_inmates: number;
+        with_proof?: number;
+        without_proof?: number;
+        virtual_available?: number;
     };
 }
+
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 export default function TaggedInmates({ taggedInmates, stats }: Props) {
     const [selectedInmate, setSelectedInmate] = useState<TaggedInmate | null>(null);
@@ -181,71 +201,34 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Tagged Inmates" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold">Tagged Inmates</h1>
-                        <p className="text-muted-foreground">
-                            Inmates you can quickly schedule visits with
-                        </p>
-                    </div>
-                    <Link
-                        href="/dashboard/visitor"
-                        className="inline-flex items-center justify-center rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-                    >
-                        ← Back to Dashboard
-                    </Link>
-                </div>
-
-                {/* Statistics Cards */}
-                <div className="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Total Tagged Inmates
-                            </CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.total_tagged_inmates}</div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                From approved visits
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Quick Reschedule
-                            </CardTitle>
-                            <Calendar className="h-4 w-4 text-blue-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.total_tagged_inmates}</div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                Ready for instant scheduling
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Documents On File
-                            </CardTitle>
-                            <FileText className="h-4 w-4 text-purple-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {taggedInmates.filter(i => i.has_relationship_proof).length}
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-teal-600 rounded-xl"><UserCheck className="w-5 h-5 text-white" /></div>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-900 leading-none">Tagged Inmates</h1>
+                                <p className="text-xs text-slate-500 mt-0.5">Inmates you can quickly schedule visits with</p>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                With proof of relationship
-                            </p>
-                        </CardContent>
-                    </Card>
+                        </div>
+                        <Link
+                            href="/dashboard/visitor"
+                            className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                        >
+                            ← Back to Dashboard
+                        </Link>
+                    </div>
                 </div>
+
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<UserCheck className="w-5 h-5" />} value={stats?.total_tagged_inmates || 0} label="Total Tagged" accent="bg-teal-600" iconBg="bg-teal-50" iconColor="text-teal-600" />
+                        <StatCard icon={<FileText className="w-5 h-5" />} value={stats?.with_proof || 0} label="With Proof" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
+                        <StatCard icon={<AlertCircle className="w-5 h-5" />} value={stats?.without_proof || 0} label="Without Proof" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
+                        <StatCard icon={<Video className="w-5 h-5" />} value={stats?.virtual_available || 0} label="Virtual Available" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
+                    </div>
 
                 {/* Info Banner */}
                 <Card className="bg-blue-50 border-blue-200">
@@ -598,6 +581,7 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
                     </form>
                 </DialogContent>
             </Dialog>
+            </div>
         </AppLayout>
     );
 }

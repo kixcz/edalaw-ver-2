@@ -1,10 +1,17 @@
 import { Head, router } from '@inertiajs/react';
-import { Computer, Globe, MapPin, Monitor, ShieldCheck, Smartphone, Tablet, Trash2, X } from 'lucide-react';
+import { Computer, Globe, MapPin, Monitor, ShieldCheck, Smartphone, Tablet, Trash2, X, MonitorSmartphone, CheckCircle, XCircle, Clock, HelpCircle, Info } from 'lucide-react';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     Table,
     TableBody,
@@ -13,6 +20,12 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -33,7 +46,30 @@ type Session = {
 
 type Props = {
     sessions: Session[];
+    stats?: {
+        total_sessions: number;
+        active_sessions: number;
+        current_session: number;
+        other_sessions: number;
+    };
 };
+
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -73,9 +109,10 @@ function getDeviceTypeBadge(deviceType: string | null) {
     );
 }
 
-export default function Sessions({ sessions }: Props) {
+export default function Sessions({ sessions, stats }: Props) {
     const [revokingSession, setRevokingSession] = useState<number | null>(null);
     const [revokingAll, setRevokingAll] = useState(false);
+    const [isSecurityInfoOpen, setIsSecurityInfoOpen] = useState(false);
 
     const handleRevoke = (sessionId: number) => {
         setRevokingSession(sessionId);
@@ -98,14 +135,68 @@ export default function Sessions({ sessions }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Session Management" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold">Session Management</h1>
-                        <p className="text-muted-foreground">
-                            View and manage your active login sessions across different devices
-                        </p>
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-indigo-600 rounded-xl"><MonitorSmartphone className="w-5 h-5 text-white" /></div>
+                            <div className="flex items-center gap-2">
+                                <div>
+                                    <h1 className="text-lg font-bold text-slate-900 leading-none">Session Management</h1>
+                                    <p className="text-xs text-slate-500 mt-0.5">Manage your active sessions and devices</p>
+                                </div>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 rounded-full"
+                                                onClick={() => setIsSecurityInfoOpen(true)}
+                                            >
+                                                <HelpCircle className="h-4 w-4 text-slate-500" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right" className="max-w-xs bg-slate-50 border-slate-200 text-slate-700">
+                                            <p className="text-xs">Click to view security information and privacy notice</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                        </div>
                     </div>
+                </div>
+            
+
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<MonitorSmartphone className="w-5 h-5" />} value={stats?.total_sessions || 0} label="Total Sessions" accent="bg-indigo-600" iconBg="bg-indigo-50" iconColor="text-indigo-600" />
+                        <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats?.active_sessions || 0} label="Active" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
+                        <StatCard icon={<Clock className="w-5 h-5" />} value={stats?.current_session || 0} label="Current" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
+                        <StatCard icon={<XCircle className="w-5 h-5" />} value={stats?.other_sessions || 0} label="Other Devices" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
+                    </div>
+
+                    {/* Data Privacy Notice - Prominently Displayed */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                            <ShieldCheck className="w-5 h-5 text-slate-700 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <h3 className="text-sm font-semibold text-slate-900 mb-1">Data Privacy Notice</h3>
+                                <div className="text-xs text-slate-700 leading-relaxed space-y-2">
+                                    <p>
+                                        For security, compliance, and audit purposes, the system records session metadata including login timestamps, IP addresses, device information, and connection activity. Such information is accessible only to authorized personnel and is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and applicable privacy policies.
+                                    </p>
+                                    <p className="italic text-slate-600">
+                                        (Alang sa seguridad, pagsunod sa balaod, ug audit, ang sistema nagrekord sa session metadata lakip ang login timestamps, IP addresses, impormasyon sa device, ug kalabutan sa koneksyon. Kini nga impormasyon accessible lamang sa mga awtorisadong personel ug giproseso sumala sa Republic Act No. 10173 (Data Privacy Act of 2012) ug mga nahisgutan nga privacy policies.)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                <div className="flex items-center justify-between mb-4">
                     {otherSessions.length > 0 && (
                         <Button
                             onClick={handleRevokeAll}
@@ -125,23 +216,6 @@ export default function Sessions({ sessions }: Props) {
                             )}
                         </Button>
                     )}
-                </div>
-
-                {/* Privacy Notice */}
-                <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                    <ShieldCheck style={{ width: '14px', height: '14px', color: '#6B7280', flexShrink: 0, marginTop: '1px' }} />
-                    <div>
-                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#374151', marginBottom: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                            Data Privacy Notice
-                        </div>
-                        <div style={{ fontSize: '9px', lineHeight: '1.5', color: '#4B5563' }}>
-                            For security, compliance, and audit purposes, the system records session metadata including login timestamps, IP addresses, device information, and connection activity. Such information is accessible only to authorized personnel and is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and applicable privacy policies.
-                            <br />
-                            <span style={{ fontStyle: 'italic' }}>
-                                (Alang sa seguridad, pagsunod sa balaod, ug audit, ang sistema nagrekord sa session metadata lakip ang login timestamps, IP addresses, impormasyon sa device, ug kalabutan sa koneksyon. Kini nga impormasyon accessible lamang sa mga awtorisadong personel ug giproseso sumala sa Republic Act No. 10173 (Data Privacy Act of 2012) ug mga nahisgutan nga privacy policies.)
-                            </span>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Sessions Table */}
@@ -295,21 +369,53 @@ export default function Sessions({ sessions }: Props) {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* Security Notice */}
-                <Card className="border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20">
-                    <CardHeader>
-                        <CardTitle className="text-sm">Security Information</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                            As a visitor, you can only be logged in on one device at a time for security purposes.
-                            If you log in from a new device, all other sessions will be automatically revoked.
-                            If you notice any suspicious activity, please revoke the session immediately.
-                        </p>
-                    </CardContent>
-                </Card>
+                </div>
             </div>
+
+            {/* Security Information Modal */}
+            <Dialog open={isSecurityInfoOpen} onOpenChange={setIsSecurityInfoOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-slate-900">
+                            <Info className="h-5 w-5 text-slate-700" />
+                            Security Information & Privacy Notice
+                        </DialogTitle>
+                        <DialogDescription className="sr-only">
+                            Security information and data privacy notice for session management
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        {/* Security Information Section */}
+                        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                            <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-slate-700" />
+                                Session Security
+                            </h3>
+                            <p className="text-xs text-slate-700 leading-relaxed">
+                                As a visitor, you can only be logged in on one device at a time for security purposes.
+                                If you log in from a new device, all other sessions will be automatically revoked.
+                                If you notice any suspicious activity, please revoke the session immediately.
+                            </p>
+                        </div>
+
+                        {/* Privacy Notice Section */}
+                        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                            <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-slate-700" />
+                                Data Privacy Notice
+                            </h3>
+                            <div className="text-xs text-slate-700 leading-relaxed space-y-2">
+                                <p>
+                                    For security, compliance, and audit purposes, the system records session metadata including login timestamps, IP addresses, device information, and connection activity. Such information is accessible only to authorized personnel and is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and applicable privacy policies.
+                                </p>
+                                <p className="italic text-slate-600">
+                                    (Alang sa seguridad, pagsunod sa balaod, ug audit, ang sistema nagrekord sa session metadata lakip ang login timestamps, IP addresses, impormasyon sa device, ug kalabutan sa koneksyon. Kini nga impormasyon accessible lamang sa mga awtorisadong personel ug giproseso sumala sa Republic Act No. 10173 (Data Privacy Act of 2012) ug mga nahisgutan nga privacy policies.)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

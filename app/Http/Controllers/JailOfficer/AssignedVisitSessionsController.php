@@ -7,6 +7,7 @@ use App\Models\InmateTunnel;
 use App\Models\SystemLog;
 use App\Models\Visit;
 use App\Models\VisitSession;
+use App\Services\AuditLogService;
 use App\Services\VideoSdkService;
 use App\Services\VisitSessionCompletionService;
 use App\Services\VisitSessionRecordingService;
@@ -316,6 +317,7 @@ class AssignedVisitSessionsController extends Controller
             // Send notification
             NotificationService::createVisitNotification($visit, 'approved');
 
+            // Log to system log
             SystemLog::create([
                 'visit_id' => $visit->id,
                 'action' => 'visit_approved',
@@ -325,6 +327,20 @@ class AssignedVisitSessionsController extends Controller
                     'scheduled_date' => $visit->scheduled_date->format('Y-m-d'),
                 ],
             ]);
+
+            // Log to audit log
+            AuditLogService::logAction(
+                'visit_approved',
+                $visit,
+                'Visit Management',
+                null,
+                $request,
+                [
+                    'visit_type' => $visit->visit_type->value,
+                    'scheduled_date' => $visit->scheduled_date->format('Y-m-d'),
+                    'scheduled_time' => $visit->scheduled_time,
+                ]
+            );
 
             return back()->with('success', 'Visit schedule approved successfully.');
         } catch (\Exception $e) {
@@ -369,6 +385,7 @@ class AssignedVisitSessionsController extends Controller
             'jail_officer_id' => $user->id,
         ]);
 
+        // Log to system log
         SystemLog::create([
             'visit_id' => $visit->id,
             'action' => 'visit_rejected',
@@ -377,6 +394,18 @@ class AssignedVisitSessionsController extends Controller
                 'reason' => $validated['rejection_reason'],
             ],
         ]);
+
+        // Log to audit log
+        AuditLogService::logAction(
+            'visit_rejected',
+            $visit,
+            'Visit Management',
+            null,
+            $request,
+            [
+                'rejection_reason' => $validated['rejection_reason'],
+            ]
+        );
 
         // Send notification
         NotificationService::createVisitNotification($visit, 'rejected');

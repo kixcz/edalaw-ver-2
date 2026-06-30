@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Clock, Eye, MoreVertical, Phone, PhoneIncoming, PhoneOutgoing, Video } from 'lucide-react';
+import { Clock, Eye, MoreVertical, Phone, PhoneIncoming, PhoneOutgoing, Video, PhoneCall, PhoneMissed, CheckCircle, XCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { DataTable } from '@/components/data-table';
@@ -44,7 +44,30 @@ type CallLog = {
 
 type Props = {
     callLogs: CallLog[];
+    stats?: {
+        total_calls: number;
+        completed_calls: number;
+        missed_calls: number;
+        video_calls: number;
+    };
 };
+
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -57,7 +80,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function CallLogs({ callLogs }: Props) {
+export default function CallLogs({ callLogs, stats }: Props) {
     const [selectedCallLog, setSelectedCallLog] = useState<CallLog | null>(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
@@ -200,13 +223,28 @@ export default function CallLogs({ callLogs }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Call Logs" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold">Call Logs</h1>
-                        <p className="text-muted-foreground">View your call history and records</p>
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-blue-600 rounded-xl"><PhoneCall className="w-5 h-5 text-white" /></div>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-900 leading-none">Call Logs</h1>
+                                <p className="text-xs text-slate-500 mt-0.5">View your call history and records</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<PhoneCall className="w-5 h-5" />} value={stats?.total_calls || 0} label="Total Calls" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
+                        <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats?.completed_calls || 0} label="Completed" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
+                        <StatCard icon={<PhoneMissed className="w-5 h-5" />} value={stats?.missed_calls || 0} label="Missed" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
+                        <StatCard icon={<Video className="w-5 h-5" />} value={stats?.video_calls || 0} label="Video Calls" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
+                    </div>
 
                 <Card>
                     <CardHeader>
@@ -298,6 +336,7 @@ export default function CallLogs({ callLogs }: Props) {
                         )}
                     </DialogContent>
                 </Dialog>
+                </div>
             </div>
         </AppLayout>
     );

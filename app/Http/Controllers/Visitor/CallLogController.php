@@ -56,8 +56,17 @@ class CallLogController extends Controller
                 ];
             });
 
+        // Calculate stats (max 4 KPIs)
+        $stats = [
+            'total_calls' => $callLogs->count(),
+            'completed_calls' => $callLogs->where('status', 'completed')->count(),
+            'missed_calls' => $callLogs->where('status', 'missed')->count(),
+            'video_calls' => $callLogs->where('call_type', 'video')->count(),
+        ];
+
         return Inertia::render('Visitor/CallLogs', [
             'callLogs' => $callLogs,
+            'stats' => $stats,
         ]);
     }
     

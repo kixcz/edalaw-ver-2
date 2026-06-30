@@ -8,6 +8,7 @@ use App\Models\InmateTunnel;
 use App\Models\SessionMediaCommand;
 use App\Models\SystemLog;
 use App\Models\VisitSession;
+use App\Services\AuditLogService;
 use App\Services\VideoSdkService;
 use App\Services\VisitSessionCompletionService;
 use App\Services\VisitSessionRecordingService;
@@ -213,6 +214,15 @@ class AssignedSessionsController extends Controller
             'performed_by' => $request->user()->id,
         ]);
 
+        // Log to audit log
+        AuditLogService::logAction(
+            'session_started',
+            $session,
+            'Session Monitoring',
+            null,
+            $request
+        );
+
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Session started.']);
         }
@@ -261,6 +271,16 @@ class AssignedSessionsController extends Controller
             'performed_by' => $request->user()->id,
             'metadata' => ['duration_seconds' => $durationSeconds],
         ]);
+
+        // Log to audit log
+        AuditLogService::logAction(
+            'session_ended',
+            $session,
+            'Session Monitoring',
+            null,
+            $request,
+            ['duration_seconds' => $durationSeconds]
+        );
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Session ended.']);
@@ -322,6 +342,19 @@ class AssignedSessionsController extends Controller
                 'reason' => 'killed_by_monitor',
             ],
         ]);
+
+        // Log to audit log
+        AuditLogService::logAction(
+            'session_killed',
+            $session,
+            'Session Monitoring',
+            null,
+            $request,
+            [
+                'duration_seconds' => $durationSeconds,
+                'reason' => 'killed_by_monitor',
+            ]
+        );
 
         return response()->json(['message' => 'Session terminated immediately.']);
     }
@@ -499,6 +532,15 @@ class AssignedSessionsController extends Controller
             'performed_by' => $request->user()->id,
         ]);
 
+        // Log to audit log
+        AuditLogService::logAction(
+            'chat_locked',
+            $session,
+            'Session Monitoring',
+            null,
+            $request
+        );
+
         VisitSessionChatLockChanged::dispatch($session->fresh(), true);
 
         return response()->json(['ok' => true, 'chat_locked' => true]);
@@ -524,6 +566,15 @@ class AssignedSessionsController extends Controller
             'action' => 'unlock_chat',
             'performed_by' => $request->user()->id,
         ]);
+
+        // Log to audit log
+        AuditLogService::logAction(
+            'chat_unlocked',
+            $session,
+            'Session Monitoring',
+            null,
+            $request
+        );
 
         VisitSessionChatLockChanged::dispatch($session->fresh(), false);
 

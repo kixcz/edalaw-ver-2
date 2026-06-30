@@ -110,6 +110,11 @@ class AuditLogService
             'user_deleted' => "User account #{$auditable->id} deleted",
             'user_status_updated' => "User account #{$auditable->id} status updated",
             'suggestion_submitted' => "Suggestion/Complaint #{$auditable->id} submitted",
+            'session_started' => "Session #{$auditable->id} started",
+            'session_ended' => "Session #{$auditable->id} ended",
+            'session_killed' => "Session #{$auditable->id} terminated by monitor",
+            'chat_locked' => "Chat locked for session #{$auditable->id}",
+            'chat_unlocked' => "Chat unlocked for session #{$auditable->id}",
             default => "Action '{$action}' performed on {$auditableType} #{$auditable->id}",
         };
     }

@@ -86,6 +86,17 @@ class TaggedInmatesController extends Controller
 
         $stats = [
             'total_tagged_inmates' => $taggedInmates->count(),
+            'with_proof' => $taggedInmates->where('has_relationship_proof', true)->count(),
+            'without_proof' => $taggedInmates->where('has_relationship_proof', false)->count(),
+            'virtual_available' => $taggedInmates->filter(function($inmate) {
+                // Check if any day has virtual visits available
+                foreach ($inmate['available_days'] as $day => $types) {
+                    if ($types['virtual'] ?? false) {
+                        return true;
+                    }
+                }
+                return false;
+            })->count(),
         ];
 
         return Inertia::render('Visitor/TaggedInmates', [
