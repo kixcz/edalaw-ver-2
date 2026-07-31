@@ -493,7 +493,7 @@ export default function AppealReview({ appeals, stats }: Props) {
 
                 {/* Review Modal */}
                 <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>
                                 {reviewForm.data.status === 'approved' ? 'Approve' : 'Reject'} Appeal

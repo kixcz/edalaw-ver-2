@@ -28,8 +28,8 @@ const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: Rea
                 <div className="flex items-center gap-4 px-5 py-4 flex-1">
                     <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
-                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                        <div className="text-2xl font-bold text-foreground leading-none">{value}</div>
+                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
                     </div>
                 </div>
             </div>
@@ -68,7 +68,7 @@ function getActionBadge(action: string) {
         visit_rescheduled: 'bg-amber-50 text-amber-700 border-amber-200',
         appeal_reviewed: 'bg-purple-50 text-purple-700 border-purple-200',
         session_started: 'bg-green-50 text-green-700 border-green-200',
-        session_ended: 'bg-slate-50 text-slate-700 border-slate-200',
+        session_ended: 'bg-muted text-muted-foreground border-border',
         session_killed: 'bg-red-50 text-red-700 border-red-200',
         chat_locked: 'bg-orange-50 text-orange-700 border-orange-200',
         chat_unlocked: 'bg-teal-50 text-teal-700 border-teal-200',
@@ -90,7 +90,7 @@ function getActionBadge(action: string) {
         chat_unlocked: 'Chat Unlocked',
     };
 
-    const className = actionColors[action] || 'bg-slate-100 text-slate-600 border-slate-200';
+    const className = actionColors[action] || 'bg-muted text-muted-foreground border-border';
     const label = actionLabels[action] || action.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
     return <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${className}`}>{label}</span>;
 }
@@ -104,7 +104,7 @@ function getModuleBadge(module: string) {
         'Session Monitoring': 'bg-indigo-50 text-indigo-700 border-indigo-200',
     };
 
-    const className = moduleColors[module] || 'bg-slate-100 text-slate-600 border-slate-200';
+    const className = moduleColors[module] || 'bg-muted text-muted-foreground border-border';
     return <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${className}`}>{module}</span>;
 }
 
@@ -121,7 +121,7 @@ export default function AuditLogs({ audit_logs, stats, chartData }: Props) {
                 cell: ({ row }) => (
                     <div>
                         <div className="font-medium">{row.original.created_at}</div>
-                        <div className="text-xs text-slate-500">{row.original.created_at_human}</div>
+                        <div className="text-xs text-muted-foreground">{row.original.created_at_human}</div>
                     </div>
                 ),
             },
@@ -144,7 +144,7 @@ export default function AuditLogs({ audit_logs, stats, chartData }: Props) {
                         <div className="max-w-md">
                             <div className="font-medium">{row.original.description}</div>
                             {metadata && Object.keys(metadata).length > 0 && (
-                                <div className="text-xs text-slate-500 mt-1">
+                                <div className="text-xs text-muted-foreground mt-1">
                                     {metadata.rejection_reason && (
                                         <div>Reason: {String(metadata.rejection_reason).substring(0, 100)}</div>
                                     )}
@@ -170,7 +170,7 @@ export default function AuditLogs({ audit_logs, stats, chartData }: Props) {
                 cell: ({ row }) => (
                     <div>
                         <div className="font-medium">{row.original.auditable_type}</div>
-                        <div className="text-xs text-slate-500">ID: {row.original.auditable_id}</div>
+                        <div className="text-xs text-muted-foreground">ID: {row.original.auditable_id}</div>
                     </div>
                 ),
             },
@@ -209,15 +209,15 @@ export default function AuditLogs({ audit_logs, stats, chartData }: Props) {
     return (
         <AppLayout>
             <Head title="Audit Logs" />
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-background">
                 {/* Header */}
-                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
                     <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-slate-700 rounded-xl"><ClipboardList className="w-5 h-5 text-white" /></div>
+                            <div className="p-2 bg-primary rounded-xl"><ClipboardList className="w-5 h-5 text-white" /></div>
                             <div>
-                                <h1 className="text-lg font-bold text-slate-900 leading-none">Audit Logs</h1>
-                                <p className="text-xs text-slate-500 mt-0.5">View all your transaction history and audit logs</p>
+                                <h1 className="text-lg font-bold text-foreground leading-none">Audit Logs</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">View all your transaction history and audit logs</p>
                             </div>
                         </div>
                     </div>
@@ -225,29 +225,29 @@ export default function AuditLogs({ audit_logs, stats, chartData }: Props) {
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        <StatCard icon={<FileText className="w-5 h-5" />} value={stats.total} label="Total Actions" accent="bg-slate-700" iconBg="bg-slate-100" iconColor="text-slate-700" />
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <StatCard icon={<FileText className="w-5 h-5" />} value={stats.total} label="Total Actions" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
                         <StatCard icon={<Layers className="w-5 h-5" />} value={modules.length} label="Modules" accent="bg-cyan-600" iconBg="bg-cyan-50" iconColor="text-cyan-600" />
                         <StatCard icon={<Activity className="w-5 h-5" />} value={actions.length} label="Action Types" accent="bg-indigo-600" iconBg="bg-indigo-50" iconColor="text-indigo-600" />
                     </div>
 
                     {/* Tabs */}
                     <Tabs defaultValue="records" className="space-y-4">
-                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
-                            <TabsTrigger value="records" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                        <TabsList className="bg-card border border-border p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger value="records" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <List className="w-4 h-4" />Logs
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                            <TabsTrigger value="analytics" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <BarChart2 className="w-4 h-4" />Analytics
                             </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="records">
                             <Card className="border-0 shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100">
+                                <div className="px-6 py-4 border-b border-border">
                                     <div className="flex items-center gap-4">
                                         <div className="relative flex-1">
-                                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                             <Input
                                                 placeholder="Search logs..."
                                                 value={searchQuery}
@@ -283,9 +283,9 @@ export default function AuditLogs({ audit_logs, stats, chartData }: Props) {
                                         </Select>
                                     </div>
                                 </div>
-                                <div className="px-6 py-4 border-b border-slate-100">
-                                    <h3 className="font-semibold text-slate-800">Audit Log History</h3>
-                                    <p className="text-xs text-slate-500 mt-0.5">{filteredLogs.length} of {stats.total} logs</p>
+                                <div className="px-6 py-4 border-b border-border">
+                                    <h3 className="font-semibold text-foreground">Audit Log History</h3>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{filteredLogs.length} of {stats.total} logs</p>
                                 </div>
                                 <div className="p-6">
                                     <DataTable columns={columns} data={filteredLogs} />
@@ -296,9 +296,9 @@ export default function AuditLogs({ audit_logs, stats, chartData }: Props) {
                         <TabsContent value="analytics">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Logs by Module</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Distribution across modules</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Logs by Module</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Distribution across modules</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -312,9 +312,9 @@ export default function AuditLogs({ audit_logs, stats, chartData }: Props) {
                                     </CardContent>
                                 </Card>
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Logs by Action</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Top action types</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Logs by Action</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Top action types</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>

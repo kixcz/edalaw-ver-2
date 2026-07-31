@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -82,21 +83,17 @@ export function CrudDialog({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
-            <form
-                onSubmit={submit}
-                className="w-full max-w-2xl space-y-5 rounded-xl border bg-card p-6 shadow-lg"
-            >
-                <div>
-                    <h2 className="text-lg font-semibold">
-                        {record ? `Edit ${title}` : `Add ${title}`}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
+        <Dialog open={open} onOpenChange={(open) => { if (!open) onClose(); }}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{record ? `Edit ${title}` : `Add ${title}`}</DialogTitle>
+                    <DialogDescription>
                         Complete the required fields and save the record.
-                    </p>
-                </div>
+                    </DialogDescription>
+                </DialogHeader>
 
-                <div className="grid max-h-[65vh] gap-4 overflow-y-auto pr-1 md:grid-cols-2">
+                <form onSubmit={submit}>
+                    <div className="grid max-h-[65vh] gap-4 overflow-y-auto pr-1 md:grid-cols-2">
                     {fields.map((field) => (
                         <div
                             key={field.name}
@@ -169,7 +166,7 @@ export function CrudDialog({
                     ))}
                 </div>
 
-                <div className="flex justify-end gap-2">
+                <DialogFooter>
                     <Button
                         type="button"
                         variant="outline"
@@ -178,11 +175,12 @@ export function CrudDialog({
                     >
                         Cancel
                     </Button>
-                    <Button type="submit" disabled={form.processing}>
+                    <Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">
                         Save Record
                     </Button>
-                </div>
+                </DialogFooter>
             </form>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 }

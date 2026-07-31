@@ -783,7 +783,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
 
                 {/* Approve Modal */}
                 <Dialog open={isApproveModalOpen} onOpenChange={setIsApproveModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Approve Visit Schedule</DialogTitle>
                             <DialogDescription>
@@ -891,7 +891,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
 
                 {/* Reject Modal */}
                 <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Reject Visit Schedule</DialogTitle>
                             <DialogDescription>
@@ -947,7 +947,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
 
                 {/* Update Status Modal */}
                 <Dialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Update Visit Status</DialogTitle>
                             <DialogDescription>

@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { FileText, Scale, Plus, Clock, CheckCircle, XCircle, ShieldCheck, Gavel, Hourglass, CircleCheck, CircleX } from 'lucide-react';
+import { FileText, Scale, Plus, Clock, CheckCircle, XCircle, Gavel, Hourglass, CircleCheck, CircleX } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -26,6 +26,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { PrivacyNotice } from '@/components/privacy-notice';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
@@ -476,7 +477,7 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols, st
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard icon={<Gavel className="w-5 h-5" />} value={stats?.total_appeals || 0} label="Total Appeals" accent="bg-slate-700" iconBg="bg-slate-50" iconColor="text-slate-700" />
                         <StatCard icon={<Hourglass className="w-5 h-5" />} value={stats?.pending_appeals || 0} label="Pending" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
                         <StatCard icon={<CircleCheck className="w-5 h-5" />} value={stats?.approved_appeals || 0} label="Approved" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
@@ -583,7 +584,7 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols, st
 
                 {/* View Appeal Details Modal */}
                 <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Appeal Details</DialogTitle>
                             <DialogDescription>
@@ -675,7 +676,7 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols, st
 
                 {/* Submit Appeal Modal */}
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Submit Appeal</DialogTitle>
                             <DialogDescription>
@@ -684,26 +685,9 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols, st
                             </DialogDescription>
                         </DialogHeader>
                         
-                        {/* Privacy Notice - Top of Form */}
-                        <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                            <ShieldCheck style={{ width: '14px', height: '14px', color: '#6B7280', flexShrink: 0, marginTop: '1px' }} />
-                            <div>
-                                <div style={{ fontSize: '9px', fontWeight: 700, color: '#374151', marginBottom: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                                    Data Privacy Notice
-                                </div>
-                                <div style={{ fontSize: '9px', lineHeight: '1.5', color: '#4B5563' }}>
-                                    Information provided in this appeal shall be used exclusively for the review, evaluation, and resolution of the appealed visitation or e-Burol request. 
-                                    All submitted information will be processed only by authorized personnel and handled in accordance with the Data Privacy Act of 2012.
-                                    <br />
-                                    <span style={{ fontStyle: 'italic' }}>
-                                        (Ang impormasyon nga gihatag niini nga apela gamiton lamang alang sa pagsusi, pagtimbang-timbang, ug pagresolba sa giapela nga pagbisita o e-Burol nga hangyo. 
-                                        Ang tanan nga gipasa nga impormasyon giproseso lamang sa mga awtorisadong personel ug gipangdumala sumala sa Data Privacy Act of 2012.)
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                        <PrivacyNotice variant="appeal" />
                         <form onSubmit={handleSubmit}>
-                            <div className="space-y-4">
+                            <div className="space-y-4 py-4">
                                 {selectedItem && (
                                     <div className="rounded-lg bg-muted p-4">
                                         <Label className="text-sm font-semibold">Appealing:</Label>
@@ -764,7 +748,7 @@ export default function Appeals({ appeals, rejected_visits, rejected_eburols, st
                                 <Button type="button" variant="outline" onClick={handleModalClose}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing}>
+                                <Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">
                                     {form.processing ? 'Submitting...' : 'Submit Appeal'}
                                 </Button>
                             </DialogFooter>

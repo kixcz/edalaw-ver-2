@@ -706,7 +706,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
 
                 {/* View Details Modal */}
                 <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Visit Schedule Details</DialogTitle>
                             <DialogDescription>
@@ -771,7 +771,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
 
                 {/* Approve Modal */}
                 <Dialog open={isApproveModalOpen} onOpenChange={setIsApproveModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Approve Visit Schedule</DialogTitle>
                             <DialogDescription>
@@ -861,7 +861,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
 
                 {/* Reject Modal */}
                 <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Reject Visit Schedule</DialogTitle>
                             <DialogDescription>
@@ -917,7 +917,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
 
                 {/* Update Status Modal */}
                 <Dialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Update Visit Status</DialogTitle>
                             <DialogDescription>
@@ -986,7 +986,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
 
                 {/* Reschedule Modal â€” 10-min slots (virtual) / 1-hour (physical); past times disabled when date is today */}
                 <Dialog open={isRescheduleModalOpen} onOpenChange={setIsRescheduleModalOpen}>
-                    <DialogContent className="max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Reschedule Visit</DialogTitle>
                             <DialogDescription>
@@ -1068,7 +1068,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
 
                 {/* Session Not Started Yet Modal */}
                 <Dialog open={!!beforeScheduleVisit} onOpenChange={(open) => !open && setBeforeScheduleVisit(null)}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Session not started yet</DialogTitle>
                             <DialogDescription>

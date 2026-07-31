@@ -2,6 +2,9 @@ import { Head, router } from '@inertiajs/react';
 import { Phone } from 'lucide-react';
 import { useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
 type Props = {
     tunnel_token: string;
     session: {
@@ -111,37 +114,32 @@ export default function JoinSession({ tunnel_token, session }: Props) {
             </div>
 
             {/* Session Not Started Yet Modal */}
-            {showNotStartedModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg">
-                        <h2 className="text-lg font-semibold">Session not started yet</h2>
-                        <p className="mt-2 text-sm text-muted-foreground">
+            <Dialog open={showNotStartedModal} onOpenChange={setShowNotStartedModal}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Session not started yet</DialogTitle>
+                        <DialogDescription>
                             {timeUntilStart
                                 ? `This session starts in ${timeUntilStart}. You can wait and try again when it's time.`
                                 : 'This session has not started yet.'}
-                        </p>
-                        <div className="mt-6 flex justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setShowNotStartedModal(false)}
-                                className="rounded-md border bg-background px-4 py-2 text-sm font-medium hover:bg-accent"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setShowNotStartedModal(false);
-                                    handleJoin();
-                                }}
-                                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-                            >
-                                Wait
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowNotStartedModal(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                setShowNotStartedModal(false);
+                                handleJoin();
+                            }}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            Wait
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

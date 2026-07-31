@@ -46,8 +46,8 @@ const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: Rea
                 <div className="flex items-center gap-4 px-5 py-4 flex-1">
                     <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
-                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                        <div className="text-2xl font-bold text-foreground leading-none">{value}</div>
+                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
                     </div>
                 </div>
             </div>
@@ -133,7 +133,7 @@ export default function DormitoryManagement({ auth, dormitories, annexes, stats,
                 accessorKey: 'status',
                 header: 'Status',
                 cell: ({ row }) => (
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${row.original.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${row.original.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-muted text-muted-foreground border-border'}`}>
                         {row.original.status}
                     </span>
                 ),
@@ -150,7 +150,7 @@ export default function DormitoryManagement({ auth, dormitories, annexes, stats,
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => openEditModal(row.original)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => submitDelete(row.original.id)} className="text-red-600 focus:text-white focus:bg-red-600 [&_svg]:!text-red-600 focus:[&_svg]:!text-white">
+                            <DropdownMenuItem onClick={() => submitDelete(row.original.id)} className="text-destructive focus:text-white focus:bg-red-600 [&_svg]:!text-destructive focus:[&_svg]:!text-white">
                                 <Trash2 className="mr-2 h-4 w-4" />Delete
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -164,15 +164,15 @@ export default function DormitoryManagement({ auth, dormitories, annexes, stats,
     return (
         <AppLayout>
             <Head title="Dormitory Management" />
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-muted">
                 {/* Header */}
-                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
                     <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="p-2 bg-emerald-600 rounded-xl"><Building className="w-5 h-5 text-white" /></div>
                             <div>
-                                <h1 className="text-lg font-bold text-slate-900 leading-none">Dormitory Management</h1>
-                                <p className="text-xs text-slate-500 mt-0.5">Manage dormitories across all annexes</p>
+                                <h1 className="text-lg font-bold text-foreground leading-none">Dormitory Management</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">Manage dormitories across all annexes</p>
                             </div>
                         </div>
                         <Button onClick={openCreateModal} className="h-9"><Plus className="h-4 w-4 mr-2" />Create Dormitory</Button>
@@ -181,29 +181,29 @@ export default function DormitoryManagement({ auth, dormitories, annexes, stats,
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard icon={<Building className="w-5 h-5" />} value={stats.total_dormitories} label="Total Dormitories" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
                         <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats.active_dormitories} label="Active" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
-                        <StatCard icon={<XCircle className="w-5 h-5" />} value={stats.inactive_dormitories} label="Inactive" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
+                        <StatCard icon={<XCircle className="w-5 h-5" />} value={stats.inactive_dormitories} label="Inactive" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-destructive" />
                         <StatCard icon={<Grid className="w-5 h-5" />} value={stats.total_cells} label="Total Cells" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
                     </div>
 
                     {/* Tabs */}
                     <Tabs defaultValue="records" className="space-y-4">
-                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
-                            <TabsTrigger value="records" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                        <TabsList className="bg-card border border-border p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger value="records" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <List className="w-4 h-4" />Dormitories
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                            <TabsTrigger value="analytics" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <BarChart2 className="w-4 h-4" />Analytics
                             </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="records">
                             <Card className="border-0 shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100">
-                                    <h3 className="font-semibold text-slate-800">Dormitory Records</h3>
-                                    <p className="text-xs text-slate-500 mt-0.5">{dormitories.total} total dormitories</p>
+                                <div className="px-6 py-4 border-b border-border">
+                                    <h3 className="font-semibold text-foreground">Dormitory Records</h3>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{dormitories.total} total dormitories</p>
                                 </div>
                                 <div className="p-6">
                                     <DataTable columns={columns} data={dormitories.data || []} />
@@ -214,9 +214,9 @@ export default function DormitoryManagement({ auth, dormitories, annexes, stats,
                         <TabsContent value="analytics">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Dormitories by Status</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Active vs Inactive distribution</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Dormitories by Status</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Active vs Inactive distribution</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -230,9 +230,9 @@ export default function DormitoryManagement({ auth, dormitories, annexes, stats,
                                     </CardContent>
                                 </Card>
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Dormitories by Type</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Distribution by type</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Dormitories by Type</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Distribution by type</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -254,34 +254,34 @@ export default function DormitoryManagement({ auth, dormitories, annexes, stats,
 
             {/* Create Modal */}
             <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                <DialogContent>
-                    <DialogHeader><DialogTitle>Create New Dormitory</DialogTitle><DialogDescription>Add a new dormitory to an annex</DialogDescription></DialogHeader>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader><DialogTitle>Create New Dormitory</DialogTitle><DialogDescription>Add a new dormitory to an annex in your branch.</DialogDescription></DialogHeader>
                     <form onSubmit={submitCreate}>
                         <div className="space-y-4 py-4">
-                            <div className="space-y-2"><Label htmlFor="name">Name</Label><Input id="name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} placeholder="Enter dormitory name" />{form.errors.name && <p className="text-sm text-red-600">{form.errors.name}</p>}</div>
-                            <div className="space-y-2"><Label htmlFor="type">Type</Label><Input id="type" value={form.data.type} onChange={(e) => form.setData('type', e.target.value)} placeholder="Enter type" />{form.errors.type && <p className="text-sm text-red-600">{form.errors.type}</p>}</div>
-                            <div className="space-y-2"><Label htmlFor="annex_id">Annex</Label><Select value={form.data.annex_id} onValueChange={(value) => form.setData('annex_id', value)}><SelectTrigger><SelectValue placeholder="Select annex" /></SelectTrigger><SelectContent>{annexes?.map((annex: any) => (<SelectItem key={annex.id} value={annex.id.toString()}>{annex.name}</SelectItem>))}</SelectContent></Select>{form.errors.annex_id && <p className="text-sm text-red-600">{form.errors.annex_id}</p>}</div>
-                            <div className="space-y-2"><Label htmlFor="description">Description</Label><Input id="description" value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} placeholder="Enter description" />{form.errors.description && <p className="text-sm text-red-600">{form.errors.description}</p>}</div>
-                            <div className="space-y-2"><Label htmlFor="status">Status</Label><Select value={form.data.status} onValueChange={(value) => form.setData('status', value)}><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select>{form.errors.status && <p className="text-sm text-red-600">{form.errors.status}</p>}</div>
+                            <div className="space-y-2"><Label htmlFor="name">Name</Label><Input id="name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} placeholder="Enter dormitory name" />{form.errors.name && <p className="text-sm text-destructive">{form.errors.name}</p>}</div>
+                            <div className="space-y-2"><Label htmlFor="type">Type</Label><Input id="type" value={form.data.type} onChange={(e) => form.setData('type', e.target.value)} placeholder="Enter type" />{form.errors.type && <p className="text-sm text-destructive">{form.errors.type}</p>}</div>
+                            <div className="space-y-2"><Label htmlFor="annex_id">Annex</Label><Select value={form.data.annex_id} onValueChange={(value) => form.setData('annex_id', value)}><SelectTrigger><SelectValue placeholder="Select annex" /></SelectTrigger><SelectContent>{annexes?.map((annex: any) => (<SelectItem key={annex.id} value={annex.id.toString()}>{annex.name}</SelectItem>))}</SelectContent></Select>{form.errors.annex_id && <p className="text-sm text-destructive">{form.errors.annex_id}</p>}</div>
+                            <div className="space-y-2"><Label htmlFor="description">Description</Label><Input id="description" value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} placeholder="Enter description" />{form.errors.description && <p className="text-sm text-destructive">{form.errors.description}</p>}</div>
+                            <div className="space-y-2"><Label htmlFor="status">Status</Label><Select value={form.data.status} onValueChange={(value) => form.setData('status', value)}><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select>{form.errors.status && <p className="text-sm text-destructive">{form.errors.status}</p>}</div>
                         </div>
-                        <DialogFooter><Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button><Button type="submit" disabled={form.processing}>Create Dormitory</Button></DialogFooter>
+                        <DialogFooter><Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button><Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">Create Dormitory</Button></DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
 
             {/* Edit Modal */}
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                <DialogContent>
-                    <DialogHeader><DialogTitle>Edit Dormitory</DialogTitle><DialogDescription>Update dormitory information</DialogDescription></DialogHeader>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader><DialogTitle>Edit Dormitory</DialogTitle><DialogDescription>Update the dormitory information.</DialogDescription></DialogHeader>
                     <form onSubmit={submitUpdate}>
                         <div className="space-y-4 py-4">
-                            <div className="space-y-2"><Label htmlFor="edit-name">Name</Label><Input id="edit-name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} />{form.errors.name && <p className="text-sm text-red-600">{form.errors.name}</p>}</div>
-                            <div className="space-y-2"><Label htmlFor="edit-type">Type</Label><Input id="edit-type" value={form.data.type} onChange={(e) => form.setData('type', e.target.value)} />{form.errors.type && <p className="text-sm text-red-600">{form.errors.type}</p>}</div>
-                            <div className="space-y-2"><Label htmlFor="edit-annex_id">Annex</Label><Select value={form.data.annex_id} onValueChange={(value) => form.setData('annex_id', value)}><SelectTrigger><SelectValue placeholder="Select annex" /></SelectTrigger><SelectContent>{annexes?.map((annex: any) => (<SelectItem key={annex.id} value={annex.id.toString()}>{annex.name}</SelectItem>))}</SelectContent></Select>{form.errors.annex_id && <p className="text-sm text-red-600">{form.errors.annex_id}</p>}</div>
-                            <div className="space-y-2"><Label htmlFor="edit-description">Description</Label><Input id="edit-description" value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} />{form.errors.description && <p className="text-sm text-red-600">{form.errors.description}</p>}</div>
-                            <div className="space-y-2"><Label htmlFor="edit-status">Status</Label><Select value={form.data.status} onValueChange={(value) => form.setData('status', value)}><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select>{form.errors.status && <p className="text-sm text-red-600">{form.errors.status}</p>}</div>
+                            <div className="space-y-2"><Label htmlFor="edit-name">Name</Label><Input id="edit-name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} />{form.errors.name && <p className="text-sm text-destructive">{form.errors.name}</p>}</div>
+                            <div className="space-y-2"><Label htmlFor="edit-type">Type</Label><Input id="edit-type" value={form.data.type} onChange={(e) => form.setData('type', e.target.value)} />{form.errors.type && <p className="text-sm text-destructive">{form.errors.type}</p>}</div>
+                            <div className="space-y-2"><Label htmlFor="edit-annex_id">Annex</Label><Select value={form.data.annex_id} onValueChange={(value) => form.setData('annex_id', value)}><SelectTrigger><SelectValue placeholder="Select annex" /></SelectTrigger><SelectContent>{annexes?.map((annex: any) => (<SelectItem key={annex.id} value={annex.id.toString()}>{annex.name}</SelectItem>))}</SelectContent></Select>{form.errors.annex_id && <p className="text-sm text-destructive">{form.errors.annex_id}</p>}</div>
+                            <div className="space-y-2"><Label htmlFor="edit-description">Description</Label><Input id="edit-description" value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} />{form.errors.description && <p className="text-sm text-destructive">{form.errors.description}</p>}</div>
+                            <div className="space-y-2"><Label htmlFor="edit-status">Status</Label><Select value={form.data.status} onValueChange={(value) => form.setData('status', value)}><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select>{form.errors.status && <p className="text-sm text-destructive">{form.errors.status}</p>}</div>
                         </div>
-                        <DialogFooter><Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button><Button type="submit" disabled={form.processing}>Update Dormitory</Button></DialogFooter>
+                        <DialogFooter><Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button><Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">Update Dormitory</Button></DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>

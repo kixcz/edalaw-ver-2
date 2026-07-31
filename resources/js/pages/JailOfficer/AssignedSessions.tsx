@@ -90,8 +90,8 @@ const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: Rea
                 <div className="flex items-center gap-4 px-5 py-4 flex-1">
                     <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
-                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                        <div className="text-2xl font-bold text-foreground leading-none">{value}</div>
+                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
                     </div>
                 </div>
             </div>
@@ -104,11 +104,11 @@ function getStatusBadge(status: string) {
         scheduled: { label: 'Scheduled', className: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
         active: { label: 'Active', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
         completed: { label: 'Completed', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-        terminated: { label: 'Terminated', className: 'bg-slate-100 text-slate-500 border-slate-200' },
+        terminated: { label: 'Terminated', className: 'bg-muted text-muted-foreground border-border' },
         no_show: { label: 'No show', className: 'bg-orange-50 text-orange-700 border-orange-200' },
         unsuccessful: { label: 'Unsuccessful', className: 'bg-red-50 text-red-700 border-red-200' },
     };
-    const config = map[status] ?? { label: status, className: 'bg-slate-100 text-slate-500 border-slate-200' };
+    const config = map[status] ?? { label: status, className: 'bg-muted text-muted-foreground border-border' };
     return <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${config.className}`}>{config.label}</span>;
 }
 
@@ -146,7 +146,7 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
                 return (
                     <div className="space-y-1">
                         <div className="font-medium">{dateLabel}</div>
-                        <div className="text-sm text-slate-500">{timeLabel}</div>
+                        <div className="text-sm text-muted-foreground">{timeLabel}</div>
                     </div>
                 );
             },
@@ -316,15 +316,15 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
     return (
         <AppLayout>
             <Head title="Assigned Sessions" />
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-background">
                 {/* Header */}
-                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
                     <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-violet-600 rounded-xl"><Calendar className="w-5 h-5 text-white" /></div>
+                            <div className="p-2 bg-primary rounded-xl"><Calendar className="w-5 h-5 text-white" /></div>
                             <div>
-                                <h1 className="text-lg font-bold text-slate-900 leading-none">Assigned Sessions</h1>
-                                <p className="text-xs text-slate-500 mt-0.5">Monitor virtual visits and e-burol sessions in your assigned areas</p>
+                                <h1 className="text-lg font-bold text-foreground leading-none">Assigned Sessions</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">Monitor virtual visits and e-burol sessions in your assigned areas</p>
                             </div>
                         </div>
                     </div>
@@ -332,32 +332,30 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-                        <StatCard icon={<Calendar className="w-5 h-5" />} value={stats.total_sessions} label="Total Sessions" accent="bg-violet-600" iconBg="bg-violet-50" iconColor="text-violet-600" />
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<Calendar className="w-5 h-5" />} value={stats.total_sessions} label="Total Sessions" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
                         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} value={stats.active_sessions} label="Active" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
                         <StatCard icon={<Clock className="w-5 h-5" />} value={stats.scheduled_sessions} label="Scheduled" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
                         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} value={stats.completed_sessions} label="Completed" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
-                        <StatCard icon={<Video className="w-5 h-5" />} value={stats.visit_sessions} label="Visits" accent="bg-sky-600" iconBg="bg-sky-50" iconColor="text-sky-600" />
-                        <StatCard icon={<Camera className="w-5 h-5" />} value={stats.eburol_sessions} label="E-Burols" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
                     </div>
 
                     {/* Tabs */}
                     <Tabs defaultValue="records" className="space-y-4">
-                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
-                            <TabsTrigger value="records" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                        <TabsList className="bg-card border border-border p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger value="records" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <List className="w-4 h-4" />Sessions
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                            <TabsTrigger value="analytics" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <BarChart2 className="w-4 h-4" />Analytics
                             </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="records">
                             <Card className="border-0 shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                                     <div>
-                                        <h3 className="font-semibold text-slate-800">Session Records</h3>
-                                        <p className="text-xs text-slate-500 mt-0.5">{filteredSessions.length} of {sessions.length} sessions</p>
+                                        <h3 className="font-semibold text-foreground">Session Records</h3>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{filteredSessions.length} of {sessions.length} sessions</p>
                                     </div>
                                     <Select value={typeFilter} onValueChange={setTypeFilter}>
                                         <SelectTrigger className="w-[180px] h-9">
@@ -385,9 +383,9 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
                         <TabsContent value="analytics">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Sessions by Status</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Distribution of session statuses</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Sessions by Status</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Distribution of session statuses</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -401,9 +399,9 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
                                     </CardContent>
                                 </Card>
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Sessions by Type</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Visit vs E-Burol distribution</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Sessions by Type</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Visit vs E-Burol distribution</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -424,7 +422,7 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
             </div>
 
             <Dialog open={!!beforeScheduleSession} onOpenChange={(open) => !open && setBeforeScheduleSession(null)}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Session not started yet</DialogTitle>
                         <DialogDescription>

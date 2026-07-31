@@ -36,7 +36,7 @@ class NotificationController extends Controller
             ->whereNull('read_at')
             ->count();
 
-        return Inertia::render('BjmpOfficer/Notifications', [
+        return Inertia::render('JailOfficer/Notifications', [
             'notifications' => $notifications,
             'unread_count' => $unreadCount,
         ]);

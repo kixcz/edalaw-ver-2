@@ -25,8 +25,8 @@ const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: Rea
                 <div className="flex items-center gap-4 px-5 py-4 flex-1">
                     <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
-                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                        <div className="text-2xl font-bold text-foreground leading-none">{value}</div>
+                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
                     </div>
                 </div>
             </div>
@@ -65,7 +65,7 @@ function StatusBadge({ status }: { status: string }) {
         used: { className: 'bg-blue-50 text-blue-700 border-blue-200', label: 'Used' },
         expired: { className: 'bg-red-50 text-red-700 border-red-200', label: 'Expired' },
     };
-    const { className, label } = config[status] ?? { className: 'bg-slate-100 text-slate-600 border-slate-200', label: status };
+    const { className, label } = config[status] ?? { className: 'bg-muted text-muted-foreground border-border', label: status };
     return <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${className}`}>{label}</span>;
 }
 
@@ -87,12 +87,12 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
                 cell: ({ row }) => {
                     const code = row.original.short_code;
                     const link = row.original.tunnel_link ?? '';
-                    if (!code && !link) return <span className="text-slate-400">—</span>;
+                    if (!code && !link) return <span className="text-muted-foreground">—</span>;
                     const display = code ?? (link.length > 45 ? `${link.slice(0, 42)}…` : link);
                     const toCopy = code ?? link;
                     return (
                         <div className="flex items-center gap-2">
-                            <code className="font-mono text-sm tracking-wider rounded bg-slate-100 px-1.5 py-0.5" title={link || undefined}>
+                            <code className="font-mono text-sm tracking-wider rounded bg-muted px-1.5 py-0.5" title={link || undefined}>
                                 {display}
                             </code>
                             <Button
@@ -111,7 +111,7 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
             },
             { accessorKey: 'visitor_name', header: 'Visitor', cell: ({ row }) => row.original.visitor_name ?? '—' },
             { accessorKey: 'inmate_name', header: 'Inmate', cell: ({ row }) => row.original.inmate_name ?? '—' },
-            { accessorKey: 'expires_at', header: 'Expires', cell: ({ row }) => <div><div className="text-sm">{row.original.expires_at.slice(0, 16).replace('T', ' ')}</div><div className="text-xs text-slate-500">{row.original.expires_at_human}</div></div> },
+            { accessorKey: 'expires_at', header: 'Expires', cell: ({ row }) => <div><div className="text-sm">{row.original.expires_at.slice(0, 16).replace('T', ' ')}</div><div className="text-xs text-muted-foreground">{row.original.expires_at_human}</div></div> },
             { accessorKey: 'status', header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> },
         ],
         [copy]
@@ -132,15 +132,15 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
     return (
         <AppLayout>
             <Head title="Inmate Tunnels" />
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-background">
                 {/* Header */}
-                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
                     <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-amber-600 rounded-xl"><Key className="w-5 h-5 text-white" /></div>
+                            <div className="p-2 bg-primary rounded-xl"><Key className="w-5 h-5 text-white" /></div>
                             <div>
-                                <h1 className="text-lg font-bold text-slate-900 leading-none">Inmate Tunnels</h1>
-                                <p className="text-xs text-slate-500 mt-0.5">Inmate join links you have generated for your assigned sessions</p>
+                                <h1 className="text-lg font-bold text-foreground leading-none">Inmate Tunnels</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">Inmate join links you have generated for your assigned sessions</p>
                             </div>
                         </div>
                     </div>
@@ -148,8 +148,8 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatCard icon={<Key className="w-5 h-5" />} value={stats.total_tunnels} label="Total Tunnels" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<Key className="w-5 h-5" />} value={stats.total_tunnels} label="Total Tunnels" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
                         <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats.valid_tunnels} label="Valid" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
                         <StatCard icon={<Link2 className="w-5 h-5" />} value={stats.used_tunnels} label="Used" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
                         <StatCard icon={<XCircle className="w-5 h-5" />} value={stats.expired_tunnels} label="Expired" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
@@ -157,21 +157,21 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
 
                     {/* Tabs */}
                     <Tabs defaultValue="records" className="space-y-4">
-                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
-                            <TabsTrigger value="records" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                        <TabsList className="bg-card border border-border p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger value="records" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <List className="w-4 h-4" />Tunnels
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                            <TabsTrigger value="analytics" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <BarChart2 className="w-4 h-4" />Analytics
                             </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="records">
                             <Card className="border-0 shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100">
+                                <div className="px-6 py-4 border-b border-border">
                                     <div className="flex flex-wrap items-end gap-4">
                                         <div className="relative flex-1 min-w-[200px]">
-                                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                             <Input placeholder="Search by token or session ID..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleFilter()} className="pl-9" />
                                         </div>
                                         <div className="flex flex-col gap-1"><Label className="text-xs">From</Label><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px]" /></div>
@@ -188,15 +188,15 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
                                         <Button onClick={handleFilter} variant="outline" className="gap-2"><Filter className="h-4 w-4" />Apply</Button>
                                     </div>
                                 </div>
-                                <div className="px-6 py-4 border-b border-slate-100">
-                                    <h3 className="font-semibold text-slate-800">Tunnel Records</h3>
-                                    <p className="text-xs text-slate-500 mt-0.5">{tunnels.total} total tunnels</p>
+                                <div className="px-6 py-4 border-b border-border">
+                                    <h3 className="font-semibold text-foreground">Tunnel Records</h3>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{tunnels.total} total tunnels</p>
                                 </div>
                                 <div className="p-6">
                                     <DataTable columns={columns} data={tunnels.data} enableGlobalFilter={false} />
                                     {tunnels.last_page > 1 && (
                                         <div className="mt-4 flex items-center justify-between">
-                                            <p className="text-sm text-slate-500">Page {tunnels.current_page} of {tunnels.last_page} ({tunnels.total} total)</p>
+                                            <p className="text-sm text-muted-foreground">Page {tunnels.current_page} of {tunnels.last_page} ({tunnels.total} total)</p>
                                             <div className="flex gap-2">
                                                 {prevLink?.url ? <Button variant="outline" size="sm" asChild><Link href={prevLink.url} preserveScroll>Previous</Link></Button> : <Button variant="outline" size="sm" disabled>Previous</Button>}
                                                 {nextLink?.url ? <Button variant="outline" size="sm" asChild><Link href={nextLink.url} preserveScroll>Next</Link></Button> : <Button variant="outline" size="sm" disabled>Next</Button>}
@@ -210,9 +210,9 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
                         <TabsContent value="analytics">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Tunnels by Status</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Distribution of tunnel statuses</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Tunnels by Status</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Distribution of tunnel statuses</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -226,9 +226,9 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
                                     </CardContent>
                                 </Card>
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Tunnels by Day</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Creation trend (last 7 days)</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Tunnels by Day</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Creation trend (last 7 days)</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>

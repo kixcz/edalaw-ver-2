@@ -7,7 +7,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme {
+@theme inline {
     --font-sans:
         'Poppins', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
@@ -218,6 +218,270 @@
 }
 
 /* Scroll Animation Classes */
+/* ============================================
+   THEME COLOR SYSTEM
+   ============================================ */
+
+/* Default theme: Blue */
+:root {
+    --theme-h: 221;
+    --theme-s: 83%;
+    --theme-l: 53%;
+    --theme-primary: oklch(0.55 0.22 263);
+    --theme-primary-soft: oklch(0.92 0.05 263);
+    --theme-primary-muted: oklch(0.75 0.1 263);
+    --theme-glow: oklch(0.65 0.2 263 / 0.4);
+    --theme-glow-soft: oklch(0.55 0.15 263 / 0.15);
+    --theme-border: oklch(0.65 0.2 263 / 0.25);
+    --theme-border-soft: oklch(0.65 0.2 263 / 0.12);
+    --theme-surface: oklch(1 0 0 / 0.7);
+    --theme-surface-dark: oklch(0.18 0.02 263 / 0.6);
+    --theme-glow-dark: oklch(0.55 0.18 263 / 0.3);
+    --theme-glow-dark-soft: oklch(0.5 0.12 263 / 0.1);
+    --theme-border-dark: oklch(0.55 0.18 263 / 0.2);
+    --theme-border-dark-soft: oklch(0.5 0.12 263 / 0.08);
+}
+
+/* Blue theme */
+.theme-blue {
+    --theme-h: 221;
+    --theme-s: 83%;
+    --theme-l: 53%;
+    --theme-primary: oklch(0.55 0.22 263);
+    --theme-primary-soft: oklch(0.92 0.05 263);
+    --theme-primary-muted: oklch(0.75 0.1 263);
+    --theme-glow: oklch(0.65 0.2 263 / 0.4);
+    --theme-glow-soft: oklch(0.55 0.15 263 / 0.15);
+    --theme-border: oklch(0.65 0.2 263 / 0.25);
+    --theme-border-soft: oklch(0.65 0.2 263 / 0.12);
+    --theme-surface: oklch(1 0 0 / 0.7);
+    --theme-surface-dark: oklch(0.18 0.02 263 / 0.6);
+    --theme-glow-dark: oklch(0.55 0.18 263 / 0.3);
+    --theme-glow-dark-soft: oklch(0.5 0.12 263 / 0.1);
+    --theme-border-dark: oklch(0.55 0.18 263 / 0.2);
+    --theme-border-dark-soft: oklch(0.5 0.12 263 / 0.08);
+}
+
+/* Orange theme */
+.theme-orange {
+    --theme-h: 25;
+    --theme-s: 95%;
+    --theme-l: 53%;
+    --theme-primary: oklch(0.65 0.2 60);
+    --theme-primary-soft: oklch(0.92 0.06 60);
+    --theme-primary-muted: oklch(0.78 0.12 60);
+    --theme-glow: oklch(0.7 0.18 60 / 0.4);
+    --theme-glow-soft: oklch(0.65 0.15 60 / 0.15);
+    --theme-border: oklch(0.7 0.18 60 / 0.25);
+    --theme-border-soft: oklch(0.7 0.18 60 / 0.12);
+    --theme-surface: oklch(1 0 0 / 0.7);
+    --theme-surface-dark: oklch(0.18 0.02 60 / 0.6);
+    --theme-glow-dark: oklch(0.6 0.16 60 / 0.3);
+    --theme-glow-dark-soft: oklch(0.55 0.12 60 / 0.1);
+    --theme-border-dark: oklch(0.6 0.16 60 / 0.2);
+    --theme-border-dark-soft: oklch(0.55 0.12 60 / 0.08);
+}
+
+/* Green theme */
+.theme-green {
+    --theme-h: 142;
+    --theme-s: 71%;
+    --theme-l: 45%;
+    --theme-primary: oklch(0.55 0.18 150);
+    --theme-primary-soft: oklch(0.92 0.05 150);
+    --theme-primary-muted: oklch(0.72 0.12 150);
+    --theme-glow: oklch(0.65 0.18 150 / 0.4);
+    --theme-glow-soft: oklch(0.55 0.12 150 / 0.15);
+    --theme-border: oklch(0.65 0.18 150 / 0.25);
+    --theme-border-soft: oklch(0.65 0.18 150 / 0.12);
+    --theme-surface: oklch(1 0 0 / 0.7);
+    --theme-surface-dark: oklch(0.18 0.02 150 / 0.6);
+    --theme-glow-dark: oklch(0.55 0.16 150 / 0.3);
+    --theme-glow-dark-soft: oklch(0.5 0.1 150 / 0.1);
+    --theme-border-dark: oklch(0.55 0.16 150 / 0.2);
+    --theme-border-dark-soft: oklch(0.5 0.1 150 / 0.08);
+}
+
+/* Pink theme */
+.theme-pink {
+    --theme-h: 330;
+    --theme-s: 80%;
+    --theme-l: 55%;
+    --theme-primary: oklch(0.6 0.22 350);
+    --theme-primary-soft: oklch(0.92 0.05 350);
+    --theme-primary-muted: oklch(0.75 0.12 350);
+    --theme-glow: oklch(0.65 0.2 350 / 0.4);
+    --theme-glow-soft: oklch(0.6 0.15 350 / 0.15);
+    --theme-border: oklch(0.65 0.2 350 / 0.25);
+    --theme-border-soft: oklch(0.65 0.2 350 / 0.12);
+    --theme-surface: oklch(1 0 0 / 0.7);
+    --theme-surface-dark: oklch(0.18 0.02 350 / 0.6);
+    --theme-glow-dark: oklch(0.55 0.18 350 / 0.3);
+    --theme-glow-dark-soft: oklch(0.5 0.12 350 / 0.1);
+    --theme-border-dark: oklch(0.55 0.18 350 / 0.2);
+    --theme-border-dark-soft: oklch(0.5 0.12 350 / 0.08);
+}
+
+/* Purple theme */
+.theme-purple {
+    --theme-h: 270;
+    --theme-s: 75%;
+    --theme-l: 55%;
+    --theme-primary: oklch(0.55 0.22 290);
+    --theme-primary-soft: oklch(0.92 0.05 290);
+    --theme-primary-muted: oklch(0.72 0.12 290);
+    --theme-glow: oklch(0.6 0.2 290 / 0.4);
+    --theme-glow-soft: oklch(0.55 0.15 290 / 0.15);
+    --theme-border: oklch(0.6 0.2 290 / 0.25);
+    --theme-border-soft: oklch(0.6 0.2 290 / 0.12);
+    --theme-surface: oklch(1 0 0 / 0.7);
+    --theme-surface-dark: oklch(0.18 0.02 290 / 0.6);
+    --theme-glow-dark: oklch(0.5 0.18 290 / 0.3);
+    --theme-glow-dark-soft: oklch(0.45 0.12 290 / 0.1);
+    --theme-border-dark: oklch(0.5 0.18 290 / 0.2);
+    --theme-border-dark-soft: oklch(0.45 0.12 290 / 0.08);
+}
+
+/* Yellow theme */
+.theme-yellow {
+    --theme-h: 48;
+    --theme-s: 95%;
+    --theme-l: 50%;
+    --theme-primary: oklch(0.75 0.16 85);
+    --theme-primary-soft: oklch(0.94 0.06 85);
+    --theme-primary-muted: oklch(0.82 0.12 85);
+    --theme-glow: oklch(0.78 0.16 85 / 0.4);
+    --theme-glow-soft: oklch(0.72 0.12 85 / 0.15);
+    --theme-border: oklch(0.78 0.16 85 / 0.25);
+    --theme-border-soft: oklch(0.78 0.16 85 / 0.12);
+    --theme-surface: oklch(1 0 0 / 0.7);
+    --theme-surface-dark: oklch(0.18 0.02 85 / 0.6);
+    --theme-glow-dark: oklch(0.65 0.14 85 / 0.3);
+    --theme-glow-dark-soft: oklch(0.6 0.1 85 / 0.1);
+    --theme-border-dark: oklch(0.65 0.14 85 / 0.2);
+    --theme-border-dark-soft: oklch(0.6 0.1 85 / 0.08);
+}
+
+/* ============================================
+   LIGHT MODE - Clear borders & shadows
+   ============================================ */
+.glass-card {
+    border: 1px solid var(--theme-border);
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.08);
+    transition: all 0.2s ease;
+}
+
+.glass-card:hover {
+    box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.1), 0 2px 6px -2px rgb(0 0 0 / 0.06);
+}
+
+.glass-card-active {
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 1px var(--theme-border-soft), 0 4px 12px -2px var(--theme-glow-soft);
+}
+
+.glass-panel {
+    border: 1px solid var(--theme-border);
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06);
+}
+
+/* ============================================
+   DARK MODE - Glassmorphism with glow
+   ============================================ */
+.dark .glass-card {
+    background: var(--theme-surface-dark);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--theme-border-dark);
+    box-shadow:
+        0 0 15px -3px var(--theme-glow-dark-soft),
+        0 0 5px -1px var(--theme-glow-dark-soft),
+        inset 0 1px 0 0 rgb(255 255 255 / 0.03);
+    transition: all 0.25s ease;
+}
+
+.dark .glass-card:hover {
+    border-color: var(--theme-border-dark);
+    box-shadow:
+        0 0 20px -3px var(--theme-glow-dark),
+        0 0 8px -1px var(--theme-glow-dark-soft),
+        inset 0 1px 0 0 rgb(255 255 255 / 0.05);
+}
+
+.dark .glass-card-active {
+    border-color: var(--theme-primary);
+    box-shadow:
+        0 0 25px -3px var(--theme-glow-dark),
+        0 0 10px -1px var(--theme-glow-dark),
+        inset 0 1px 0 0 rgb(255 255 255 / 0.05);
+}
+
+.dark .glass-panel {
+    background: var(--theme-surface-dark);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--theme-border-dark-soft);
+    box-shadow:
+        0 0 20px -5px var(--theme-glow-dark-soft),
+        inset 0 1px 0 0 rgb(255 255 255 / 0.02);
+}
+
+/* Icon container accent colors */
+.icon-container-blue { background: oklch(0.92 0.05 263); color: oklch(0.45 0.2 263); }
+.icon-container-orange { background: oklch(0.92 0.06 60); color: oklch(0.55 0.18 60); }
+.icon-container-green { background: oklch(0.92 0.05 150); color: oklch(0.45 0.15 150); }
+.icon-container-pink { background: oklch(0.92 0.05 350); color: oklch(0.5 0.2 350); }
+.icon-container-purple { background: oklch(0.92 0.05 290); color: oklch(0.45 0.2 290); }
+.icon-container-yellow { background: oklch(0.94 0.06 85); color: oklch(0.6 0.15 85); }
+
+.dark .icon-container-blue { background: oklch(0.3 0.1 263); color: oklch(0.7 0.18 263); }
+.dark .icon-container-orange { background: oklch(0.3 0.08 60); color: oklch(0.7 0.16 60); }
+.dark .icon-container-green { background: oklch(0.3 0.06 150); color: oklch(0.7 0.15 150); }
+.dark .icon-container-pink { background: oklch(0.3 0.08 350); color: oklch(0.7 0.18 350); }
+.dark .icon-container-purple { background: oklch(0.3 0.08 290); color: oklch(0.7 0.18 290); }
+.dark .icon-container-yellow { background: oklch(0.3 0.06 85); color: oklch(0.78 0.15 85); }
+
+/* Theme-aware primary overrides for sidebar and accents */
+.theme-blue { --primary: oklch(0.55 0.22 263); --ring: oklch(0.55 0.22 263); --sidebar-primary: oklch(0.55 0.22 263); }
+.theme-orange { --primary: oklch(0.65 0.2 60); --ring: oklch(0.65 0.2 60); --sidebar-primary: oklch(0.65 0.2 60); }
+.theme-green { --primary: oklch(0.55 0.18 150); --ring: oklch(0.55 0.18 150); --sidebar-primary: oklch(0.55 0.18 150); }
+.theme-pink { --primary: oklch(0.6 0.22 350); --ring: oklch(0.6 0.22 350); --sidebar-primary: oklch(0.6 0.22 350); }
+.theme-purple { --primary: oklch(0.55 0.22 290); --ring: oklch(0.55 0.22 290); --sidebar-primary: oklch(0.55 0.22 290); }
+.theme-yellow { --primary: oklch(0.75 0.16 85); --ring: oklch(0.75 0.16 85); --sidebar-primary: oklch(0.75 0.16 85); }
+
+.dark .theme-blue { --primary: oklch(0.65 0.2 263); --ring: oklch(0.65 0.2 263); --sidebar-primary: oklch(0.65 0.2 263); }
+.dark .theme-orange { --primary: oklch(0.7 0.18 60); --ring: oklch(0.7 0.18 60); --sidebar-primary: oklch(0.7 0.18 60); }
+.dark .theme-green { --primary: oklch(0.65 0.18 150); --ring: oklch(0.65 0.18 150); --sidebar-primary: oklch(0.65 0.18 150); }
+.dark .theme-pink { --primary: oklch(0.7 0.2 350); --ring: oklch(0.7 0.2 350); --sidebar-primary: oklch(0.7 0.2 350); }
+.dark .theme-purple { --primary: oklch(0.65 0.2 290); --ring: oklch(0.65 0.2 290); --sidebar-primary: oklch(0.65 0.2 290); }
+.dark .theme-yellow { --primary: oklch(0.78 0.15 85); --ring: oklch(0.78 0.15 85); --sidebar-primary: oklch(0.78 0.15 85); }
+
+/* ============================================
+   SIDEBAR ACTIVE STATE - Theme-aware
+   ============================================ */
+[data-active=true] {
+    background: color-mix(in oklch, var(--theme-primary) 12%, transparent);
+    color: var(--theme-primary);
+    font-weight: 600;
+}
+
+.dark [data-active=true] {
+    background: color-mix(in oklch, var(--theme-primary) 18%, transparent);
+    color: color-mix(in oklch, var(--theme-primary) 80%, white);
+}
+
+/* ============================================
+   TAB ACTIVE STATE - Theme-aware
+   ============================================ */
+[data-state=active] {
+    color: var(--theme-primary) !important;
+}
+
+.dark [data-state=active] {
+    color: color-mix(in oklch, var(--theme-primary) 80%, white) !important;
+}
+
+/* Scroll animation classes - preserved */
 .scroll-animate {
     opacity: 0;
     transform: translateY(30px);

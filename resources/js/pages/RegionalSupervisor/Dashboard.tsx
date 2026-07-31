@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -68,11 +69,11 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({ currentPage, to
     };
 
     return (
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-            <p className="text-sm text-slate-500">
-                Page <span className="font-medium text-slate-700">{currentPage}</span> of{' '}
-                <span className="font-medium text-slate-700">{totalPages}</span>
-                <span className="ml-2 text-slate-400">({totalItems} total)</span>
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+            <p className="text-sm text-muted-foreground">
+                Page <span className="font-medium text-foreground">{currentPage}</span> of{' '}
+                <span className="font-medium text-foreground">{totalPages}</span>
+                <span className="ml-2 text-muted-foreground">({totalItems} total)</span>
             </p>
             <div className="flex items-center gap-1">
                 <Button
@@ -91,12 +92,12 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({ currentPage, to
                             variant={page === currentPage ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => onPageChange(page)}
-                            className={`h-8 w-8 p-0 text-xs ${page === currentPage ? 'bg-orange-600 hover:bg-orange-700 border-orange-600' : ''}`}
+                            className={`h-8 w-8 p-0 text-xs ${page === currentPage ? 'bg-primary hover:bg-primary/90 border-primary' : ''}`}
                         >
                             {page}
                         </Button>
                     ) : (
-                        <span key={index} className="px-1 text-slate-400 text-sm">…</span>
+                        <span key={index} className="px-1 text-muted-foreground text-sm">…</span>
                     )
                 )}
                 <Button
@@ -129,7 +130,7 @@ const DetailNode: React.FC<{ label: string; meta?: string; colorClass: string; c
                 {meta && <span className="ml-auto text-xs font-normal opacity-60">{meta}</span>}
             </button>
             {open && children && (
-                <div className="ml-5 mt-1 border-l-2 border-slate-200 pl-4 space-y-1">
+                <div className="ml-5 mt-1 border-l-2 border-border pl-4 space-y-1">
                     {children}
                 </div>
             )}
@@ -156,8 +157,8 @@ const StatCard: React.FC<{
                         {icon}
                     </div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
-                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                        <div className="text-2xl font-bold text-foreground leading-none">{value}</div>
+                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
                     </div>
                 </div>
             </div>
@@ -212,15 +213,15 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (selectedBranch) {
-            form.put(route('dashboard.branches.update', selectedBranch.id), { onSuccess: () => setIsBranchModalOpen(false) });
+            form.put(`/dashboard/branches/${selectedBranch.id}`, { onSuccess: () => setIsBranchModalOpen(false) });
         } else {
-            form.post(route('dashboard.branches.store'), { onSuccess: () => setIsBranchModalOpen(false) });
+            form.post('/dashboard/branches', { onSuccess: () => setIsBranchModalOpen(false) });
         }
     };
 
     const handleDelete = (branch: any) => {
         if (confirm(`Delete branch "${branch.name}"? This action cannot be undone.`)) {
-            form.delete(route('dashboard.branches.destroy', branch.id));
+            form.delete(`/dashboard/branches/${branch.id}`);
         }
     };
 
@@ -230,40 +231,40 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
             district: 'bg-sky-50 text-sky-700 border-sky-200',
             'sub-provincial': 'bg-amber-50 text-amber-700 border-amber-200',
         };
-        return map[type] ?? 'bg-slate-50 text-slate-600 border-slate-200';
+        return map[type] ?? 'bg-muted text-muted-foreground border-border';
     };
 
     const statusBadgeClass = (status: string) => {
         const map: Record<string, string> = {
             active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-            inactive: 'bg-slate-100 text-slate-500 border-slate-200',
-            maintenance: 'bg-orange-50 text-orange-700 border-orange-200',
+            inactive: 'bg-muted text-muted-foreground border-border',
+            maintenance: 'bg-primary/10 text-primary border-primary/20',
         };
-        return map[status] ?? 'bg-slate-100 text-slate-500';
+        return map[status] ?? 'bg-muted text-muted-foreground';
     };
 
     const paginatedBranches = paginate(branches, 'branches');
 
     return (
-        <AppLayout user={{ first_name: '', last_name: '', middle_name: '', role: { name: 'Regional Supervisor' } }}>
+        <AppLayout>
             <Head title="Regional Supervisor Dashboard" />
 
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-background">
                 {/* Page Header */}
-                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
                     <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-orange-600 rounded-xl">
+                            <div className="p-2 bg-primary rounded-xl">
                                 <ShieldCheck className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-lg font-bold text-slate-900 leading-none">Regional Supervisor</h1>
-                                <p className="text-xs text-slate-500 mt-0.5">BJMP Branch Management & Oversight</p>
+                                <h1 className="text-lg font-bold text-foreground leading-none">Regional Supervisor</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">BJMP Branch Management & Oversight</p>
                             </div>
                         </div>
                         <Button
                             onClick={openCreateModal}
-                            className="bg-orange-600 hover:bg-orange-700 text-white shadow-sm gap-1.5 text-sm"
+                            className="bg-primary hover:bg-primary/90 text-white shadow-sm gap-1.5 text-sm"
                         >
                             <Plus className="w-4 h-4" />
                             Add Branch
@@ -273,36 +274,34 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* Stats Grid */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatCard icon={<GitBranch className="w-5 h-5" />} value={overviewStats.total_branches} label="Total Branches" accent="bg-orange-600" iconBg="bg-orange-50" iconColor="text-orange-600" />
-                        <StatCard icon={<Building2 className="w-5 h-5" />} value={overviewStats.total_annexes} label="Total Annexes" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
-                        <StatCard icon={<BedDouble className="w-5 h-5" />} value={overviewStats.total_dormitories} label="Dormitories" accent="bg-yellow-500" iconBg="bg-yellow-50" iconColor="text-yellow-600" />
-                        <StatCard icon={<Grid3X3 className="w-5 h-5" />} value={overviewStats.total_cells} label="Total Cells" accent="bg-orange-700" iconBg="bg-orange-100" iconColor="text-orange-700" />
-                        <StatCard icon={<Users className="w-5 h-5" />} value={overviewStats.total_pdls} label="Total PDLs" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
-                        <StatCard icon={<ShieldCheck className="w-5 h-5" />} value={overviewStats.total_jail_wardens} label="Jail Wardens" accent="bg-orange-500" iconBg="bg-orange-50" iconColor="text-orange-500" />
-                        <StatCard icon={<CheckCircle2 className="w-5 h-5" />} value={overviewStats.active_branches} label="Active Branches" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<GitBranch className="w-5 h-5" />} value={overviewStats.total_branches} label="Total Branches" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
+                        <StatCard icon={<Building2 className="w-5 h-5" />} value={overviewStats.total_annexes} label="Total Annexes" accent="bg-amber-500" iconBg="bg-amber-50 dark:bg-amber-950/30" iconColor="text-amber-600 dark:text-amber-400" />
+                        <StatCard icon={<BedDouble className="w-5 h-5" />} value={overviewStats.total_dormitories} label="Dormitories" accent="bg-emerald-500" iconBg="bg-emerald-50 dark:bg-emerald-950/30" iconColor="text-emerald-600 dark:text-emerald-400" />
+                        <StatCard icon={<Grid3X3 className="w-5 h-5" />} value={overviewStats.total_cells} label="Total Cells" accent="bg-sky-500" iconBg="bg-sky-50 dark:bg-sky-950/30" iconColor="text-sky-600 dark:text-sky-400" />
+                        
                     </div>
 
                     {/* Main Tabs */}
                     <Tabs defaultValue="branches" className="space-y-4">
-                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
+                        <TabsList className="bg-card border border-border p-1 rounded-xl shadow-sm h-auto gap-1">
                             <TabsTrigger
                                 value="branches"
-                                className="data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all"
+                                className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all"
                             >
                                 <List className="w-4 h-4" />
                                 Branches
                             </TabsTrigger>
                             <TabsTrigger
                                 value="detailed"
-                                className="data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all"
+                                className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all"
                             >
                                 <LayoutGrid className="w-4 h-4" />
                                 Hierarchy
                             </TabsTrigger>
                             <TabsTrigger
                                 value="analytics"
-                                className="data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all"
+                                className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all"
                             >
                                 <BarChart2 className="w-4 h-4" />
                                 Analytics
@@ -312,59 +311,59 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
                         {/* BRANCHES TAB */}
                         <TabsContent value="branches">
                             <Card className="border-0 shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                                     <div>
-                                        <h3 className="font-semibold text-slate-800">Branch Management</h3>
-                                        <p className="text-xs text-slate-500 mt-0.5">{branches.length} branches across the region</p>
+                                        <h3 className="font-semibold text-foreground">Branch Management</h3>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{branches.length} branches across the region</p>
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
-                                            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                                                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide pl-6">Code</TableHead>
-                                                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Branch Name</TableHead>
-                                                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</TableHead>
-                                                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Location</TableHead>
-                                                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Jail Warden</TableHead>
-                                                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Annexes</TableHead>
-                                                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Dorms</TableHead>
-                                                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Cells</TableHead>
-                                                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">PDLs</TableHead>
-                                                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</TableHead>
-                                                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide pr-6">Actions</TableHead>
+                                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pl-6">Code</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Branch Name</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Type</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Location</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Jail Warden</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Annexes</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Dorms</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Cells</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">PDLs</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pr-6">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {paginatedBranches.data.map((branch) => (
-                                                <TableRow key={branch.id} className="hover:bg-slate-50 transition-colors group">
+                                                <TableRow key={branch.id} className="hover:bg-muted/50 transition-colors group">
                                                     <TableCell className="pl-6">
-                                                        <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded">{branch.code}</span>
+                                                        <span className="font-mono text-xs bg-muted text-foreground px-2 py-1 rounded">{branch.code}</span>
                                                     </TableCell>
                                                     <TableCell>
-                                                        <span className="font-semibold text-slate-800 text-sm">{branch.name}</span>
+                                                        <span className="font-semibold text-foreground text-sm">{branch.name}</span>
                                                     </TableCell>
                                                     <TableCell>
                                                         <span className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize ${branchTypeBadgeClass(branch.type)}`}>
                                                             {branch.type}
                                                         </span>
                                                     </TableCell>
-                                                    <TableCell className="text-sm text-slate-600">{branch.location}</TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground">{branch.location}</TableCell>
                                                     <TableCell>
                                                         {branch.warden ? (
                                                             <div>
-                                                                <div className="text-sm font-medium text-slate-700">{branch.warden.name}</div>
-                                                                <div className="text-xs text-slate-400">{branch.warden.email}</div>
+                                                                <div className="text-sm font-medium text-foreground">{branch.warden.name}</div>
+                                                                <div className="text-xs text-muted-foreground">{branch.warden.email}</div>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-xs text-slate-400 italic">Unassigned</span>
+                                                            <span className="text-xs text-muted-foreground italic">Unassigned</span>
                                                         )}
                                                     </TableCell>
-                                                    <TableCell className="text-right text-sm font-medium text-slate-700">{branch.total_annexes}</TableCell>
-                                                    <TableCell className="text-right text-sm font-medium text-slate-700">{branch.total_dormitories}</TableCell>
-                                                    <TableCell className="text-right text-sm font-medium text-slate-700">{branch.total_cells}</TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">{branch.total_annexes}</TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">{branch.total_dormitories}</TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">{branch.total_cells}</TableCell>
                                                     <TableCell className="text-right">
-                                                        <span className="text-sm font-bold text-slate-800">{branch.total_pdls}</span>
+                                                        <span className="text-sm font-bold text-foreground">{branch.total_pdls}</span>
                                                     </TableCell>
                                                     <TableCell>
                                                         <span className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize ${statusBadgeClass(branch.status)}`}>
@@ -378,7 +377,7 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="sm"
-                                                                        className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100 data-[state=open]:bg-slate-100 data-[state=open]:text-slate-700 transition-colors"
+                                                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted data-[state=open]:bg-muted data-[state=open]:text-foreground transition-colors"
                                                                         aria-label={`Open actions for ${branch.name}`}
                                                                     >
                                                                         <span className="sr-only">Open menu</span>
@@ -409,7 +408,7 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
                                             ))}
                                             {paginatedBranches.data.length === 0 && (
                                                 <TableRow>
-                                                    <TableCell colSpan={11} className="text-center py-12 text-slate-400 text-sm">
+                                                    <TableCell colSpan={11} className="text-center py-12 text-muted-foreground text-sm">
                                                         No branches found. Add your first branch to get started.
                                                     </TableCell>
                                                 </TableRow>
@@ -433,13 +432,13 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
                             <div className="space-y-4">
                                 {branchDetails.map((branch) => (
                                     <Card key={branch.id} className="border-0 shadow-sm overflow-hidden">
-                                        <div className="bg-orange-600 px-6 py-4 flex items-center gap-3">
-                                            <div className="p-1.5 bg-white/20 rounded-lg">
+                                        <div className="bg-primary px-6 py-4 flex items-center gap-3">
+                                            <div className="p-1.5 bg-background/20 rounded-lg">
                                                 <GitBranch className="w-4 h-4 text-white" />
                                             </div>
                                             <div>
                                                 <h4 className="font-bold text-white text-sm">{branch.name}</h4>
-                                                <span className="text-orange-100 text-xs font-mono">{branch.code}</span>
+                                                <span className="text-primary/60 text-xs font-mono">{branch.code}</span>
                                             </div>
                                         </div>
                                         <div className="p-5">
@@ -447,7 +446,7 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
                                                 <DetailNode
                                                     key={jail.code}
                                                     label={`${jail.name} (${jail.code})`}
-                                                    colorClass="bg-slate-100 text-slate-700 hover:bg-slate-150"
+                                                    colorClass="bg-muted text-foreground hover:bg-muted/80"
                                                 >
                                                     {jail.annexes.map((annex: any) => (
                                                         <DetailNode
@@ -474,14 +473,14 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
                                                                                     {cell.inmates.map((inmate: any) => (
                                                                                         <div
                                                                                             key={inmate.id}
-                                                                                            className="flex items-center gap-2 text-xs text-slate-600 py-1 px-2 bg-white rounded border border-slate-100"
+                                                                                            className="flex items-center gap-2 text-xs text-muted-foreground py-1 px-2 bg-card rounded border border-border"
                                                                                         >
-                                                                                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
-                                                                                            <span className="font-medium">{inmate.full_name}</span>
-                                                                                            <span className="text-slate-400">·</span>
-                                                                                            <span className="text-slate-400">{inmate.age} yrs</span>
-                                                                                            <span className="text-slate-400">·</span>
-                                                                                            <span className="text-slate-400 capitalize">{inmate.gender}</span>
+                                                                                            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                                                                                            <span className="font-medium text-foreground">{inmate.full_name}</span>
+                                                                                            <span className="text-muted-foreground">·</span>
+                                                                                            <span className="text-muted-foreground">{inmate.age} yrs</span>
+                                                                                            <span className="text-muted-foreground">·</span>
+                                                                                            <span className="text-muted-foreground capitalize">{inmate.gender}</span>
                                                                                         </div>
                                                                                     ))}
                                                                                 </div>
@@ -499,7 +498,7 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
                                 ))}
                                 {branchDetails.length === 0 && (
                                     <Card className="border-0 shadow-sm">
-                                        <CardContent className="py-16 text-center text-slate-400 text-sm">
+                                        <CardContent className="py-16 text-center text-muted-foreground text-sm">
                                             No branch hierarchy data available.
                                         </CardContent>
                                     </Card>
@@ -511,9 +510,9 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
                         <TabsContent value="analytics">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Branches by Type</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Distribution across branch classifications</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Branches by Type</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Distribution across branch classifications</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -532,16 +531,16 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
                                                 <Tooltip
                                                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', fontSize: 12 }}
                                                 />
-                                                <Bar dataKey="count" fill="#ea580c" radius={[4, 4, 0, 0]} />
+                                                <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </CardContent>
                                 </Card>
 
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">PDL Count by Branch</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Population of persons deprived of liberty</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">PDL Count by Branch</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Population of persons deprived of liberty</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -563,7 +562,7 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
                                                 <Tooltip
                                                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', fontSize: 12 }}
                                                 />
-                                                <Bar dataKey="pdls" fill="#f97316" radius={[4, 4, 0, 0]} />
+                                                <Bar dataKey="pdls" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </CardContent>
@@ -575,137 +574,122 @@ export default function RegionalSupervisorDashboard({ overviewStats, branches, b
             </div>
 
             {/* Branch Modal */}
-            {isBranchModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-200">
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-orange-50 rounded-lg">
-                                    {selectedBranch ? <Pencil className="w-4 h-4 text-orange-600" /> : <Plus className="w-4 h-4 text-orange-600" />}
-                                </div>
-                                <div>
-                                    <h2 className="text-base font-bold text-slate-800">
-                                        {selectedBranch ? 'Edit Branch' : 'New Branch'}
-                                    </h2>
-                                    <p className="text-xs text-slate-500">
-                                        {selectedBranch ? `Editing ${selectedBranch.name}` : 'Add a new BJMP branch to the region'}
-                                    </p>
-                                </div>
+            <Dialog open={isBranchModalOpen} onOpenChange={setIsBranchModalOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <div className="p-1.5 bg-primary/10 rounded-lg">
+                                {selectedBranch ? <Pencil className="w-4 h-4 text-primary" /> : <Plus className="w-4 h-4 text-primary" />}
                             </div>
-                            <button
-                                onClick={() => setIsBranchModalOpen(false)}
-                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
+                            {selectedBranch ? 'Edit Branch' : 'New Branch'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {selectedBranch ? `Editing ${selectedBranch.name}` : 'Add a new BJMP branch to the region'}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Code</label>
+                                <input
+                                    type="text"
+                                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition bg-card"
+                                    value={form.data.code}
+                                    onChange={(e) => form.setData('code', e.target.value)}
+                                    placeholder="e.g. BJB-001"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Type</label>
+                                <select
+                                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition bg-card"
+                                    value={form.data.type}
+                                    onChange={(e) => form.setData('type', e.target.value)}
+                                    required
+                                >
+                                    <option value="provincial">Provincial</option>
+                                    <option value="district">District</option>
+                                    <option value="sub-provincial">Sub-Provincial</option>
+                                </select>
+                            </div>
                         </div>
 
-                        {/* Modal Form */}
-                        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Code</label>
-                                    <input
-                                        type="text"
-                                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-                                        value={form.data.code}
-                                        onChange={(e) => form.setData('code', e.target.value)}
-                                        placeholder="e.g. BJB-001"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Type</label>
-                                    <select
-                                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition bg-white"
-                                        value={form.data.type}
-                                        onChange={(e) => form.setData('type', e.target.value)}
-                                        required
+                        <div>
+                            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Branch Name</label>
+                            <input
+                                type="text"
+                                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition bg-card"
+                                value={form.data.name}
+                                onChange={(e) => form.setData('name', e.target.value)}
+                                placeholder="Full branch name"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Location</label>
+                            <input
+                                type="text"
+                                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition bg-card"
+                                value={form.data.location}
+                                onChange={(e) => form.setData('location', e.target.value)}
+                                placeholder="City / Municipality"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Description <span className="text-muted-foreground font-normal normal-case">(optional)</span></label>
+                            <textarea
+                                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition resize-none bg-card"
+                                value={form.data.description}
+                                onChange={(e) => form.setData('description', e.target.value)}
+                                rows={2}
+                                placeholder="Brief notes about this branch…"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Status</label>
+                            <div className="flex gap-2">
+                                {['active', 'inactive', 'maintenance'].map((s) => (
+                                    <button
+                                        key={s}
+                                        type="button"
+                                        onClick={() => form.setData('status', s)}
+                                        className={`flex-1 py-2 text-xs font-medium rounded-lg border capitalize transition-all ${
+                                            form.data.status === s
+                                                ? statusBadgeClass(s) + ' border-current shadow-sm'
+                                                : 'border-border text-muted-foreground hover:border-border/80'
+                                        }`}
                                     >
-                                        <option value="provincial">Provincial</option>
-                                        <option value="district">District</option>
-                                        <option value="sub-provincial">Sub-Provincial</option>
-                                    </select>
-                                </div>
+                                        {s}
+                                    </button>
+                                ))}
                             </div>
+                        </div>
 
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Branch Name</label>
-                                <input
-                                    type="text"
-                                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-                                    value={form.data.name}
-                                    onChange={(e) => form.setData('name', e.target.value)}
-                                    placeholder="Full branch name"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Location</label>
-                                <input
-                                    type="text"
-                                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-                                    value={form.data.location}
-                                    onChange={(e) => form.setData('location', e.target.value)}
-                                    placeholder="City / Municipality"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Description <span className="text-slate-400 font-normal normal-case">(optional)</span></label>
-                                <textarea
-                                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition resize-none"
-                                    value={form.data.description}
-                                    onChange={(e) => form.setData('description', e.target.value)}
-                                    rows={2}
-                                    placeholder="Brief notes about this branch…"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Status</label>
-                                <div className="flex gap-2">
-                                    {['active', 'inactive', 'maintenance'].map((s) => (
-                                        <button
-                                            key={s}
-                                            type="button"
-                                            onClick={() => form.setData('status', s)}
-                                            className={`flex-1 py-2 text-xs font-medium rounded-lg border capitalize transition-all ${
-                                                form.data.status === s
-                                                    ? statusBadgeClass(s) + ' border-current shadow-sm'
-                                                    : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                                            }`}
-                                        >
-                                            {s}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex gap-2 pt-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsBranchModalOpen(false)}
-                                    className="flex-1 border-slate-200 text-slate-600 hover:bg-slate-50"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={form.processing}
-                                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white shadow-sm"
-                                >
-                                    {form.processing ? 'Saving…' : selectedBranch ? 'Save Changes' : 'Create Branch'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsBranchModalOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={form.processing}
+                                className="bg-primary hover:bg-primary/90 text-white"
+                            >
+                                {form.processing ? 'Saving…' : selectedBranch ? 'Save Changes' : 'Create Branch'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

@@ -72,12 +72,12 @@ export default function Services() {
                 
                 <div className="relative z-10 container mx-auto px-4 max-w-7xl">
                     <div className="max-w-4xl mx-auto text-center">
-                        <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
+                        <div className="inline-flex items-center gap-2 bg-primary/15 border border-primary/30 text-primary text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
                             <Shield className="w-3.5 h-3.5" />
                             OUR SERVICES
                         </div>
                         <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
-                            Our <span className="text-orange-400">Services</span>
+                            Our <span className="text-primary">Services</span>
                         </h1>
                         <p className="text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
                             Comprehensive visitation solutions designed for security, accessibility, and family connectivity
@@ -98,8 +98,8 @@ export default function Services() {
                                     className={`flex flex-col ${index % 2 === 1 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-8 lg:gap-12 items-center`}
                                 >
                                     <div className="flex-1">
-                                        <div className="w-20 h-20 bg-orange-100 rounded-xl flex items-center justify-center mb-6">
-                                            <Icon className="w-10 h-10 text-orange-600" />
+                                        <div className="w-20 h-20 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
+                                            <Icon className="w-10 h-10 text-primary" />
                                         </div>
                                         <h2 className="text-3xl font-bold text-gray-900 mb-4">{service.title}</h2>
                                         <p className="text-lg text-gray-700 leading-relaxed mb-6">
@@ -117,8 +117,8 @@ export default function Services() {
                                         </ul>
                                     </div>
                                     <div className="flex-1 w-full">
-                                        <div className="bg-gradient-to-br from-orange-100 to-gray-100 rounded-2xl p-8 aspect-square flex items-center justify-center">
-                                            <Icon className="w-32 h-32 text-orange-300" />
+                                        <div className="bg-gradient-to-br from-primary/10 to-muted rounded-2xl p-8 aspect-square flex items-center justify-center">
+                                            <Icon className="w-32 h-32 text-primary/30" />
                                         </div>
                                     </div>
                                 </div>
@@ -129,7 +129,7 @@ export default function Services() {
             </section>
 
             {/* CTA */}
-            <section className="py-20 bg-gradient-to-r from-orange-500 to-orange-600">
+            <section className="py-20 bg-gradient-to-r from-primary to-primary/90">
                 <div className="container mx-auto px-4 max-w-7xl">
                     <div className="text-center text-white">
                         <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Get Started?</h2>
@@ -139,13 +139,13 @@ export default function Services() {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link
                                 href={register()}
-                                className="inline-block px-8 py-4 bg-white text-orange-600 font-semibold rounded-lg hover:bg-gray-50 transition-all shadow-lg"
+                                className="inline-block px-8 py-4 bg-white text-primary font-semibold rounded-lg hover:bg-gray-50 transition-all shadow-lg"
                             >
                                 Create Account
                             </Link>
                             <Link
                                 href={howItWorks()}
-                                className="inline-block px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-orange-600 transition-all"
+                                className="inline-block px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-primary transition-all"
                             >
                                 Learn How It Works
                             </Link>

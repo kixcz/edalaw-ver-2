@@ -710,13 +710,6 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     });
 
     Route::middleware(['role:jail_officer', 'resolve_jo_scope'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
-        Route::get('notifications', [\App\Http\Controllers\BjmpOfficer\NotificationController::class, 'index'])
-            ->name('notifications.index');
-        Route::post('notifications/{notification}/read', [\App\Http\Controllers\BjmpOfficer\NotificationController::class, 'markAsRead'])
-            ->name('notifications.read');
-        Route::post('notifications/read-all', [\App\Http\Controllers\BjmpOfficer\NotificationController::class, 'markAllAsRead'])
-            ->name('notifications.read-all');
-
         Route::get('eburols', [\App\Http\Controllers\BjmpOfficer\EburolManagementController::class, 'index'])
             ->name('eburols.index');
         Route::get('eburols/{eburol}/document/death-certificate', [\App\Http\Controllers\BjmpOfficer\EburolManagementController::class, 'deathCertificate'])

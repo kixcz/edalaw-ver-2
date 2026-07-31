@@ -26,6 +26,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -475,7 +476,7 @@ export default function EburolManagement({ eburols, stats, monitoringOfficers }:
 
                 {/* View Details Modal */}
                 <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>E-Burol Application Details</DialogTitle>
                             <DialogDescription>
@@ -576,7 +577,7 @@ export default function EburolManagement({ eburols, stats, monitoringOfficers }:
 
                 {/* Approve Modal */}
                 <Dialog open={isApproveModalOpen} onOpenChange={setIsApproveModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Approve E-Burol Application</DialogTitle>
                             <DialogDescription>
@@ -634,7 +635,7 @@ export default function EburolManagement({ eburols, stats, monitoringOfficers }:
 
                 {/* Reject Modal */}
                 <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Reject E-Burol Application</DialogTitle>
                             <DialogDescription>
@@ -690,7 +691,7 @@ export default function EburolManagement({ eburols, stats, monitoringOfficers }:
 
                 {/* Update Status Modal */}
                 <Dialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Update E-Burol Status</DialogTitle>
                             <DialogDescription>

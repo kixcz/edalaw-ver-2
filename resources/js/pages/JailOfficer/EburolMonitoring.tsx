@@ -20,8 +20,8 @@ const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: Rea
                 <div className="flex items-center gap-4 px-5 py-4 flex-1">
                     <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
-                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                        <div className="text-2xl font-bold text-foreground leading-none">{value}</div>
+                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
                     </div>
                 </div>
             </div>
@@ -57,7 +57,7 @@ function getStatusBadge(status: string) {
         rejected: { label: 'Rejected', className: 'bg-red-50 text-red-700 border-red-200' },
         completed: { label: 'Completed', className: 'bg-blue-50 text-blue-700 border-blue-200' },
     };
-    const config = map[status] ?? { label: status, className: 'bg-slate-100 text-slate-500 border-slate-200' };
+    const config = map[status] ?? { label: status, className: 'bg-muted text-muted-foreground border-border' };
     return <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${config.className}`}>{config.label}</span>;
 }
 
@@ -69,7 +69,7 @@ export default function EburolMonitoring({ eburols, stats, chartData }: Props) {
             cell: ({ row }) => (
                 <div className="space-y-0.5">
                     <div className="font-medium">{row.original.visitor_name}</div>
-                    <div className="text-xs text-slate-500">{row.original.visitor_email}</div>
+                    <div className="text-xs text-muted-foreground">{row.original.visitor_email}</div>
                 </div>
             ),
         },
@@ -100,7 +100,7 @@ export default function EburolMonitoring({ eburols, stats, chartData }: Props) {
             cell: ({ row }) => {
                 const code = row.original.inmate_tunnel_code;
                 const status = row.original.inmate_tunnel_status;
-                if (!code) return <span className="text-slate-400">—</span>;
+                if (!code) return <span className="text-muted-foreground">—</span>;
                 const statusLabel = status === 'active' ? 'Active' : status === 'expired' ? 'Expired' : status === 'used' ? 'Used' : '—';
                 const statusVariant = status === 'active' ? 'default' : status === 'expired' ? 'destructive' : 'secondary';
                 return (
@@ -120,15 +120,15 @@ export default function EburolMonitoring({ eburols, stats, chartData }: Props) {
     return (
         <AppLayout>
             <Head title="E-Burol Monitoring" />
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-background">
                 {/* Header */}
-                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
                     <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-purple-600 rounded-xl"><Heart className="w-5 h-5 text-white" /></div>
+                            <div className="p-2 bg-primary rounded-xl"><Heart className="w-5 h-5 text-white" /></div>
                             <div>
-                                <h1 className="text-lg font-bold text-slate-900 leading-none">E-Burol Monitoring</h1>
-                                <p className="text-xs text-slate-500 mt-0.5">E-burol schedules you are responsible for overseeing</p>
+                                <h1 className="text-lg font-bold text-foreground leading-none">E-Burol Monitoring</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">E-burol schedules you are responsible for overseeing</p>
                             </div>
                         </div>
                     </div>
@@ -136,36 +136,34 @@ export default function EburolMonitoring({ eburols, stats, chartData }: Props) {
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-                        <StatCard icon={<Heart className="w-5 h-5" />} value={stats.total_eburols} label="Total E-Burols" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<Heart className="w-5 h-5" />} value={stats.total_eburols} label="Total E-Burols" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
                         <StatCard icon={<Clock className="w-5 h-5" />} value={stats.pending_eburols} label="Pending" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
                         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} value={stats.approved_eburols} label="Approved" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
                         <StatCard icon={<AlertCircle className="w-5 h-5" />} value={stats.rejected_eburols} label="Rejected" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
-                        <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats.completed_eburols} label="Completed" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
-                        <StatCard icon={<Users className="w-5 h-5" />} value={stats.active_tunnels} label="Active Tunnels" accent="bg-indigo-600" iconBg="bg-indigo-50" iconColor="text-indigo-600" />
                     </div>
 
                     {/* Tabs */}
                     <Tabs defaultValue="records" className="space-y-4">
-                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
-                            <TabsTrigger value="records" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                        <TabsList className="bg-card border border-border p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger value="records" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <List className="w-4 h-4" />E-Burols
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                            <TabsTrigger value="analytics" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <BarChart2 className="w-4 h-4" />Analytics
                             </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="records">
                             <Card className="border-0 shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100">
-                                    <h3 className="font-semibold text-slate-800">E-Burol Records</h3>
-                                    <p className="text-xs text-slate-500 mt-0.5">{eburols.length} e-burol schedules</p>
+                                <div className="px-6 py-4 border-b border-border">
+                                    <h3 className="font-semibold text-foreground">E-Burol Records</h3>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{eburols.length} e-burol schedules</p>
                                 </div>
                                 <div className="p-6">
                                     <DataTable columns={eburolColumns} data={eburols} />
                                     {eburols.length === 0 && (
-                                        <p className="py-8 text-center text-slate-400">
+                                        <p className="py-8 text-center text-muted-foreground">
                                             No e-burol schedules assigned to you yet.
                                         </p>
                                     )}
@@ -176,9 +174,9 @@ export default function EburolMonitoring({ eburols, stats, chartData }: Props) {
                         <TabsContent value="analytics">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">E-Burols by Status</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Distribution of e-burol statuses</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">E-Burols by Status</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Distribution of e-burol statuses</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -192,9 +190,9 @@ export default function EburolMonitoring({ eburols, stats, chartData }: Props) {
                                     </CardContent>
                                 </Card>
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">E-Burols by Period</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Timeline distribution</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">E-Burols by Period</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Timeline distribution</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>

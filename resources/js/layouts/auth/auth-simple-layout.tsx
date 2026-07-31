@@ -9,8 +9,9 @@ export default function AuthSimpleLayout({
     title,
     description,
 }: AuthLayoutProps) {
+    // theme-orange pins the primary color to orange on auth pages; dashboard theme colors only apply to dashboards
     return (
-        <div className="flex min-h-screen flex-col bg-background">
+        <div className="theme-orange flex min-h-screen flex-col bg-background">
             {/* Theme Toggle - Top Right */}
             <div className="absolute top-4 right-4">
                 <ThemeToggle />

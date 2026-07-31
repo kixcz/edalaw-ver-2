@@ -104,63 +104,33 @@ interface DashboardProps {
     }>;
 }
 
-type MetricTone =
-    | 'cyan'
-    | 'green'
-    | 'pink'
-    | 'amber'
-    | 'blue'
-    | 'violet'
-    | 'slate';
-
-type MetricCardProps = {
-    label: string;
+const StatCard: React.FC<{
+    icon: React.ReactNode;
     value: number | string;
-    detail: string;
-    icon: ElementType;
-    tone: MetricTone;
-};
-
-const toneStyles: Record<MetricTone, string> = {
-    cyan: 'border-cyan-200 bg-cyan-50 text-cyan-900 dark:border-cyan-900 dark:bg-cyan-950/30 dark:text-cyan-100',
-    green: 'border-green-200 bg-green-50 text-green-900 dark:border-green-900 dark:bg-green-950/30 dark:text-green-100',
-    pink: 'border-pink-200 bg-pink-50 text-pink-900 dark:border-pink-900 dark:bg-pink-950/30 dark:text-pink-100',
-    amber: 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100',
-    blue: 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100',
-    violet: 'border-violet-200 bg-violet-50 text-violet-900 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-100',
-    slate: 'border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100',
-};
-
-function MetricCard({
-    label,
-    value,
-    detail,
-    icon: Icon,
-    tone,
-}: MetricCardProps) {
-    return (
-        <Card
-            className={`overflow-hidden border ${toneStyles[tone]} shadow-none`}
-        >
-            <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <p className="text-sm font-medium opacity-75">
-                            {label}
-                        </p>
-                        <p className="mt-3 text-3xl font-semibold tracking-tight">
-                            {value}
-                        </p>
-                        <p className="mt-2 text-xs opacity-70">{detail}</p>
+    label: string;
+    accent: string;
+    iconBg: string;
+    iconColor: string;
+}> = ({
+    icon, value, label, accent, iconBg, iconColor,
+}) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>
+                        {icon}
                     </div>
-                    <div className="rounded-xl bg-background/70 p-2 shadow-sm">
-                        <Icon className="h-5 w-5" />
+                    <div>
+                        <div className="text-2xl font-bold text-foreground leading-none">{value}</div>
+                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
                     </div>
                 </div>
-            </CardContent>
-        </Card>
-    );
-}
+            </div>
+        </CardContent>
+    </Card>
+);
 
 function EmptyState({ message }: { message: string }) {
     return (
@@ -184,7 +154,7 @@ function StatusBadge({ status }: { status: string }) {
     return (
         <Badge
             variant="outline"
-            className={`capitalize ${map[status] ?? 'border-slate-200 bg-slate-50 text-slate-700'}`}
+            className={`capitalize ${map[status] ?? 'border-border bg-muted text-muted-foreground'}`}
         >
             {status}
         </Badge>
@@ -310,103 +280,45 @@ export default function Dashboard({
         [facilityAlerts, severityFilter],
     );
 
-    const metrics: MetricCardProps[] = [
-        {
-            label: 'Total PDLs',
-            value: kpis.total_pdls,
-            detail: 'Assigned scope population',
-            icon: Users,
-            tone: 'cyan',
-        },
-        {
-            label: 'Occupied Cells',
-            value: kpis.occupied_cells,
-            detail: 'Cells with active PDLs',
-            icon: UserCheck,
-            tone: 'green',
-        },
-        {
-            label: 'Available Cells',
-            value: kpis.available_cells,
-            detail: 'Cells available in scope',
-            icon: UserX,
-            tone: 'blue',
-        },
-        {
-            label: 'Pending Visits',
-            value: kpis.pending_visits,
-            detail: 'Awaiting review',
-            icon: Calendar,
-            tone: 'amber',
-        },
-        {
-            label: 'Pending E-Burol',
-            value: kpis.pending_eburols,
-            detail: 'Requests needing action',
-            icon: Heart,
-            tone: 'pink',
-        },
-        {
-            label: 'Active Sessions',
-            value: kpis.active_sessions,
-            detail: 'Live monitoring sessions',
-            icon: Video,
-            tone: 'violet',
-        },
-        {
-            label: "Today's Visits",
-            value: kpis.today_visits,
-            detail: 'Scheduled today',
-            icon: Clock,
-            tone: 'slate',
-        },
-    ];
+
 
     return (
         <AppLayout>
             <Head title="Jail Officer Dashboard" />
 
-            <div className="min-h-screen bg-muted/30 p-4 sm:p-6">
-                <div className="mx-auto max-w-[1600px] space-y-6">
-                    <div className="flex flex-col gap-4 rounded-3xl border bg-card p-6 shadow-sm lg:flex-row lg:items-end lg:justify-between">
-                        <div>
-                            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                                <LayoutDashboard className="h-4 w-4" />
-                                Operational dashboard
+            <div className="min-h-screen bg-background">
+                {/* Page Header */}
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-primary rounded-xl">
+                                <LayoutDashboard className="w-5 h-5 text-white" />
                             </div>
-                            <h1 className="text-3xl font-semibold tracking-tight">
-                                Hello, {userName}
-                            </h1>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                {today}
-                            </p>
+                            <div>
+                                <h1 className="text-lg font-bold text-foreground leading-none">Jail Officer</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">Facility Operations & Monitoring</p>
+                            </div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            <Badge
-                                variant="outline"
-                                className="rounded-xl px-3 py-2"
-                            >
-                                Last 7 days analytics
-                            </Badge>
+                        <div className="flex items-center gap-2">
                             {urgentAlertCount > 0 && (
-                                <Badge
-                                    variant="outline"
-                                    className="rounded-xl border-red-200 bg-red-50 px-3 py-2 text-red-700"
-                                >
-                                    <ShieldAlert className="h-4 w-4" />
-                                    {urgentAlertCount} urgent
-                                </Badge>
+                                <span className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
+                                    <ShieldAlert className="h-3.5 w-3.5" />
+                                    {urgentAlertCount}
+                                </span>
                             )}
-                            <Button variant="outline" size="sm">
-                                <Filter className="h-4 w-4" />
-                                Filters
-                            </Button>
-                            <Button size="sm">
-                                <Download className="h-4 w-4" />
-                                Export
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 gap-1.5 border-border text-xs hover:bg-muted"
+                            >
+                                <Filter className="h-3.5 w-3.5" />
+                                Filter
                             </Button>
                         </div>
                     </div>
+                </div>
+
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
 
                     <Tabs defaultValue="overview" className="space-y-6">
                         <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border bg-card p-1 sm:w-fit">
@@ -428,13 +340,12 @@ export default function Dashboard({
                         </TabsList>
 
                         <TabsContent value="overview" className="space-y-6">
-                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
-                                {metrics.map((metric) => (
-                                    <MetricCard
-                                        key={metric.label}
-                                        {...metric}
-                                    />
-                                ))}
+                            {/* Stats Grid */}
+                            <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <StatCard icon={<Users className="w-5 h-5" />} value={kpis.total_pdls} label="Total PDLs" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
+                                <StatCard icon={<UserCheck className="w-5 h-5" />} value={kpis.occupied_cells} label="Occupied Cells" accent="bg-emerald-500" iconBg="bg-emerald-50 dark:bg-emerald-950/30" iconColor="text-emerald-600 dark:text-emerald-400" />
+                                <StatCard icon={<Calendar className="w-5 h-5" />} value={kpis.pending_visits} label="Pending Visits" accent="bg-amber-500" iconBg="bg-amber-50 dark:bg-amber-950/30" iconColor="text-amber-600 dark:text-amber-400" />
+                                <StatCard icon={<Video className="w-5 h-5" />} value={kpis.active_sessions} label="Active Sessions" accent="bg-sky-500" iconBg="bg-sky-50 dark:bg-sky-950/30" iconColor="text-sky-600 dark:text-sky-400" />
                             </div>
 
                             <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
@@ -474,10 +385,10 @@ export default function Dashboard({
                                                     <Line
                                                         type="monotone"
                                                         dataKey="count"
-                                                        stroke="#8b5cf6"
+                                                        stroke="var(--primary)"
                                                         strokeWidth={2}
-                                                        dot={{ fill: '#8b5cf6', r: 4 }}
-                                                        activeDot={{ r: 6, fill: '#7c3aed' }}
+                                                        dot={{ fill: 'var(--primary)', r: 4 }}
+                                                        activeDot={{ r: 6, fill: 'var(--primary)' }}
                                                         name="Visits"
                                                     />
                                                 </LineChart>
@@ -495,7 +406,7 @@ export default function Dashboard({
                                             Assigned jurisdiction
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="grid gap-3 sm:grid-cols-2">
+                                    <CardContent className="grid w-full gap-3 sm:grid-cols-2">
                                         {[
                                             {
                                                 icon: Building2,
@@ -549,7 +460,7 @@ export default function Dashboard({
                                     </CardHeader>
                                     <CardContent>
                                         {cellOccupancy.length > 0 ? (
-                                            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                            <div className="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-4">
                                                 {cellOccupancy
                                                     .slice(0, 12)
                                                     .map((cell) => {
@@ -619,27 +530,33 @@ export default function Dashboard({
                                             {
                                                 label: 'Completed',
                                                 value: sessionStats.completed,
-                                                tone: 'green' as MetricTone,
+                                                accent: 'bg-emerald-500',
+                                                iconBg: 'bg-emerald-50 dark:bg-emerald-950/30',
+                                                iconColor: 'text-emerald-600 dark:text-emerald-400',
                                             },
                                             {
                                                 label: 'Active',
                                                 value: sessionStats.active,
-                                                tone: 'blue' as MetricTone,
+                                                accent: 'bg-sky-500',
+                                                iconBg: 'bg-sky-50 dark:bg-sky-950/30',
+                                                iconColor: 'text-sky-600 dark:text-sky-400',
                                             },
                                             {
                                                 label: 'Flagged',
                                                 value: sessionStats.flagged,
-                                                tone: 'amber' as MetricTone,
+                                                accent: 'bg-amber-500',
+                                                iconBg: 'bg-amber-50 dark:bg-amber-950/30',
+                                                iconColor: 'text-amber-600 dark:text-amber-400',
                                             },
                                         ].map((item) => (
                                             <div
                                                 key={item.label}
-                                                className={`rounded-2xl border p-4 ${toneStyles[item.tone]}`}
+                                                className="rounded-2xl border bg-background p-4"
                                             >
-                                                <p className="text-sm opacity-70">
+                                                <p className="text-sm text-muted-foreground">
                                                     {item.label}
                                                 </p>
-                                                <p className="mt-2 text-3xl font-semibold">
+                                                <p className="mt-2 text-3xl font-semibold text-foreground">
                                                     {item.value}
                                                 </p>
                                             </div>
@@ -940,7 +857,7 @@ export default function Dashboard({
                                                         <div className="mt-3 flex gap-2">
                                                             <Button
                                                                 size="sm"
-                                                                className="flex-1 bg-green-600 hover:bg-green-700"
+                                                                className="flex-1 bg-primary hover:bg-primary/90 text-white"
                                                             >
                                                                 <CheckCircle2 className="h-4 w-4" />
                                                                 Approve
@@ -1112,7 +1029,7 @@ const SeverityDot = ({ severity }: { severity: string }) => {
     };
     return (
         <span
-            className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${map[severity] ?? 'bg-gray-400'}`}
+            className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${map[severity] ?? 'bg-muted-foreground'}`}
         />
     );
 };
@@ -1126,7 +1043,7 @@ const getSeverityBadgeClass = (severity: string) => {
         case 'low':
             return 'bg-blue-50 text-blue-700 border border-blue-200';
         default:
-            return 'bg-gray-50 text-gray-700 border border-gray-200';
+            return 'bg-muted text-muted-foreground border border-border';
     }
 };
 
@@ -1141,7 +1058,7 @@ const getStatusClass = (status: string) => {
         case 'completed':
             return 'bg-blue-50 text-blue-700 border border-blue-200';
         default:
-            return 'bg-gray-50 text-gray-700 border border-gray-200';
+            return 'bg-muted text-muted-foreground border border-border';
     }
 };
 
@@ -1213,15 +1130,15 @@ function LegacyOfficerDashboard({
         <AppLayout>
             <Head title="Jail Officer Dashboard" />
 
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-muted">
                 {/* ── Top Bar ── */}
-                <header className="sticky top-0 z-20 border-b border-gray-200 bg-white">
+                <header className="sticky top-0 z-20 border-b border-border bg-card">
                     <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-6 py-4">
                         <div>
-                            <h1 className="text-lg font-medium text-gray-900">
+                            <h1 className="text-lg font-medium text-foreground">
                                 Hello, {userName}
                             </h1>
-                            <p className="mt-0.5 text-xs text-gray-500">
+                            <p className="mt-0.5 text-xs text-muted-foreground">
                                 {today}
                             </p>
                         </div>
@@ -1236,7 +1153,7 @@ function LegacyOfficerDashboard({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 gap-1.5 border-gray-300 text-xs hover:bg-gray-50"
+                                className="h-8 gap-1.5 border-border text-xs hover:bg-muted"
                             >
                                 <Filter className="h-3.5 w-3.5" />
                                 Filter
@@ -1247,9 +1164,9 @@ function LegacyOfficerDashboard({
 
                 <main className="mx-auto max-w-[1600px] space-y-6 px-6 py-6">
                     {/* ── Jurisdiction Summary ── */}
-                    <div className="rounded-lg border border-gray-200 bg-white p-5">
+                    <div className="rounded-lg border border-border bg-card p-5">
                         <div className="mb-4 flex items-center justify-between">
-                            <p className="text-sm font-medium tracking-wide text-gray-700 uppercase">
+                            <p className="text-sm font-medium tracking-wide text-foreground/80 uppercase">
                                 Assigned Jurisdiction
                             </p>
                         </div>
@@ -1278,12 +1195,12 @@ function LegacyOfficerDashboard({
                             ].map(({ icon: Icon, label, value }) => (
                                 <div
                                     key={label}
-                                    className="border-l-2 border-gray-300 pl-4"
+                                    className="border-l-2 border-border pl-4"
                                 >
-                                    <div className="text-2xl font-semibold text-gray-900">
+                                    <div className="text-2xl font-semibold text-foreground">
                                         {value}
                                     </div>
-                                    <div className="mt-0.5 text-xs text-gray-600">
+                                    <div className="mt-0.5 text-xs text-muted-foreground">
                                         {label}
                                     </div>
                                 </div>
@@ -1361,17 +1278,17 @@ function LegacyOfficerDashboard({
                             }) => (
                                 <div
                                     key={label}
-                                    className={`border bg-white ${border} rounded-lg p-4`}
+                                    className={`border bg-card ${border} rounded-lg p-4`}
                                 >
                                     <div
                                         className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${bg} mb-2.5`}
                                     >
                                         <Icon className={`h-4 w-4 ${color}`} />
                                     </div>
-                                    <div className="mb-0.5 text-2xl font-semibold text-gray-900">
+                                    <div className="mb-0.5 text-2xl font-semibold text-foreground">
                                         {value}
                                     </div>
-                                    <div className="text-xs text-gray-600">
+                                    <div className="text-xs text-muted-foreground">
                                         {label}
                                     </div>
                                 </div>
@@ -1382,10 +1299,10 @@ function LegacyOfficerDashboard({
                     {/* ── Analytics Row ── */}
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                         {/* Visit Volume */}
-                        <div className="rounded-lg border border-gray-200 bg-white p-5">
+                        <div className="rounded-lg border border-border bg-card p-5">
                             <div className="mb-4 flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4 text-gray-700" />
-                                <h2 className="text-sm font-medium text-gray-900">
+                                <TrendingUp className="h-4 w-4 text-foreground/80" />
+                                <h2 className="text-sm font-medium text-foreground">
                                     Visit Volume — Last 7 Days
                                 </h2>
                             </div>
@@ -1431,10 +1348,10 @@ function LegacyOfficerDashboard({
                         </div>
 
                         {/* Session Stats */}
-                        <div className="rounded-lg border border-gray-200 bg-white p-5">
+                        <div className="rounded-lg border border-border bg-card p-5">
                             <div className="mb-4 flex items-center gap-2">
-                                <Video className="h-4 w-4 text-gray-700" />
-                                <h2 className="text-sm font-medium text-gray-900">
+                                <Video className="h-4 w-4 text-foreground/80" />
+                                <h2 className="text-sm font-medium text-foreground">
                                     Session Monitoring — Last 7 Days
                                 </h2>
                             </div>
@@ -1471,15 +1388,15 @@ function LegacyOfficerDashboard({
                                         >
                                             {value}
                                         </div>
-                                        <div className="mt-1 text-xs text-gray-600">
+                                        <div className="mt-1 text-xs text-muted-foreground">
                                             {label}
                                         </div>
                                     </div>
                                 ))}
                             </div>
                             {/* PDL Distribution inside same card to fill space */}
-                            <div className="border-t border-gray-200 pt-4">
-                                <p className="mb-3 text-xs font-medium tracking-wide text-gray-700 uppercase">
+                            <div className="border-t border-border pt-4">
+                                <p className="mb-3 text-xs font-medium tracking-wide text-foreground/80 uppercase">
                                     PDL Distribution by Cell
                                 </p>
                                 <div className="max-h-36 space-y-2.5 overflow-y-auto pr-1">
@@ -1505,15 +1422,15 @@ function LegacyOfficerDashboard({
                                                     className="space-y-1"
                                                 >
                                                     <div className="flex justify-between text-xs">
-                                                        <span className="font-medium text-gray-700">
+                                                        <span className="font-medium text-foreground/80">
                                                             {cell.name}
                                                         </span>
-                                                        <span className="text-gray-500">
+                                                        <span className="text-muted-foreground">
                                                             {cell.count}/
                                                             {cell.capacity}
                                                         </span>
                                                     </div>
-                                                    <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+                                                    <div className="h-2 overflow-hidden rounded-full bg-muted">
                                                         <div
                                                             className={`${barColor} h-full rounded-full transition-all`}
                                                             style={{
@@ -1525,7 +1442,7 @@ function LegacyOfficerDashboard({
                                             );
                                         })
                                     ) : (
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-muted-foreground">
                                             No distribution data
                                         </p>
                                     )}
@@ -1535,23 +1452,23 @@ function LegacyOfficerDashboard({
                     </div>
 
                     {/* ── Cell Occupancy ── */}
-                    <div className="rounded-lg border border-gray-200 bg-white p-5">
+                    <div className="rounded-lg border border-border bg-card p-5">
                         <div className="mb-4 flex items-center gap-2">
-                            <Columns3 className="h-4 w-4 text-gray-700" />
-                            <h2 className="text-sm font-medium text-gray-900">
+                            <Columns3 className="h-4 w-4 text-foreground/80" />
+                            <h2 className="text-sm font-medium text-foreground">
                                 Cell Occupancy Overview
                             </h2>
-                            <div className="ml-auto flex items-center gap-3 text-[11px] text-gray-600">
+                            <div className="ml-auto flex items-center gap-3 text-[11px] text-muted-foreground">
                                 <span className="flex items-center gap-1">
-                                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-gray-400" />{' '}
+                                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-border" />{' '}
                                     Normal
                                 </span>
                                 <span className="flex items-center gap-1">
-                                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-gray-600" />{' '}
+                                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-foreground/60" />{' '}
                                     High
                                 </span>
                                 <span className="flex items-center gap-1">
-                                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-gray-900" />{' '}
+                                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-foreground" />{' '}
                                     Critical
                                 </span>
                             </div>
@@ -1574,10 +1491,10 @@ function LegacyOfficerDashboard({
                                     return (
                                         <div
                                             key={cell.cell}
-                                            className="rounded-xl border border-gray-100 bg-gray-50 p-3"
+                                            className="rounded-xl border border-border bg-muted p-3"
                                         >
                                             <div className="mb-2 flex items-center justify-between">
-                                                <span className="text-xs font-semibold text-gray-700">
+                                                <span className="text-xs font-semibold text-foreground/80">
                                                     {cell.cell}
                                                 </span>
                                                 <span
@@ -1586,7 +1503,7 @@ function LegacyOfficerDashboard({
                                                     {cell.percentage}%
                                                 </span>
                                             </div>
-                                            <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                                            <div className="h-2 overflow-hidden rounded-full bg-border">
                                                 <div
                                                     className={`${fillColor} h-full rounded-full transition-all`}
                                                     style={{
@@ -1594,7 +1511,7 @@ function LegacyOfficerDashboard({
                                                     }}
                                                 />
                                             </div>
-                                            <div className="mt-1.5 text-[11px] text-gray-400">
+                                            <div className="mt-1.5 text-[11px] text-muted-foreground">
                                                 {cell.occupied} /{' '}
                                                 {cell.capacity} occupied
                                             </div>
@@ -1610,12 +1527,12 @@ function LegacyOfficerDashboard({
                     {/* ── Activity + Upcoming Split ── */}
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                         {/* Recent Activity — wider */}
-                        <div className="flex flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm lg:col-span-2">
+                        <div className="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm lg:col-span-2">
                             <div className="mb-4 flex items-center gap-2">
                                 <div className="rounded-lg bg-orange-50 p-1.5">
                                     <Activity className="h-4 w-4 text-orange-600" />
                                 </div>
-                                <h2 className="text-sm font-semibold text-gray-800">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     Recent Activity
                                 </h2>
                             </div>
@@ -1626,12 +1543,12 @@ function LegacyOfficerDashboard({
                                         .map((activity) => (
                                             <div
                                                 key={activity.id}
-                                                className="group flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-gray-50"
+                                                className="group flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted"
                                             >
                                                 <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-orange-400" />
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <p className="truncate text-sm font-medium text-gray-800">
+                                                        <p className="truncate text-sm font-medium text-foreground">
                                                             {activity.title}
                                                         </p>
                                                         <span
@@ -1640,10 +1557,10 @@ function LegacyOfficerDashboard({
                                                             {activity.status}
                                                         </span>
                                                     </div>
-                                                    <p className="mt-0.5 text-xs leading-snug text-gray-500">
+                                                    <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
                                                         {activity.description}
                                                     </p>
-                                                    <p className="mt-1 text-[10px] text-gray-400">
+                                                    <p className="mt-1 text-[10px] text-muted-foreground">
                                                         {activity.created_at}
                                                     </p>
                                                 </div>
@@ -1656,12 +1573,12 @@ function LegacyOfficerDashboard({
                         </div>
 
                         {/* Upcoming Visits */}
-                        <div className="flex flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                        <div className="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm">
                             <div className="mb-4 flex items-center gap-2">
                                 <div className="rounded-lg bg-blue-50 p-1.5">
                                     <Calendar className="h-4 w-4 text-blue-600" />
                                 </div>
-                                <h2 className="text-sm font-semibold text-gray-800">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     Upcoming Visits
                                 </h2>
                             </div>
@@ -1671,16 +1588,16 @@ function LegacyOfficerDashboard({
                                         <Link
                                             key={visit.id}
                                             href={`/jail-officer/assigned-visit-sessions/${visit.id}`}
-                                            className="group flex items-center gap-3 rounded-xl border border-gray-100 p-3 transition-colors hover:border-orange-200 hover:bg-orange-50"
+                                            className="group flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:border-orange-200 hover:bg-orange-50"
                                         >
                                             <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm font-medium text-gray-800">
+                                                <p className="truncate text-sm font-medium text-foreground">
                                                     {visit.visitor_name}
                                                 </p>
-                                                <p className="truncate text-xs text-gray-500">
+                                                <p className="truncate text-xs text-muted-foreground">
                                                     → {visit.inmate_name}
                                                 </p>
-                                                <div className="mt-1.5 flex items-center gap-1 text-[11px] text-gray-400">
+                                                <div className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
                                                     <Clock className="h-3 w-3" />
                                                     {visit.scheduled_date} ·{' '}
                                                     {visit.scheduled_time}
@@ -1690,7 +1607,7 @@ function LegacyOfficerDashboard({
                                                 <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">
                                                     {visit.visit_type}
                                                 </span>
-                                                <ChevronRight className="h-3.5 w-3.5 text-gray-300 transition-colors group-hover:text-orange-500" />
+                                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-colors group-hover:text-orange-500" />
                                             </div>
                                         </Link>
                                     ))}
@@ -1704,12 +1621,12 @@ function LegacyOfficerDashboard({
                     {/* ── Action + Alerts Row ── */}
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                         {/* Pending Approvals */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                             <div className="mb-4 flex items-center gap-2">
                                 <div className="rounded-lg bg-amber-50 p-1.5">
                                     <UserCheck className="h-4 w-4 text-amber-600" />
                                 </div>
-                                <h2 className="text-sm font-semibold text-gray-800">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     Pending Approvals
                                 </h2>
                                 {pendingApprovals.length > 0 && (
@@ -1727,10 +1644,10 @@ function LegacyOfficerDashboard({
                                         >
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0">
-                                                    <p className="truncate text-sm font-medium text-gray-900">
+                                                    <p className="truncate text-sm font-medium text-foreground">
                                                         {approval.visitor_name}
                                                     </p>
-                                                    <p className="truncate text-xs text-gray-500">
+                                                    <p className="truncate text-xs text-muted-foreground">
                                                         → {approval.inmate_name}
                                                     </p>
                                                 </div>
@@ -1738,7 +1655,7 @@ function LegacyOfficerDashboard({
                                                     Pending
                                                 </span>
                                             </div>
-                                            <div className="mt-2 flex items-center gap-1 text-[11px] text-gray-400">
+                                            <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
                                                 <Clock className="h-3 w-3" />
                                                 {approval.scheduled_date} ·{' '}
                                                 {approval.scheduled_time}
@@ -1748,7 +1665,7 @@ function LegacyOfficerDashboard({
                                                     <CheckCircle2 className="h-3.5 w-3.5" />{' '}
                                                     Approve
                                                 </button>
-                                                <button className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-gray-200 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50">
+                                                <button className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted">
                                                     <XCircle className="h-3.5 w-3.5" />{' '}
                                                     Reject
                                                 </button>
@@ -1762,12 +1679,12 @@ function LegacyOfficerDashboard({
                         </div>
 
                         {/* Flagged Chats */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                             <div className="mb-4 flex items-center gap-2">
                                 <div className="rounded-lg bg-red-50 p-1.5">
                                     <Flag className="h-4 w-4 text-red-600" />
                                 </div>
-                                <h2 className="text-sm font-semibold text-gray-800">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     Flagged Chats & Incidents
                                 </h2>
                                 {flaggedItems.length > 0 && (
@@ -1781,18 +1698,18 @@ function LegacyOfficerDashboard({
                                     {flaggedItems.map((item) => (
                                         <div
                                             key={item.id}
-                                            className="rounded-xl border border-gray-100 p-3 transition-colors hover:bg-gray-50"
+                                            className="rounded-xl border border-border p-3 transition-colors hover:bg-muted"
                                         >
                                             <div className="flex items-start gap-2">
                                                 <SeverityDot
                                                     severity={item.severity}
                                                 />
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs leading-snug font-medium text-gray-800">
+                                                    <p className="text-xs leading-snug font-medium text-foreground">
                                                         {item.message}
                                                     </p>
                                                     <div className="mt-1.5 flex items-center justify-between">
-                                                        <span className="flex items-center gap-1 text-[10px] text-gray-500">
+                                                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                                                             <Users className="h-3 w-3" />{' '}
                                                             {item.visitor_name}
                                                         </span>
@@ -1802,7 +1719,7 @@ function LegacyOfficerDashboard({
                                                             {item.severity}
                                                         </span>
                                                     </div>
-                                                    <p className="mt-1 text-[10px] text-gray-400">
+                                                    <p className="mt-1 text-[10px] text-muted-foreground">
                                                         {item.created_at}
                                                     </p>
                                                 </div>
@@ -1816,12 +1733,12 @@ function LegacyOfficerDashboard({
                         </div>
 
                         {/* Facility Alerts */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                             <div className="mb-4 flex items-center gap-2">
                                 <div className="rounded-lg bg-red-50 p-1.5">
                                     <AlertTriangle className="h-4 w-4 text-red-600" />
                                 </div>
-                                <h2 className="text-sm font-semibold text-gray-800">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     Facility Alerts
                                 </h2>
                                 {facilityAlerts.length > 0 && (
@@ -1860,12 +1777,12 @@ function LegacyOfficerDashboard({
 
                     {/* ── E-Burol Row ── */}
                     {upcomingEburols.length > 0 && (
-                        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                             <div className="mb-4 flex items-center gap-2">
                                 <div className="rounded-lg bg-pink-50 p-1.5">
                                     <Heart className="h-4 w-4 text-pink-600" />
                                 </div>
-                                <h2 className="text-sm font-semibold text-gray-800">
+                                <h2 className="text-sm font-semibold text-foreground">
                                     Upcoming E-Burol Schedules
                                 </h2>
                             </div>
@@ -1875,10 +1792,10 @@ function LegacyOfficerDashboard({
                                         key={eburol.id}
                                         className="rounded-xl border border-pink-100 bg-pink-50 p-3"
                                     >
-                                        <p className="text-sm font-medium text-gray-800">
+                                        <p className="text-sm font-medium text-foreground">
                                             {eburol.visitor_name}
                                         </p>
-                                        <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-500">
+                                        <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
                                             <Clock className="h-3 w-3" />
                                             {eburol.scheduled_date} ·{' '}
                                             {eburol.scheduled_time}
@@ -1897,10 +1814,10 @@ function LegacyOfficerDashboard({
 function LegacyOfficerEmptyState({ message }: { message: string }) {
     return (
         <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-                <span className="text-lg leading-none text-gray-400">·</span>
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <span className="text-lg leading-none text-muted-foreground">·</span>
             </div>
-            <p className="text-xs text-gray-400">{message}</p>
+            <p className="text-xs text-muted-foreground">{message}</p>
         </div>
     );
 }

@@ -69,12 +69,12 @@ export default function FAQ() {
                 
                 <div className="relative z-10 container mx-auto px-4 max-w-7xl">
                     <div className="max-w-4xl mx-auto text-center">
-                        <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
+                        <div className="inline-flex items-center gap-2 bg-primary/15 border border-primary/30 text-primary text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
                             <MessageSquare className="w-3.5 h-3.5" />
                             SUPPORT
                         </div>
                         <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
-                            Frequently Asked <span className="text-orange-400">Questions</span>
+                            Frequently Asked <span className="text-primary">Questions</span>
                         </h1>
                         <p className="text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
                             Find answers to common questions about eDalaw services
@@ -90,7 +90,7 @@ export default function FAQ() {
                         {faqs.map((faq, index) => (
                             <div
                                 key={index}
-                                className="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-orange-300 transition-colors"
+                                className="border-2 border-gray-200 rounded-xl overflow-hidden hover:border-primary/30 transition-colors"
                             >
                                 <button
                                     onClick={() => setOpenIndex(openIndex === index ? null : index)}
@@ -98,7 +98,7 @@ export default function FAQ() {
                                 >
                                     <span className="text-lg font-semibold text-gray-900 pr-4">{faq.question}</span>
                                     {openIndex === index ? (
-                                        <ChevronUp className="w-6 h-6 text-orange-600 flex-shrink-0" />
+                                        <ChevronUp className="w-6 h-6 text-primary flex-shrink-0" />
                                     ) : (
                                         <ChevronDown className="w-6 h-6 text-gray-400 flex-shrink-0" />
                                     )}
@@ -125,7 +125,7 @@ export default function FAQ() {
                             </p>
                             <a
                                 href="/contact"
-                                className="inline-block px-8 py-4 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-all shadow-md hover:shadow-lg"
+                                className="inline-block px-8 py-4 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-md hover:shadow-lg"
                             >
                                 Contact Us
                             </a>

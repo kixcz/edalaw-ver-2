@@ -4,7 +4,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Users, Calendar, FileText, CheckCircle, AlertCircle, X, ShieldCheck, Video, Building, Clock, UserCheck, ClockIcon, CheckCircle2, XCircle } from 'lucide-react';
+import { User, Users, Calendar, FileText, CheckCircle, AlertCircle, X, Video, Building, Clock, UserCheck, ClockIcon, CheckCircle2, XCircle } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { PrivacyNotice } from '@/components/privacy-notice';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
@@ -223,7 +224,7 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard icon={<UserCheck className="w-5 h-5" />} value={stats?.total_tagged_inmates || 0} label="Total Tagged" accent="bg-teal-600" iconBg="bg-teal-50" iconColor="text-teal-600" />
                         <StatCard icon={<FileText className="w-5 h-5" />} value={stats?.with_proof || 0} label="With Proof" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
                         <StatCard icon={<AlertCircle className="w-5 h-5" />} value={stats?.without_proof || 0} label="Without Proof" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
@@ -327,7 +328,7 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
 
             {/* Schedule Visit Modal */}
             <Dialog open={isScheduleModalOpen} onOpenChange={setIsScheduleModalOpen}>
-                <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Apply for Visit Schedule</DialogTitle>
                         <DialogDescription>
@@ -335,22 +336,7 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
                         </DialogDescription>
                     </DialogHeader>
                     
-                    {/* Privacy Notice */}
-                    <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                        <ShieldCheck style={{ width: '14px', height: '14px', color: '#6B7280', flexShrink: 0, marginTop: '1px' }} />
-                        <div>
-                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#374151', marginBottom: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                                Data Privacy Notice
-                            </div>
-                            <div style={{ fontSize: '9px', lineHeight: '1.5', color: '#4B5563' }}>
-                                The information provided in this visitation request will be collected and processed solely for identity verification, visitation scheduling, approval processing, security monitoring, record management, and other legitimate operational purposes. All information shall be handled in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.
-                                <br />
-                                <span style={{ fontStyle: 'italic' }}>
-                                    (Ang impormasyon nga gihatag niini nga hangyo sa pagbisita mocollect ug giproseso lamang alang sa pag-verify sa pagkatawo, pag-iskedyul sa pagbisita, pagproseso sa apruba, pag-monitor sa seguridad, pagdumala sa rekord, ug uban pa nga lehitimo nga katuyoan sa operasyon. Ang tanan nga impormasyon gipangdumala sumala sa Data Privacy Act of 2012 ug mga nahisgutan nga privacy ug security policies.)
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+                    <PrivacyNotice variant="visitation" />
 
                     <form onSubmit={handleScheduleSubmit}>
                         <div className="flex flex-col gap-5 py-4">

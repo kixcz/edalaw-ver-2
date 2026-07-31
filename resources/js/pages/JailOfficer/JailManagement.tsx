@@ -336,7 +336,7 @@ export default function JailManagement({ jails, filters }: Props) {
 
             {/* Create Modal */}
             <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Create Jail</DialogTitle>
                         <DialogDescription>
@@ -417,7 +417,7 @@ export default function JailManagement({ jails, filters }: Props) {
                             <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={createForm.processing}>
+                            <Button type="submit" disabled={createForm.processing} className="bg-primary hover:bg-primary/90 text-white">
                                 Create Jail
                             </Button>
                         </DialogFooter>
@@ -427,7 +427,7 @@ export default function JailManagement({ jails, filters }: Props) {
 
             {/* Edit Modal */}
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Edit Jail</DialogTitle>
                         <DialogDescription>
@@ -504,7 +504,7 @@ export default function JailManagement({ jails, filters }: Props) {
                             <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={editForm.processing}>
+                            <Button type="submit" disabled={editForm.processing} className="bg-primary hover:bg-primary/90 text-white">
                                 Update Jail
                             </Button>
                         </DialogFooter>
@@ -514,7 +514,7 @@ export default function JailManagement({ jails, filters }: Props) {
 
             {/* Delete Modal */}
             <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Delete Jail</DialogTitle>
                         <DialogDescription>

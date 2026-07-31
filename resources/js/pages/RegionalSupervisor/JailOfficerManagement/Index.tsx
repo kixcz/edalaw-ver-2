@@ -99,8 +99,6 @@ export default function JailOfficerIndex(props: any) {
             analytics={props.analytics}
             filters={props.filters}
             icon={Users}
-            showReportsTab
-            reportsDescription="Approval status distribution and officer coverage across branches in your region."
         />
     );
 }

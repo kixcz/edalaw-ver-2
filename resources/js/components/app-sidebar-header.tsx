@@ -1,10 +1,11 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, Moon, Sun } from 'lucide-react';
+import { Bell, MessageSquare } from 'lucide-react';
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import HeaderUserDropdown from '@/components/header-user-dropdown';
+import ThemeSelector from '@/components/theme-selector';
 import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { useAppearance } from '@/hooks/use-appearance';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 import type { SharedData } from '@/types';
 
@@ -14,6 +15,8 @@ function notificationHref(role: string | undefined): string | null {
             return '/visitor/notifications';
         case 'bjmp_officer':
             return '/bjmp-officer/notifications';
+        case 'jail_officer':
+            return '/jail-officer/notifications';
         case 'monitoring_officer':
             return '/monitoring-officer/notifications';
         case 'super_admin':
@@ -39,14 +42,9 @@ export function AppSidebarHeader({
     breadcrumbs?: BreadcrumbItemType[];
 }) {
     const page = usePage<SharedData>();
-    const { resolvedAppearance, updateAppearance } = useAppearance();
     const role = page.props?.auth?.user?.role;
     const href = notificationHref(role);
     const count = unreadCount(page);
-
-    const toggleTheme = () => {
-        updateAppearance(resolvedAppearance === 'dark' ? 'light' : 'dark');
-    };
 
     return (
         <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/50 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4">
@@ -55,22 +53,14 @@ export function AppSidebarHeader({
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
             <div className="flex items-center gap-2">
-                <button
-                    type="button"
-                    onClick={toggleTheme}
-                    className="inline-flex size-9 items-center justify-center rounded-md border border-input bg-background text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-                    aria-label="Toggle theme"
-                >
-                    {resolvedAppearance === 'dark' ? (
-                        <Sun className="size-4" />
-                    ) : (
-                        <Moon className="size-4" />
-                    )}
-                </button>
+                {/* Theme Selector */}
+                <ThemeSelector />
+
+                {/* Notification Bell */}
                 {href && (
                     <Link
                         href={href}
-                        className="relative inline-flex size-9 items-center justify-center rounded-md border border-input bg-background text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+                        className="relative inline-flex size-9 items-center justify-center rounded-full border border-input bg-background text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                         aria-label="Notifications"
                     >
                         <Bell className="size-4" />
@@ -81,6 +71,17 @@ export function AppSidebarHeader({
                         )}
                     </Link>
                 )}
+
+                {/* Message Icon (visual indicator only) */}
+                <div
+                    className="relative inline-flex size-9 items-center justify-center rounded-full border border-input bg-background text-sm font-medium shadow-sm"
+                    aria-label="Messages"
+                >
+                    <MessageSquare className="size-4 text-muted-foreground" />
+                </div>
+
+                {/* User Dropdown */}
+                <HeaderUserDropdown />
             </div>
         </header>
     );

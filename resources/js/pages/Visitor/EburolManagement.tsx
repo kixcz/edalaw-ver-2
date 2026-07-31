@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Calendar, Clock, FileText, MapPin, Scale, User, Users, MoreVertical, Eye, Edit, CalendarClock, Trash2, Filter, Video, Search, AlertCircle, CheckCircle2, Building, Upload, ShieldCheck, FileHeart, Hourglass, CircleCheck, CircleX } from 'lucide-react';
+import { Calendar, Clock, FileText, MapPin, Scale, User, Users, MoreVertical, Eye, Edit, CalendarClock, Trash2, Filter, Video, Search, AlertCircle, CheckCircle2, Building, Upload, FileHeart, Hourglass, CircleCheck, CircleX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -38,6 +38,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { PrivacyNotice } from '@/components/privacy-notice';
 import { Textarea } from '@/components/ui/textarea';
 import {
     Tooltip,
@@ -885,7 +886,7 @@ export default function EburolManagement({ eburols, stats }: Props) {
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard icon={<FileHeart className="w-5 h-5" />} value={stats?.total_eburols || 0} label="Total E-Burols" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
                         <StatCard icon={<Hourglass className="w-5 h-5" />} value={stats?.pending_eburols || 0} label="Pending" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
                         <StatCard icon={<CircleCheck className="w-5 h-5" />} value={stats?.approved_eburols || 0} label="Approved" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
@@ -902,7 +903,7 @@ export default function EburolManagement({ eburols, stats }: Props) {
 
                     {/* Apply for E-Burol Modal */}
                     <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) form.reset(); }}>
-                    <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg">
+                    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Apply for E-Burol Schedule</DialogTitle>
                             <DialogDescription>
@@ -910,22 +911,7 @@ export default function EburolManagement({ eburols, stats }: Props) {
                             </DialogDescription>
                         </DialogHeader>
                         
-                        {/* Privacy Notice */}
-                        <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                            <ShieldCheck style={{ width: '14px', height: '14px', color: '#6B7280', flexShrink: 0, marginTop: '1px' }} />
-                            <div>
-                                <div style={{ fontSize: '9px', fontWeight: 700, color: '#374151', marginBottom: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                                    Data Privacy Notice
-                                </div>
-                                <div style={{ fontSize: '9px', lineHeight: '1.5', color: '#4B5563' }}>
-                                    Information provided in this application, including supporting details and documents, will be processed solely for evaluating, verifying, approving, scheduling, and administering e-Burol requests. Access to submitted information shall be restricted to authorized personnel only.
-                                    <br />
-                                    <span style={{ fontStyle: 'italic' }}>
-                                        (Ang impormasyon nga gihatag niini nga aplikasyon, lakip ang mga supporting nga detalye ug dokumento, giproseso lamang alang sa pagsusi, pag-verify, pag-apruba, pag-iskedyul, ug pagdumala sa mga e-Burol nga hangyo. Ang access sa gipasa nga impormasyon limitado lamang sa mga awtorisadong personel.)
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                        <PrivacyNotice variant="eburol" />
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Inmate Search Section */}
@@ -1283,7 +1269,7 @@ export default function EburolManagement({ eburols, stats }: Props) {
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing}>
+                                <Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">
                                     {form.processing && <Spinner />}
                                     Submit Application
                                 </Button>
@@ -1325,14 +1311,14 @@ export default function EburolManagement({ eburols, stats }: Props) {
 
                 {/* Video Call Informed Consent Modal */}
                 <Dialog open={videoTermsModalOpen} onOpenChange={setVideoTermsModalOpen}>
-                    <DialogContent className="sm:max-w-2xl border-l-4 border-l-orange-500">
+                    <DialogContent className="sm:max-w-2xl border-l-4 border-l-primary">
                         
                         
                         <div className="space-y-6 py-4">
-                            <div className="bg-orange-50 p-4 rounded-md">
-                                <p className="text-sm text-gray-800 leading-relaxed">
-                                    <strong className="font-semibold text-gray-900">Session Participation Consent:</strong>{" "}
-                                    <span className="text-gray-700">By joining this session, I acknowledge and agree that the session may be monitored, recorded, reviewed, and documented by authorized personnel for security, compliance, audit, documentation, incident investigation, and legitimate operational purposes. I understand that chat messages, audio, video, and other session-related activities may be logged and retained in accordance with applicable policies and retention requirements. I further understand that any violation of applicable rules, regulations, or visitation policies may result in the immediate termination of the session and may be subject to appropriate administrative or legal action.</span>
+                            <div className="bg-primary/10 p-4 rounded-md">
+                                <p className="text-sm text-foreground leading-relaxed">
+                                    <strong className="font-semibold text-foreground">Session Participation Consent:</strong>{" "}
+                                    <span className="text-foreground/80">By joining this session, I acknowledge and agree that the session may be monitored, recorded, reviewed, and documented by authorized personnel for security, compliance, audit, documentation, incident investigation, and legitimate operational purposes. I understand that chat messages, audio, video, and other session-related activities may be logged and retained in accordance with applicable policies and retention requirements. I further understand that any violation of applicable rules, regulations, or visitation policies may result in the immediate termination of the session and may be subject to appropriate administrative or legal action.</span>
                                 </p>
                             </div>
 
@@ -1381,7 +1367,7 @@ export default function EburolManagement({ eburols, stats }: Props) {
                                         alert('Error accepting consent. Please try again.');
                                     }
                                 }}
-                                className="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 text-white"
+                                className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-white"
                             >
                                 {acceptingTerms ? 'Processing...' : 'I Accept'}
                             </Button>
@@ -1391,7 +1377,7 @@ export default function EburolManagement({ eburols, stats }: Props) {
 
                 {/* View Details Modal */}
                 <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>E-Burol Application Details</DialogTitle>
                             <DialogDescription>
@@ -1507,7 +1493,7 @@ export default function EburolManagement({ eburols, stats }: Props) {
 
                 {/* Edit Modal */}
                 <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Edit E-Burol Application</DialogTitle>
                             <DialogDescription>
@@ -1745,7 +1731,7 @@ export default function EburolManagement({ eburols, stats }: Props) {
 
                 {/* Reschedule Modal */}
                 <Dialog open={isRescheduleModalOpen} onOpenChange={setIsRescheduleModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Reschedule E-Burol</DialogTitle>
                             <DialogDescription>
@@ -1813,7 +1799,7 @@ export default function EburolManagement({ eburols, stats }: Props) {
 
                 {/* Appeal Modal - read-only eburol summary; only appeal statement and supporting docs editable */}
                 <Dialog open={isAppealModalOpen} onOpenChange={setIsAppealModalOpen}>
-                    <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Submit Appeal for E-Burol Application</DialogTitle>
                             <DialogDescription>
@@ -1889,7 +1875,7 @@ export default function EburolManagement({ eburols, stats }: Props) {
 
                 {/* Delete Confirmation Modal */}
                 <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Delete E-Burol Application</DialogTitle>
                             <DialogDescription>

@@ -46,8 +46,8 @@ const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: Rea
                 <div className="flex items-center gap-4 px-5 py-4 flex-1">
                     <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
-                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                        <div className="text-2xl font-bold text-foreground leading-none">{value}</div>
+                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
                     </div>
                 </div>
             </div>
@@ -133,7 +133,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                 accessorKey: 'status',
                 header: 'Status',
                 cell: ({ row }) => (
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${row.original.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${row.original.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-muted text-muted-foreground border-border'}`}>
                         {row.original.status}
                     </span>
                 ),
@@ -181,15 +181,15 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
     return (
         <AppLayout user={auth.user}>
             <Head title="Annex Management" />
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-muted">
                 {/* Header */}
-                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
                     <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="p-2 bg-orange-600 rounded-xl"><Building2 className="w-5 h-5 text-white" /></div>
                             <div>
-                                <h1 className="text-lg font-bold text-slate-900 leading-none">Annex Management</h1>
-                                <p className="text-xs text-slate-500 mt-0.5">Manage your branch's annexes</p>
+                                <h1 className="text-lg font-bold text-foreground leading-none">Annex Management</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">Manage your branch's annexes</p>
                             </div>
                         </div>
                         <Button onClick={openCreateModal} className="h-9">
@@ -201,30 +201,30 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-5">
                         <StatCard icon={<Building2 className="w-5 h-5" />} value={stats.total_annexes} label="Total Annexes" accent="bg-orange-600" iconBg="bg-orange-50" iconColor="text-orange-600" />
                         <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats.active_annexes} label="Active" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
                         <StatCard icon={<XCircle className="w-5 h-5" />} value={stats.inactive_annexes} label="Inactive" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
                         <StatCard icon={<Grid className="w-5 h-5" />} value={stats.total_cells} label="Total Cells" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
-                        <StatCard icon={<Layers className="w-5 h-5" />} value={stats.total_dormitories} label="Dormitories" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
+                        
                     </div>
 
                     {/* Tabs */}
                     <Tabs defaultValue="records" className="space-y-4">
-                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
-                            <TabsTrigger value="records" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                        <TabsList className="bg-card border border-border p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger value="records" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <List className="w-4 h-4" />Annexes
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                            <TabsTrigger value="analytics" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <BarChart2 className="w-4 h-4" />Analytics
                             </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="records">
                             <Card className="border-0 shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100">
-                                    <h3 className="font-semibold text-slate-800">Annex Records</h3>
-                                    <p className="text-xs text-slate-500 mt-0.5">{annexes.total} total annexes</p>
+                                <div className="px-6 py-4 border-b border-border">
+                                    <h3 className="font-semibold text-foreground">Annex Records</h3>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{annexes.total} total annexes</p>
                                 </div>
                                 <div className="p-6">
                                     <DataTable
@@ -244,9 +244,9 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                         <TabsContent value="analytics">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Annexes by Status</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Active vs Inactive distribution</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Annexes by Status</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Active vs Inactive distribution</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -260,9 +260,9 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                                     </CardContent>
                                 </Card>
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Annexes by Jail</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Distribution across jails</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Annexes by Jail</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Distribution across jails</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -284,7 +284,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
 
             {/* Create Modal */}
             <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Create New Annex</DialogTitle>
                         <DialogDescription>
@@ -311,7 +311,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                                     </SelectContent>
                                 </Select>
                                 {form.errors.jail_id && (
-                                    <p className="text-sm text-red-600">{form.errors.jail_id}</p>
+                                    <p className="text-sm text-destructive">{form.errors.jail_id}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
@@ -323,7 +323,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                                     placeholder="Enter annex name"
                                 />
                                 {form.errors.name && (
-                                    <p className="text-sm text-red-600">{form.errors.name}</p>
+                                    <p className="text-sm text-destructive">{form.errors.name}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
@@ -335,7 +335,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                                     placeholder="Enter description"
                                 />
                                 {form.errors.description && (
-                                    <p className="text-sm text-red-600">{form.errors.description}</p>
+                                    <p className="text-sm text-destructive">{form.errors.description}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
@@ -353,7 +353,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                                     </SelectContent>
                                 </Select>
                                 {form.errors.status && (
-                                    <p className="text-sm text-red-600">{form.errors.status}</p>
+                                    <p className="text-sm text-destructive">{form.errors.status}</p>
                                 )}
                             </div>
                         </div>
@@ -365,7 +365,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={form.processing}>
+                            <Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">
                                 Create Annex
                             </Button>
                         </DialogFooter>
@@ -375,10 +375,10 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
 
             {/* Edit Modal */}
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Edit Annex</DialogTitle>
-                        <DialogDescription>Update annex information</DialogDescription>
+                        <DialogDescription>Update annex information.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submitUpdate}>
                         <div className="space-y-4 py-4">
@@ -400,7 +400,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                                     </SelectContent>
                                 </Select>
                                 {form.errors.jail_id && (
-                                    <p className="text-sm text-red-600">{form.errors.jail_id}</p>
+                                    <p className="text-sm text-destructive">{form.errors.jail_id}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
@@ -411,7 +411,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                                     onChange={(e) => form.setData('name', e.target.value)}
                                 />
                                 {form.errors.name && (
-                                    <p className="text-sm text-red-600">{form.errors.name}</p>
+                                    <p className="text-sm text-destructive">{form.errors.name}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
@@ -422,7 +422,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                                     onChange={(e) => form.setData('description', e.target.value)}
                                 />
                                 {form.errors.description && (
-                                    <p className="text-sm text-red-600">{form.errors.description}</p>
+                                    <p className="text-sm text-destructive">{form.errors.description}</p>
                                 )}
                             </div>
                             <div className="space-y-2">
@@ -440,7 +440,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                                     </SelectContent>
                                 </Select>
                                 {form.errors.status && (
-                                    <p className="text-sm text-red-600">{form.errors.status}</p>
+                                    <p className="text-sm text-destructive">{form.errors.status}</p>
                                 )}
                             </div>
                         </div>
@@ -452,7 +452,7 @@ export default function AnnexManagement({ auth, annexes, jails, branch, stats, c
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={form.processing}>
+                            <Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">
                                 Update Annex
                             </Button>
                         </DialogFooter>

@@ -880,14 +880,14 @@ export default function UserManagement({ users = [], roles: rolesProp = [] }: Pr
 
                 {/* Edit User Modal */}
                 <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Update User</DialogTitle>
                             <DialogDescription>
-                                Update user information
+                                Update user information.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4">
+                        <div className="space-y-4 py-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="first_name">First Name</Label>
@@ -1032,7 +1032,7 @@ export default function UserManagement({ users = [], roles: rolesProp = [] }: Pr
                             <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button onClick={submitEdit} disabled={editForm.processing}>
+                            <Button onClick={submitEdit} disabled={editForm.processing} className="bg-primary hover:bg-primary/90 text-white">
                                 {editForm.processing ? 'Updating...' : 'Update User'}
                             </Button>
                         </DialogFooter>
@@ -1044,7 +1044,7 @@ export default function UserManagement({ users = [], roles: rolesProp = [] }: Pr
                     open={duplicateErrorModal.open}
                     onOpenChange={(open) => setDuplicateErrorModal((prev) => ({ ...prev, open }))}
                 >
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Cannot save user</DialogTitle>
                             <DialogDescription>{duplicateErrorModal.message}</DialogDescription>
@@ -1059,7 +1059,7 @@ export default function UserManagement({ users = [], roles: rolesProp = [] }: Pr
 
                 {/* Update Status Dialog */}
                 <Dialog open={isUpdateStatusDialogOpen} onOpenChange={setIsUpdateStatusDialogOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Update User Status</DialogTitle>
                             <DialogDescription>
@@ -1116,7 +1116,7 @@ export default function UserManagement({ users = [], roles: rolesProp = [] }: Pr
                             >
                                 Cancel
                             </Button>
-                            <Button onClick={submitUpdateStatus} disabled={updateStatusForm.processing}>
+                            <Button onClick={submitUpdateStatus} disabled={updateStatusForm.processing} className="bg-primary hover:bg-primary/90 text-white">
                                 {updateStatusForm.processing ? 'Updating...' : 'Update Status'}
                             </Button>
                         </DialogFooter>
@@ -1125,7 +1125,7 @@ export default function UserManagement({ users = [], roles: rolesProp = [] }: Pr
 
                 {/* Reject User Dialog */}
                 <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Reject User Account</DialogTitle>
                             <DialogDescription>
@@ -1174,7 +1174,7 @@ export default function UserManagement({ users = [], roles: rolesProp = [] }: Pr
 
                 {/* Log out user (all devices) Modal */}
                 <Dialog open={isLogoutUserModalOpen} onOpenChange={setIsLogoutUserModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Log out user from all devices</DialogTitle>
                             <DialogDescription>
@@ -1195,7 +1195,7 @@ export default function UserManagement({ users = [], roles: rolesProp = [] }: Pr
 
                 {/* Delete User Modal */}
                 <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Delete User</DialogTitle>
                             <DialogDescription>
@@ -1215,14 +1215,14 @@ export default function UserManagement({ users = [], roles: rolesProp = [] }: Pr
 
                 {/* Add User Dialog */}
                 <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Add New User</DialogTitle>
                             <DialogDescription>
                                 Create a new user account. The user will be automatically approved.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4">
+                        <div className="space-y-4 py-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="create_first_name">First Name</Label>
@@ -1393,7 +1393,7 @@ export default function UserManagement({ users = [], roles: rolesProp = [] }: Pr
                             >
                                 Cancel
                             </Button>
-                            <Button onClick={submitCreate} disabled={createForm.processing}>
+                            <Button onClick={submitCreate} disabled={createForm.processing} className="bg-primary hover:bg-primary/90 text-white">
                                 {createForm.processing ? 'Creating...' : 'Create User'}
                             </Button>
                         </DialogFooter>

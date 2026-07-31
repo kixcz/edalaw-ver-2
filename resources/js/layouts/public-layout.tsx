@@ -29,7 +29,8 @@ export default function PublicLayout({ children, title, description }: PublicLay
     return (
         <>
             <Head title={title} />
-            <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors duration-300">
+            {/* theme-orange pins the primary color to orange on public pages; dashboard theme colors only apply to dashboards */}
+            <div className="theme-orange min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors duration-300">
                 {/* Header with Navigation */}
                 <header className="sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 shadow-sm transition-colors duration-300">
                     <div className="container mx-auto px-4 max-w-7xl">

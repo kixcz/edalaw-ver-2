@@ -171,7 +171,7 @@ export default function Sessions({ sessions, stats }: Props) {
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard icon={<MonitorSmartphone className="w-5 h-5" />} value={stats?.total_sessions || 0} label="Total Sessions" accent="bg-indigo-600" iconBg="bg-indigo-50" iconColor="text-indigo-600" />
                         <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats?.active_sessions || 0} label="Active" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
                         <StatCard icon={<Clock className="w-5 h-5" />} value={stats?.current_session || 0} label="Current" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
@@ -184,11 +184,11 @@ export default function Sessions({ sessions, stats }: Props) {
                             <ShieldCheck className="w-5 h-5 text-slate-700 flex-shrink-0 mt-0.5" />
                             <div className="flex-1">
                                 <h3 className="text-sm font-semibold text-slate-900 mb-1">Data Privacy Notice</h3>
-                                <div className="text-xs text-slate-700 leading-relaxed space-y-2">
+                                <div className="text-xs text-foreground/80 leading-relaxed space-y-2">
                                     <p>
                                         For security, compliance, and audit purposes, the system records session metadata including login timestamps, IP addresses, device information, and connection activity. Such information is accessible only to authorized personnel and is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and applicable privacy policies.
                                     </p>
-                                    <p className="italic text-slate-600">
+                                    <p className="italic text-muted-foreground">
                                         (Alang sa seguridad, pagsunod sa balaod, ug audit, ang sistema nagrekord sa session metadata lakip ang login timestamps, IP addresses, impormasyon sa device, ug kalabutan sa koneksyon. Kini nga impormasyon accessible lamang sa mga awtorisadong personel ug giproseso sumala sa Republic Act No. 10173 (Data Privacy Act of 2012) ug mga nahisgutan nga privacy policies.)
                                     </p>
                                 </div>
@@ -374,10 +374,10 @@ export default function Sessions({ sessions, stats }: Props) {
 
             {/* Security Information Modal */}
             <Dialog open={isSecurityInfoOpen} onOpenChange={setIsSecurityInfoOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="sm:max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-slate-900">
-                            <Info className="h-5 w-5 text-slate-700" />
+                        <DialogTitle className="flex items-center gap-2 text-foreground">
+                            <Info className="h-5 w-5 text-foreground/80" />
                             Security Information & Privacy Notice
                         </DialogTitle>
                         <DialogDescription className="sr-only">
@@ -386,12 +386,12 @@ export default function Sessions({ sessions, stats }: Props) {
                     </DialogHeader>
                     <div className="space-y-4">
                         {/* Security Information Section */}
-                        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-                            <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                                <ShieldCheck className="h-4 w-4 text-slate-700" />
+                        <div className="border border-border rounded-lg p-4 bg-muted">
+                            <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-foreground/80" />
                                 Session Security
                             </h3>
-                            <p className="text-xs text-slate-700 leading-relaxed">
+                            <p className="text-xs text-foreground/80 leading-relaxed">
                                 As a visitor, you can only be logged in on one device at a time for security purposes.
                                 If you log in from a new device, all other sessions will be automatically revoked.
                                 If you notice any suspicious activity, please revoke the session immediately.
@@ -399,16 +399,16 @@ export default function Sessions({ sessions, stats }: Props) {
                         </div>
 
                         {/* Privacy Notice Section */}
-                        <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-                            <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                                <ShieldCheck className="h-4 w-4 text-slate-700" />
+                        <div className="border border-border rounded-lg p-4 bg-muted">
+                            <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-foreground/80" />
                                 Data Privacy Notice
                             </h3>
-                            <div className="text-xs text-slate-700 leading-relaxed space-y-2">
+                            <div className="text-xs text-foreground/80 leading-relaxed space-y-2">
                                 <p>
                                     For security, compliance, and audit purposes, the system records session metadata including login timestamps, IP addresses, device information, and connection activity. Such information is accessible only to authorized personnel and is processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and applicable privacy policies.
                                 </p>
-                                <p className="italic text-slate-600">
+                                <p className="italic text-muted-foreground">
                                     (Alang sa seguridad, pagsunod sa balaod, ug audit, ang sistema nagrekord sa session metadata lakip ang login timestamps, IP addresses, impormasyon sa device, ug kalabutan sa koneksyon. Kini nga impormasyon accessible lamang sa mga awtorisadong personel ug giproseso sumala sa Republic Act No. 10173 (Data Privacy Act of 2012) ug mga nahisgutan nga privacy policies.)
                                 </p>
                             </div>

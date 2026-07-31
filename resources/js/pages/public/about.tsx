@@ -21,12 +21,12 @@ export default function About() {
                 
                 <div className="relative z-10 container mx-auto px-4 max-w-7xl">
                     <div className="max-w-4xl mx-auto text-center">
-                        <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
+                        <div className="inline-flex items-center gap-2 bg-primary/15 border border-primary/30 text-primary text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
                             <Lock className="w-3.5 h-3.5" />
                             ABOUT US
                         </div>
                         <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
-                            About <span className="text-orange-400">eDalaw</span>
+                            About <span className="text-primary">eDalaw</span>
                         </h1>
                         <p className="text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
                             Understanding our mission to connect families through secure technology
@@ -58,9 +58,9 @@ export default function About() {
                 <div className="container mx-auto px-4 max-w-7xl">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
                         {/* Vision */}
-                        <div className="bg-white p-8 rounded-xl shadow-md border-2 border-orange-100">
-                            <div className="w-16 h-16 bg-orange-100 rounded-lg flex items-center justify-center mb-6">
-                                <Eye className="w-8 h-8 text-orange-600" />
+                        <div className="bg-white p-8 rounded-xl shadow-md border-2 border-primary/20">
+                            <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
+                                <Eye className="w-8 h-8 text-primary" />
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Vision</h2>
                             <p className="text-lg text-gray-700 leading-relaxed">
@@ -69,9 +69,9 @@ export default function About() {
                         </div>
 
                         {/* Mission */}
-                        <div className="bg-white p-8 rounded-xl shadow-md border-2 border-orange-100">
-                            <div className="w-16 h-16 bg-orange-100 rounded-lg flex items-center justify-center mb-6">
-                                <Heart className="w-8 h-8 text-orange-600" />
+                        <div className="bg-white p-8 rounded-xl shadow-md border-2 border-primary/20">
+                            <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
+                                <Heart className="w-8 h-8 text-primary" />
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Mission</h2>
                             <p className="text-lg text-gray-700 leading-relaxed">
@@ -95,8 +95,8 @@ export default function About() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                         <div className="text-center p-6">
-                            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Shield className="w-8 h-8 text-orange-600" />
+                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Shield className="w-8 h-8 text-primary" />
                             </div>
                             <h3 className="text-xl font-semibold text-gray-900 mb-3">Security</h3>
                             <p className="text-gray-600">
@@ -105,8 +105,8 @@ export default function About() {
                         </div>
 
                         <div className="text-center p-6">
-                            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Heart className="w-8 h-8 text-orange-600" />
+                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Heart className="w-8 h-8 text-primary" />
                             </div>
                             <h3 className="text-xl font-semibold text-gray-900 mb-3">Compassion</h3>
                             <p className="text-gray-600">
@@ -115,8 +115,8 @@ export default function About() {
                         </div>
 
                         <div className="text-center p-6">
-                            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Eye className="w-8 h-8 text-orange-600" />
+                            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Eye className="w-8 h-8 text-primary" />
                             </div>
                             <h3 className="text-xl font-semibold text-gray-900 mb-3">Transparency</h3>
                             <p className="text-gray-600">
@@ -128,7 +128,7 @@ export default function About() {
             </section>
 
             {/* CTA */}
-            <section className="py-20 bg-gradient-to-r from-orange-500 to-orange-600">
+            <section className="py-20 bg-gradient-to-r from-primary to-primary/90">
                 <div className="container mx-auto px-4 max-w-7xl">
                     <div className="text-center text-white">
                         <h2 className="text-3xl md:text-4xl font-bold mb-6">Learn More About Our Services</h2>
@@ -137,7 +137,7 @@ export default function About() {
                         </p>
                         <Link
                             href={about.objectives()}
-                            className="inline-block px-8 py-4 bg-white text-orange-600 font-semibold rounded-lg hover:bg-gray-50 transition-all shadow-lg"
+                            className="inline-block px-8 py-4 bg-white text-primary font-semibold rounded-lg hover:bg-gray-50 transition-all shadow-lg"
                         >
                             View System Objectives
                         </Link>

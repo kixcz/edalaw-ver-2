@@ -18,12 +18,12 @@ export default function Terms() {
                 
                 <div className="relative z-10 container mx-auto px-4 max-w-7xl">
                     <div className="max-w-4xl mx-auto text-center">
-                        <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
+                        <div className="inline-flex items-center gap-2 bg-primary/15 border border-primary/30 text-primary text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
                             <FileText className="w-3.5 h-3.5" />
                             LEGAL
                         </div>
                         <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
-                            Terms and <span className="text-orange-400">Conditions</span>
+                            Terms and <span className="text-primary">Conditions</span>
                         </h1>
                         <p className="text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
                             Please read these terms carefully before using eDalaw

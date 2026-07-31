@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { MessageSquare, Plus, ShieldCheck } from 'lucide-react';
+import { MessageSquare, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -24,6 +24,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { PrivacyNotice } from '@/components/privacy-notice';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
@@ -205,7 +206,7 @@ export default function Suggestions({ suggestions }: Props) {
 
                 {/* Submit Feedback Modal */}
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Submit Feedback</DialogTitle>
                             <DialogDescription>
@@ -213,26 +214,9 @@ export default function Suggestions({ suggestions }: Props) {
                             </DialogDescription>
                         </DialogHeader>
 
-                        {/* Privacy Notice - Top of Form */}
-                        <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                            <ShieldCheck style={{ width: '14px', height: '14px', color: '#6B7280', flexShrink: 0, marginTop: '1px' }} />
-                            <div>
-                                <div style={{ fontSize: '9px', fontWeight: 700, color: '#374151', marginBottom: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                                    Data Privacy Notice
-                                </div>
-                                <div style={{ fontSize: '9px', lineHeight: '1.5', color: '#4B5563' }}>
-                                    Information submitted through this form will be used solely for service evaluation, complaint investigation, issue resolution, quality improvement, and administrative review. 
-                                    Personal information shall be processed only by authorized personnel in accordance with Republic Act No. 10173 and applicable privacy policies.
-                                    <br />
-                                    <span style={{ fontStyle: 'italic' }}>
-                                        (Ang impormasyon nga gipasa pinaagi niini nga form gamiton lamang alang sa pagsusi sa serbisyo, pagsuhid sa reklamo, resolusyon sa isyu, pagpaayo sa kalidad, ug pagsusi sa administrasyon. 
-                                        Ang personal nga impormasyon giproseso lamang sa mga awtorisadong personel sumala sa Republic Act No. 10173 ug mga nahisgutan nga privacy policies.)
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                        <PrivacyNotice variant="feedback" />
                         <form onSubmit={handleSubmit}>
-                            <div className="space-y-4">
+                            <div className="space-y-4 py-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="type">
                                         Type <span className="text-destructive">*</span>
@@ -289,7 +273,7 @@ export default function Suggestions({ suggestions }: Props) {
                                 <Button type="button" variant="outline" onClick={handleModalClose}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing}>
+                                <Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">
                                     {form.processing ? 'Submitting...' : 'Submit Feedback'}
                                 </Button>
                             </DialogFooter>

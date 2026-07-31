@@ -55,8 +55,6 @@ export default function BranchManagementIndex(props: any) {
             analytics={props.analytics}
             filters={props.filters}
             icon={Building2}
-            showReportsTab
-            reportsDescription="Aggregated counts, status distribution, and personnel coverage across your regional branches."
         />
     );
 }

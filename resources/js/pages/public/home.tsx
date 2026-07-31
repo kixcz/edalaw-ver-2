@@ -115,7 +115,7 @@ export default function Home() {
             {!privacyAccepted && (
                 <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-sm z-[9999] flex items-center justify-center p-5 animate-fadeIn">
                     <div className="bg-white rounded-2xl max-w-[560px] w-full shadow-2xl overflow-hidden animate-slideUp">
-                        <div className="bg-gradient-to-br from-orange-500 to-orange-400 p-7 flex items-start gap-4">
+                        <div className="bg-gradient-to-br from-primary to-primary/80 p-7 flex items-start gap-4">
                             <div className="w-12 h-12 min-w-[48px] bg-white/20 rounded-xl flex items-center justify-center">
                                 <ShieldCheck className="w-6 h-6 text-white" />
                             </div>
@@ -137,14 +137,14 @@ export default function Home() {
                                     'Monitoring for security compliance'
                                 ].map((item, idx) => (
                                     <li key={idx} className="text-sm text-slate-600 flex items-start gap-2">
-                                        <span className="text-orange-500 mt-1.5 min-w-[6px] h-1.5 rounded-full bg-orange-500 block"></span>
+                                        <span className="text-primary mt-1.5 min-w-[6px] h-1.5 rounded-full bg-primary block"></span>
                                         {item}
                                     </li>
                                 ))}
                             </ul>
                             <Link 
                                 href="/privacy" 
-                                className="inline-flex items-center gap-1.5 text-orange-500 text-sm font-semibold mb-5 hover:opacity-75 transition-opacity"
+                                className="inline-flex items-center gap-1.5 text-primary text-sm font-semibold mb-5 hover:opacity-75 transition-opacity"
                             >
                                 <ShieldCheck className="w-4 h-4" />
                                 Read Full Privacy Policy
@@ -153,7 +153,7 @@ export default function Home() {
                         <div className="px-7 pb-7">
                             <button
                                 onClick={handlePrivacyAccept}
-                                className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-xl font-bold text-base hover:-translate-y-0.5 hover:shadow-lg transition-all shadow-lg shadow-orange-500/35"
+                                className="w-full py-3.5 bg-gradient-to-r from-primary to-primary/80 text-white rounded-xl font-bold text-base hover:-translate-y-0.5 hover:shadow-lg transition-all shadow-lg shadow-primary/35"
                             >
                                 I Understand
                             </button>
@@ -178,7 +178,7 @@ export default function Home() {
                 <div className="relative z-10 max-w-[1200px] mx-auto px-[5%] w-full grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
                     {/* Left Content */}
                     <div>
-                        <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
+                        <div className="inline-flex items-center gap-2 bg-primary/15 border border-primary/30 text-primary text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
                             <Lock className="w-3.5 h-3.5" />
                             SECURE PLATFORM
                         </div>
@@ -186,7 +186,7 @@ export default function Home() {
                         <h1 className="text-[clamp(2.2rem,4.5vw,3.4rem)] font-extrabold text-white leading-tight mb-6">
                             Secure Visitation
                             <br />
-                            Management <span className="text-orange-400">Portal</span>
+                            Management <span className="text-primary">Portal</span>
                         </h1>
                         
                         <p className="text-base text-white/70 max-w-[500px] mb-9 leading-relaxed">
@@ -197,7 +197,7 @@ export default function Home() {
                         <div className="flex flex-wrap gap-3.5 mb-5">
                             <Link
                                 href={register()}
-                                className="px-8 py-3.5 bg-orange-500 text-white rounded-xl font-bold text-base inline-flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-xl transition-all shadow-lg shadow-orange-500/40 no-underline"
+                                className="px-8 py-3.5 bg-primary text-white rounded-xl font-bold text-base inline-flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-xl transition-all shadow-lg shadow-primary/40 no-underline"
                             >
                                 Get Started
                                 <ArrowRight className="w-5 h-5" />
@@ -225,7 +225,7 @@ export default function Home() {
                                     <div className="w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)] animate-pulse" />
                                     <span className="text-xs text-white/70 font-medium">System Online</span>
                                 </div>
-                                <div className="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide">
+                                <div className="bg-primary/20 text-primary text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide">
                                     LIVE
                                 </div>
                             </div>
@@ -255,22 +255,22 @@ export default function Home() {
                             </div>
 
                             <div className="bg-white/8 rounded-full h-1.5 mb-1.5 overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full w-[65%]" />
+                                <div className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full w-[65%]" />
                             </div>
                             <div className="text-xs text-white/45 mb-4">65% slots filled today</div>
 
                             {/* Stats Grid */}
                             <div className="grid grid-cols-3 gap-3">
                                 <div className="bg-white/5 rounded-xl p-3 text-center">
-                                    <div className="text-base font-extrabold text-orange-400">24</div>
+                                    <div className="text-base font-extrabold text-primary">24</div>
                                     <div className="text-[10px] text-white/45 mt-0.5">Active</div>
                                 </div>
                                 <div className="bg-white/5 rounded-xl p-3 text-center">
-                                    <div className="text-base font-extrabold text-orange-400">156</div>
+                                    <div className="text-base font-extrabold text-primary">156</div>
                                     <div className="text-[10px] text-white/45 mt-0.5">Today</div>
                                 </div>
                                 <div className="bg-white/5 rounded-xl p-3 text-center">
-                                    <div className="text-base font-extrabold text-orange-400">98%</div>
+                                    <div className="text-base font-extrabold text-primary">98%</div>
                                     <div className="text-[10px] text-white/45 mt-0.5">Uptime</div>
                                 </div>
                             </div>
@@ -283,12 +283,12 @@ export default function Home() {
             <section className="py-[90px] bg-white dark:bg-gray-900 transition-colors duration-300">
                 <div className="max-w-[1200px] mx-auto px-[5%]">
                     <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 text-orange-500 dark:text-orange-400 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
+                        <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-primary/20">
                             <Shield className="w-3.5 h-3.5" />
                             Core Features
                         </div>
                         <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 dark:text-white leading-tight mb-3.5">
-                            Key <span className="text-orange-500">Features</span>
+                            Key <span className="text-primary">Features</span>
                         </h2>
                         <p className="text-base text-slate-600 dark:text-gray-400 max-w-[580px] mx-auto leading-relaxed">
                             Comprehensive visitation management tools designed for security, efficiency, and accessibility
@@ -301,10 +301,10 @@ export default function Home() {
                             return (
                                 <div
                                     key={feature.title}
-                                    className="group p-8 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-orange-500 hover:shadow-xl transition-all duration-300 cursor-default"
+                                    className="group p-8 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-primary hover:shadow-xl transition-all duration-300 cursor-default"
                                 >
-                                    <div className="w-16 h-16 bg-orange-100 dark:bg-orange-950/50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-orange-500 transition-colors">
-                                        <Icon className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
+                                    <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-primary transition-colors">
+                                        <Icon className="w-8 h-8 text-primary group-hover:text-white transition-colors" />
                                     </div>
                                     <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-3">{feature.title}</h3>
                                     <p className="text-slate-600 dark:text-gray-400 leading-relaxed text-sm">{feature.description}</p>
@@ -319,12 +319,12 @@ export default function Home() {
             <section className="py-[90px] bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
                 <div className="max-w-[1200px] mx-auto px-[5%]">
                     <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 text-orange-500 dark:text-orange-400 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
+                        <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-primary/20">
                             <Radio className="w-3.5 h-3.5" />
                             Process
                         </div>
                         <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 dark:text-white leading-tight mb-3.5">
-                            How It <span className="text-orange-500">Works</span>
+                            How It <span className="text-primary">Works</span>
                         </h2>
                         <p className="text-base text-slate-600 dark:text-gray-400 max-w-[580px] mx-auto leading-relaxed">
                             Simple, secure, and streamlined process for managing visitations
@@ -337,16 +337,16 @@ export default function Home() {
                             return (
                                 <div key={step.number} className="relative">
                                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md text-center relative z-10 hover:shadow-lg transition-shadow">
-                                        <div className="w-14 h-14 bg-orange-500 text-white rounded-xl flex items-center justify-center mx-auto mb-4">
+                                        <div className="w-14 h-14 bg-primary text-white rounded-xl flex items-center justify-center mx-auto mb-4">
                                             <Icon className="w-6 h-6" />
                                         </div>
-                                        <div className="text-xs font-bold text-orange-500 mb-1">STEP {step.number}</div>
+                                        <div className="text-xs font-bold text-primary mb-1">STEP {step.number}</div>
                                         <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-2">{step.title}</h3>
                                         <p className="text-xs text-slate-600 dark:text-gray-400">{step.description}</p>
                                     </div>
                                     {index < steps.length - 1 && (
                                         <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-0">
-                                            <ChevronRight className="w-8 h-8 text-orange-300" />
+                                            <ChevronRight className="w-8 h-8 text-primary/40" />
                                         </div>
                                     )}
                                 </div>
@@ -357,7 +357,7 @@ export default function Home() {
                     <div className="text-center mt-12">
                         <Link
                             href={howItWorks()}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-all no-underline"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all no-underline"
                         >
                             Learn More
                             <ChevronRight className="w-5 h-5" />
@@ -367,7 +367,7 @@ export default function Home() {
             </section>
 
             {/* Statistics Section */}
-            <section className="py-[90px] bg-gradient-to-r from-orange-500 to-orange-500">
+            <section className="py-[90px] bg-gradient-to-r from-primary to-primary/90">
                 <div className="max-w-[1200px] mx-auto px-[5%]">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {stats.map((stat) => {
@@ -393,12 +393,12 @@ export default function Home() {
             <section className="py-[90px] bg-white dark:bg-gray-900 transition-colors duration-300">
                 <div className="max-w-[1200px] mx-auto px-[5%]">
                     <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 text-orange-500 dark:text-orange-400 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20">
+                        <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-primary/20">
                             <MessageSquare className="w-3.5 h-3.5" />
                             Support
                         </div>
                         <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 dark:text-white leading-tight mb-3.5">
-                            Frequently Asked <span className="text-orange-500">Questions</span>
+                            Frequently Asked <span className="text-primary">Questions</span>
                         </h2>
                         <p className="text-base text-slate-600 dark:text-gray-400 max-w-[580px] mx-auto leading-relaxed">
                             Quick answers to common questions about eDalaw
@@ -409,7 +409,7 @@ export default function Home() {
                         {faqPreview.map((item, index) => (
                             <div
                                 key={index}
-                                className="p-6 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700 transition-colors"
+                                className="p-6 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary/30 dark:hover:border-primary/50 transition-colors"
                             >
                                 <h3 className="text-base font-semibold text-slate-800 dark:text-white mb-3">{item.question}</h3>
                                 <p className="text-slate-600 dark:text-gray-400 leading-relaxed text-sm">{item.answer}</p>
@@ -420,7 +420,7 @@ export default function Home() {
                     <div className="text-center mt-12">
                         <Link
                             href={faq()}
-                            className="inline-flex items-center gap-2 px-6 py-3 border-2 border-orange-500 text-orange-500 dark:text-orange-400 font-semibold rounded-lg hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all no-underline"
+                            className="inline-flex items-center gap-2 px-6 py-3 border-2 border-primary text-primary font-semibold rounded-lg hover:bg-primary/10 transition-all no-underline"
                         >
                             View All FAQs
                             <ChevronRight className="w-5 h-5" />
@@ -434,19 +434,19 @@ export default function Home() {
                 <div className="max-w-[1200px] mx-auto px-[5%]">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 md:p-12 border border-gray-200 dark:border-gray-700">
                         <div className="text-center max-w-3xl mx-auto">
-                            <div className="inline-flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 text-orange-500 dark:text-orange-400 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-orange-500/20 mx-auto w-fit">
+                            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-3.5 border border-primary/20 mx-auto w-fit">
                                 <Phone className="w-3.5 h-3.5" />
                                 Support
                             </div>
                             <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold text-slate-800 dark:text-white leading-tight mb-3.5">
-                                Need <span className="text-orange-500">Help?</span>
+                                Need <span className="text-primary">Help?</span>
                             </h2>
                             <p className="text-base text-slate-600 dark:text-gray-400 mb-8 leading-relaxed">
                                 Our support team is here to assist you with any questions or concerns about eDalaw
                             </p>
                             <Link
                                 href={contact()}
-                                className="inline-flex items-center gap-2 px-8 py-4 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-all shadow-md hover:shadow-lg no-underline"
+                                className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-md hover:shadow-lg no-underline"
                             >
                                 Contact Us
                                 <ChevronRight className="w-5 h-5" />
@@ -461,7 +461,7 @@ export default function Home() {
                 <div className="max-w-[1200px] mx-auto px-[5%]">
                     <div className="text-center max-w-3xl mx-auto">
                         <h2 className="text-[clamp(1.7rem,3vw,2.4rem)] font-extrabold mb-6">
-                            Ready to Get <span className="text-orange-400">Started?</span>
+                            Ready to Get <span className="text-primary">Started?</span>
                         </h2>
                         <p className="text-base text-white/70 mb-10 leading-relaxed">
                             Join thousands of families who are already using eDalaw to stay connected with their loved ones
@@ -469,7 +469,7 @@ export default function Home() {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link
                                 href={register()}
-                                className="px-8 py-4 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-all shadow-lg hover:shadow-xl no-underline"
+                                className="px-8 py-4 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl no-underline"
                             >
                                 Create Account
                             </Link>

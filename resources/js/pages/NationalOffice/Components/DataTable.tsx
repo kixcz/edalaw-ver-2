@@ -1,13 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -50,8 +43,6 @@ type Paginator = {
 };
 
 type DataTableProps = {
-    title: string;
-    description: string;
     records: Paginator;
     columns: Column[];
     onEdit: (row: RecordRow) => void;
@@ -77,7 +68,7 @@ function RowActions({
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100 data-[state=open]:bg-slate-100 data-[state=open]:text-slate-700 transition-colors"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted data-[state=open]:bg-muted data-[state=open]:text-foreground transition-colors"
                     aria-label={`Open actions for record ${row.id}`}
                 >
                     <span className="sr-only">Open menu</span>
@@ -136,9 +127,9 @@ export function ActiveStatusBadge({ value }: { value: unknown }) {
     const state = String(value || 'Unknown');
     const normalized = state.toLowerCase();
 
-    let dotClass = 'fill-slate-300 text-slate-300';
+    let dotClass = 'fill-muted text-muted-foreground';
     let pillClass =
-        'border-slate-200 bg-slate-50 text-slate-600';
+        'border-border bg-muted text-muted-foreground';
 
     if (normalized === 'online') {
         dotClass = 'fill-emerald-500 text-emerald-500';
@@ -162,126 +153,114 @@ export function ActiveStatusBadge({ value }: { value: unknown }) {
 }
 
 export function DataTable({
-    title,
-    description,
     records,
     columns,
     onEdit,
     onDelete,
 }: DataTableProps) {
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="overflow-x-auto rounded-lg border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                {columns.map((column) => (
-                                    <TableHead
-                                        key={column.key}
-                                        className={
-                                            column.align === 'right'
-                                                ? 'text-right'
-                                                : undefined
-                                        }
-                                    >
-                                        {column.label}
-                                    </TableHead>
-                                ))}
-                                <TableHead className="text-right">
-                                    Actions
+        <>
+            <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="bg-muted/50 hover:bg-muted/50">
+                            {columns.map((column) => (
+                                <TableHead
+                                    key={column.key}
+                                    className={`text-xs font-semibold text-muted-foreground uppercase tracking-wide first:pl-6 ${
+                                        column.align === 'right' ? 'text-right' : ''
+                                    }`}
+                                >
+                                    {column.label}
                                 </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {records.data.length > 0 ? (
-                                records.data.map((row) => (
-                                    <TableRow key={row.id}>
-                                        {columns.map((column) => (
-                                            <TableCell
-                                                key={column.key}
-                                                className={
-                                                    column.align === 'right'
-                                                        ? 'text-right'
-                                                        : undefined
-                                                }
-                                            >
-                                                {column.render
-                                                    ? column.render(row)
-                                                    : displayValue(
-                                                          row,
-                                                          column.key,
-                                                      )}
-                                            </TableCell>
-                                        ))}
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end">
-                                                <RowActions
-                                                    row={row}
-                                                    onEdit={onEdit}
-                                                    onDelete={onDelete}
-                                                />
-                                            </div>
+                            ))}
+                            <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right pr-6">
+                                Actions
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {records.data.length > 0 ? (
+                            records.data.map((row) => (
+                                <TableRow key={row.id} className="hover:bg-muted/50 transition-colors">
+                                    {columns.map((column) => (
+                                        <TableCell
+                                            key={column.key}
+                                            className={`text-sm first:pl-6 ${
+                                                column.align === 'right' ? 'text-right' : ''
+                                            }`}
+                                        >
+                                            {column.render
+                                                ? column.render(row)
+                                                : displayValue(
+                                                      row,
+                                                      column.key,
+                                                  )}
                                         </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length + 1}
-                                        className="h-24 text-center text-muted-foreground"
-                                    >
-                                        No records found.
+                                    ))}
+                                    <TableCell className="text-right pr-6">
+                                        <div className="flex justify-end">
+                                            <RowActions
+                                                row={row}
+                                                onEdit={onEdit}
+                                                onDelete={onDelete}
+                                            />
+                                        </div>
                                     </TableCell>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-
-                <div className="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        Showing {records.from ?? 0} to {records.to ?? 0} of{' '}
-                        {records.total ?? records.data.length} records
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {(records.links ?? []).map((link, index) =>
-                            link.url ? (
-                                <Button
-                                    key={`${link.label}-${index}`}
-                                    variant={
-                                        link.active ? 'default' : 'outline'
-                                    }
-                                    size="sm"
-                                    asChild
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell
+                                    colSpan={columns.length + 1}
+                                    className="h-24 text-center text-muted-foreground"
                                 >
-                                    <Link
-                                        href={link.url}
-                                        preserveScroll
-                                        dangerouslySetInnerHTML={{
-                                            __html: link.label,
-                                        }}
-                                    />
-                                </Button>
-                            ) : (
-                                <Button
-                                    key={`${link.label}-${index}`}
-                                    variant="outline"
-                                    size="sm"
-                                    disabled
+                                    No records found.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+
+            <div className="flex flex-col gap-3 px-6 py-4 border-t border-border text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    Showing {records.from ?? 0} to {records.to ?? 0} of{' '}
+                    {records.total ?? records.data.length} records
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {(records.links ?? []).map((link, index) =>
+                        link.url ? (
+                            <Button
+                                key={`${link.label}-${index}`}
+                                variant={
+                                    link.active ? 'default' : 'outline'
+                                }
+                                size="sm"
+                                asChild
+                            >
+                                <Link
+                                    href={link.url}
+                                    preserveScroll
                                     dangerouslySetInnerHTML={{
                                         __html: link.label,
                                     }}
                                 />
-                            ),
-                        )}
-                    </div>
+                            </Button>
+                        ) : (
+                            <Button
+                                key={`${link.label}-${index}`}
+                                variant="outline"
+                                size="sm"
+                                disabled
+                                dangerouslySetInnerHTML={{
+                                    __html: link.label,
+                                }}
+                            />
+                        ),
+                    )}
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </>
     );
 }

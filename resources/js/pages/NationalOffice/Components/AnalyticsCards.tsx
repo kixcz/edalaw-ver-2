@@ -80,26 +80,28 @@ export function AnalyticsCards({
 }: AnalyticsCardsProps) {
     return (
         <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {cards.map((card) => (
-                    <Card key={card.label}>
-                        <CardHeader className="pb-2">
-                            <CardDescription>{card.label}</CardDescription>
-                            <CardTitle className="text-2xl">
-                                {Number(card.value ?? 0).toLocaleString()}
-                            </CardTitle>
-                        </CardHeader>
-                        {card.detail ? (
-                            <CardContent className="text-sm text-muted-foreground">
-                                {card.detail}
-                            </CardContent>
-                        ) : null}
-                    </Card>
-                ))}
-            </div>
+            {cards.length > 0 ? (
+                <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {cards.map((card) => (
+                        <Card key={card.label}>
+                            <CardHeader className="pb-2">
+                                <CardDescription>{card.label}</CardDescription>
+                                <CardTitle className="text-2xl">
+                                    {Number(card.value ?? 0).toLocaleString()}
+                                </CardTitle>
+                            </CardHeader>
+                            {card.detail ? (
+                                <CardContent className="text-sm text-muted-foreground">
+                                    {card.detail}
+                                </CardContent>
+                            ) : null}
+                        </Card>
+                    ))}
+                </div>
+            ) : null}
 
             {Object.entries(charts).length > 0 ? (
-                <div className="grid gap-4 xl:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                     {Object.entries(charts).map(([key, value]) => {
                         const { type, data } = unwrapChart(value);
                         return (

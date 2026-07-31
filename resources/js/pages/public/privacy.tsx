@@ -18,12 +18,12 @@ export default function Privacy() {
                 
                 <div className="relative z-10 container mx-auto px-4 max-w-7xl">
                     <div className="max-w-4xl mx-auto text-center">
-                        <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
+                        <div className="inline-flex items-center gap-2 bg-primary/15 border border-primary/30 text-primary text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
                             <ShieldCheck className="w-3.5 h-3.5" />
                             PRIVACY
                         </div>
                         <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
-                            Data Privacy <span className="text-orange-400">Policy</span>
+                            Data Privacy <span className="text-primary">Policy</span>
                         </h1>
                         <p className="text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
                             Your privacy and data security are our top priorities

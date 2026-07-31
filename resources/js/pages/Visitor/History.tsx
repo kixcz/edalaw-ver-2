@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { FileText, Filter, Search, ShieldCheck, History as HistoryIcon, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Search, ShieldCheck, History as HistoryIcon, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { DataTable } from '@/components/data-table';
@@ -150,21 +150,21 @@ export default function History({ audit_logs, stats }: Props) {
                         <div className="font-medium">{row.original.description}</div>
                         {row.original.metadata && Object.keys(row.original.metadata).length > 0 && (
                             <div className="text-xs text-muted-foreground mt-1">
-                                {row.original.metadata.inmate_name && (
+                                {Boolean(row.original.metadata.inmate_name) && (
                                     <div>PDL: {String(row.original.metadata.inmate_name)}</div>
                                 )}
-                                {row.original.metadata.deceased_name && (
+                                {Boolean(row.original.metadata.deceased_name) && (
                                     <div>Deceased: {String(row.original.metadata.deceased_name)}</div>
                                 )}
-                                {row.original.metadata.visit_type && (
+                                {Boolean(row.original.metadata.visit_type) && (
                                     <div>Type: {String(row.original.metadata.visit_type)}</div>
                                 )}
-                                {row.original.metadata.old_date && row.original.metadata.new_date && (
+                                {Boolean(row.original.metadata.old_date && row.original.metadata.new_date) && (
                                     <div>
                                         Rescheduled: {String(row.original.metadata.old_date)} {String(row.original.metadata.old_time || '')} → {String(row.original.metadata.new_date)} {String(row.original.metadata.new_time || '')}
                                     </div>
                                 )}
-                                {row.original.metadata.subject && (
+                                {Boolean(row.original.metadata.subject) && (
                                     <div>Subject: {String(row.original.metadata.subject)}</div>
                                 )}
                             </div>
@@ -233,7 +233,7 @@ export default function History({ audit_logs, stats }: Props) {
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard icon={<HistoryIcon className="w-5 h-5" />} value={stats?.total || 0} label="Total Transactions" accent="bg-slate-700" iconBg="bg-slate-50" iconColor="text-slate-700" />
                         <StatCard icon={<Clock className="w-5 h-5" />} value={stats?.by_action?.['visit_submitted'] || 0} label="Visit Requests" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
                         <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats?.by_action?.['eburol_submitted'] || 0} label="E-Burols" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
@@ -255,40 +255,6 @@ export default function History({ audit_logs, stats }: Props) {
                             </span>
                         </div>
                     </div>
-                </div>
-
-                {/* Stats Cards */}
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Actions</CardTitle>
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.total}</div>
-                            <p className="text-xs text-muted-foreground">All logged transactions</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Modules</CardTitle>
-                            <Filter className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{modules.length}</div>
-                            <p className="text-xs text-muted-foreground">Different modules accessed</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Action Types</CardTitle>
-                            <Filter className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{actions.length}</div>
-                            <p className="text-xs text-muted-foreground">Different action types</p>
-                        </CardContent>
-                    </Card>
                 </div>
 
                 {/* Data Table */}

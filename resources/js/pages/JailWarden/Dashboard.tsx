@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
     Card,
     CardContent,
@@ -32,7 +33,7 @@ import {
     UserCheck,
     Users,
 } from 'lucide-react';
-import type { ElementType, FormEvent } from 'react';
+import type { FormEvent } from 'react';
 import { useMemo, useState } from 'react';
 
 declare const route: (name: string, params?: unknown) => string;
@@ -54,46 +55,37 @@ type Props = {
     flagged_messages_over_time?: Array<{ date: string; count: number }>;
 };
 
-type MetricProps = {
-    label: string;
-    value: number | string;
-    detail: string;
-    icon: ElementType;
-    className: string;
-};
-
 function formatNumber(value: unknown) {
     return new Intl.NumberFormat('en-US').format(Number(value ?? 0));
 }
 
-function MetricCard({
-    label,
-    value,
-    detail,
-    icon: Icon,
-    className,
-}: MetricProps) {
-    return (
-        <Card className={`overflow-hidden border shadow-none ${className}`}>
-            <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <p className="text-sm font-medium opacity-75">
-                            {label}
-                        </p>
-                        <p className="mt-3 text-3xl font-semibold tracking-tight">
-                            {formatNumber(value)}
-                        </p>
-                        <p className="mt-2 text-xs opacity-70">{detail}</p>
+const StatCard: React.FC<{
+    icon: React.ReactNode;
+    value: number | string;
+    label: string;
+    accent: string;
+    iconBg: string;
+    iconColor: string;
+}> = ({
+    icon, value, label, accent, iconBg, iconColor,
+}) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>
+                        {icon}
                     </div>
-                    <div className="rounded-xl bg-background/70 p-2 shadow-sm">
-                        <Icon className="h-5 w-5" />
+                    <div>
+                        <div className="text-2xl font-bold text-foreground leading-none">{formatNumber(value)}</div>
+                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
                     </div>
                 </div>
-            </CardContent>
-        </Card>
-    );
-}
+            </div>
+        </CardContent>
+    </Card>
+);
 
 function EmptyState({ message }: { message: string }) {
     return (
@@ -192,50 +184,7 @@ export default function JailWardenDashboard({
             ? `${filters.date_from} - ${filters.date_to}`
             : 'Current analytics window';
 
-    const branchMetrics: MetricProps[] = [
-        {
-            label: 'Dormitories',
-            value: overviewStats.total_dormitories,
-            detail: 'Housing units under branch',
-            icon: Home,
-            className: 'border-cyan-200 bg-cyan-50 text-cyan-950',
-        },
-        {
-            label: 'Annexes',
-            value: overviewStats.total_annexes,
-            detail: 'Buildings in branch scope',
-            icon: Building2,
-            className: 'border-green-200 bg-green-50 text-green-950',
-        },
-        {
-            label: 'Cells',
-            value: overviewStats.total_cells,
-            detail: 'Managed cell inventory',
-            icon: Grid3X3,
-            className: 'border-pink-200 bg-pink-50 text-pink-950',
-        },
-        {
-            label: 'PDL Capacity',
-            value: overviewStats.total_pdls,
-            detail: 'Total capacity tracked',
-            icon: Users,
-            className: 'border-amber-200 bg-amber-50 text-amber-950',
-        },
-        {
-            label: 'Jail Officers',
-            value: overviewStats.total_jail_officers,
-            detail: 'Personnel in branch',
-            icon: UserCheck,
-            className: 'border-blue-200 bg-blue-50 text-blue-950',
-        },
-        {
-            label: 'Active Scopes',
-            value: overviewStats.active_scopes,
-            detail: 'Current assignments',
-            icon: ShieldCheck,
-            className: 'border-violet-200 bg-violet-50 text-violet-950',
-        },
-    ];
+
 
     const visitTypeData = [
         {
@@ -266,42 +215,27 @@ export default function JailWardenDashboard({
         <AppLayout>
             <Head title="Jail Warden Dashboard" />
 
-            <div className="min-h-screen bg-muted/30 p-4 sm:p-6">
-                <div className="mx-auto max-w-[1600px] space-y-6">
-                    <div className="flex flex-col gap-4 rounded-3xl border bg-card p-6 shadow-sm lg:flex-row lg:items-end lg:justify-between">
-                        <div>
-                            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                                <BarChart3 className="h-4 w-4" />
-                                Branch command dashboard
+            <div className="min-h-screen bg-background">
+                {/* Page Header */}
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-primary rounded-xl">
+                                <BarChart3 className="w-5 h-5 text-white" />
                             </div>
-                            <h1 className="text-3xl font-semibold tracking-tight">
-                                {branch.name}
-                            </h1>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Branch code {branch.code} · {dateWindow}
-                            </p>
+                            <div>
+                                <h1 className="text-lg font-bold text-foreground leading-none">Jail Warden</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">Branch Command & Oversight</p>
+                            </div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            <Badge
-                                variant="outline"
-                                className="rounded-xl px-3 py-2"
-                            >
-                                {filters.date_preset || 'last_30_days'}
-                            </Badge>
-                            <Button variant="outline" size="sm">
-                                <Filter className="h-4 w-4" />
-                                Filters
-                            </Button>
-                            <Button variant="outline" size="sm">
-                                <Download className="h-4 w-4" />
-                                Export
-                            </Button>
-                            <Button size="sm" onClick={() => openScopeModal()}>
-                                <UserCheck className="h-4 w-4" />
-                                Assign Scope
-                            </Button>
-                        </div>
+                        <Button size="sm" onClick={() => openScopeModal()} className="bg-primary hover:bg-primary/90 text-white shadow-sm gap-1.5 text-sm">
+                            <UserCheck className="h-4 w-4" />
+                            Assign Scope
+                        </Button>
                     </div>
+                </div>
+
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
 
                     <Tabs defaultValue="overview" className="space-y-6">
                         <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border bg-card p-1 sm:w-fit">
@@ -323,13 +257,12 @@ export default function JailWardenDashboard({
                         </TabsList>
 
                         <TabsContent value="overview" className="space-y-6">
-                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-                                {branchMetrics.map((metric) => (
-                                    <MetricCard
-                                        key={metric.label}
-                                        {...metric}
-                                    />
-                                ))}
+                            {/* Stats Grid */}
+                            <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <StatCard icon={<Home className="w-5 h-5" />} value={overviewStats.total_dormitories} label="Dormitories" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
+                                <StatCard icon={<Building2 className="w-5 h-5" />} value={overviewStats.total_annexes} label="Annexes" accent="bg-emerald-500" iconBg="bg-emerald-50 dark:bg-emerald-950/30" iconColor="text-emerald-600 dark:text-emerald-400" />
+                                <StatCard icon={<Grid3X3 className="w-5 h-5" />} value={overviewStats.total_cells} label="Cells" accent="bg-sky-500" iconBg="bg-sky-50 dark:bg-sky-950/30" iconColor="text-sky-600 dark:text-sky-400" />
+                                <StatCard icon={<Users className="w-5 h-5" />} value={overviewStats.total_pdls} label="PDLs" accent="bg-amber-500" iconBg="bg-amber-50 dark:bg-amber-950/30" iconColor="text-amber-600 dark:text-amber-400" />
                             </div>
 
                             <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -788,211 +721,215 @@ export default function JailWardenDashboard({
                         </TabsContent>
                     </Tabs>
 
-                    {isScopeModalOpen && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                            <div className="w-full max-w-md rounded-2xl bg-background p-6 shadow-xl">
-                                <h2 className="text-xl font-semibold">
+                    <Dialog open={isScopeModalOpen} onOpenChange={setIsScopeModalOpen}>
+                        <DialogContent className="sm:max-w-lg">
+                            <DialogHeader>
+                                <DialogTitle>
                                     {selectedOfficer
                                         ? `Assign Scope to ${selectedOfficer.name}`
                                         : 'Assign Scope to Officer'}
-                                </h2>
-                                <form
-                                    onSubmit={handleSubmit}
-                                    className="mt-5 space-y-4"
-                                >
-                                    {!selectedOfficer && (
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium">
-                                                Jail Officer
-                                            </label>
-                                            <select
-                                                className="w-full rounded-md border bg-background px-3 py-2"
-                                                value={
-                                                    form.data.jail_officer_id
-                                                }
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'jail_officer_id',
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                required
-                                            >
-                                                <option value="">
-                                                    Select Officer
-                                                </option>
-                                                {jailOfficers.map((officer) => (
-                                                    <option
-                                                        key={officer.id}
-                                                        value={officer.id}
-                                                    >
-                                                        {officer.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    )}
-
+                                </DialogTitle>
+                                <DialogDescription>
+                                    Select the facility scope level and specific facility for this officer.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <form
+                                onSubmit={handleSubmit}
+                                className="space-y-4"
+                            >
+                                {!selectedOfficer && (
                                     <div>
                                         <label className="mb-1 block text-sm font-medium">
-                                            Scope Level
+                                            Jail Officer
                                         </label>
                                         <select
-                                            className="w-full rounded-md border bg-background px-3 py-2"
-                                            value={form.data.scope_type}
-                                            onChange={(event) => {
+                                            className="w-full rounded-md border border-border bg-background px-3 py-2"
+                                            value={
+                                                form.data.jail_officer_id
+                                            }
+                                            onChange={(event) =>
                                                 form.setData(
-                                                    'scope_type',
+                                                    'jail_officer_id',
                                                     event.target.value,
-                                                );
-                                                form.setData('annex_id', '');
-                                                form.setData(
-                                                    'dormitory_id',
-                                                    '',
-                                                );
-                                                form.setData('cell_id', '');
-                                            }}
+                                                )
+                                            }
                                             required
                                         >
-                                            <option value="annex">
-                                                Annex Level
+                                            <option value="">
+                                                Select Officer
                                             </option>
-                                            <option value="dormitory">
-                                                Dormitory Level
-                                            </option>
-                                            <option value="cell">
-                                                Cell Level
-                                            </option>
+                                            {jailOfficers.map((officer) => (
+                                                <option
+                                                    key={officer.id}
+                                                    value={officer.id}
+                                                >
+                                                    {officer.name}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
+                                )}
 
-                                    {form.data.scope_type === 'annex' && (
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium">
-                                                Select Annex
-                                            </label>
-                                            <select
-                                                className="w-full rounded-md border bg-background px-3 py-2"
-                                                value={form.data.annex_id}
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'annex_id',
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                required
-                                            >
-                                                <option value="">
-                                                    Select Annex
-                                                </option>
-                                                {facilities.annexes?.map(
-                                                    (annex: any) => (
-                                                        <option
-                                                            key={annex.id}
-                                                            value={annex.id}
-                                                        >
-                                                            {annex.name}
-                                                        </option>
-                                                    ),
-                                                )}
-                                            </select>
-                                        </div>
-                                    )}
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium">
+                                        Scope Level
+                                    </label>
+                                    <select
+                                        className="w-full rounded-md border border-border bg-background px-3 py-2"
+                                        value={form.data.scope_type}
+                                        onChange={(event) => {
+                                            form.setData(
+                                                'scope_type',
+                                                event.target.value,
+                                            );
+                                            form.setData('annex_id', '');
+                                            form.setData(
+                                                'dormitory_id',
+                                                '',
+                                            );
+                                            form.setData('cell_id', '');
+                                        }}
+                                        required
+                                    >
+                                        <option value="annex">
+                                            Annex Level
+                                        </option>
+                                        <option value="dormitory">
+                                            Dormitory Level
+                                        </option>
+                                        <option value="cell">
+                                            Cell Level
+                                        </option>
+                                    </select>
+                                </div>
 
-                                    {form.data.scope_type === 'dormitory' && (
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium">
-                                                Select Dormitory
-                                            </label>
-                                            <select
-                                                className="w-full rounded-md border bg-background px-3 py-2"
-                                                value={form.data.dormitory_id}
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'dormitory_id',
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                required
-                                            >
-                                                <option value="">
-                                                    Select Dormitory
-                                                </option>
-                                                {facilities.dormitories?.map(
-                                                    (dorm: any) => (
-                                                        <option
-                                                            key={dorm.id}
-                                                            value={dorm.id}
-                                                        >
-                                                            {dorm.name}
-                                                        </option>
-                                                    ),
-                                                )}
-                                            </select>
-                                        </div>
-                                    )}
-
-                                    {form.data.scope_type === 'cell' && (
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium">
-                                                Select Cell
-                                            </label>
-                                            <select
-                                                className="w-full rounded-md border bg-background px-3 py-2"
-                                                value={form.data.cell_id}
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'cell_id',
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                required
-                                            >
-                                                <option value="">
-                                                    Select Cell
-                                                </option>
-                                                {facilities.cells?.map(
-                                                    (cell: any) => (
-                                                        <option
-                                                            key={cell.id}
-                                                            value={cell.id}
-                                                        >
-                                                            Cell{' '}
-                                                            {cell.cell_number} -{' '}
-                                                            {cell.annex?.name} (
-                                                            {
-                                                                cell.dormitory
-                                                                    ?.name
-                                                            }
-                                                            )
-                                                        </option>
-                                                    ),
-                                                )}
-                                            </select>
-                                        </div>
-                                    )}
-
-                                    <div className="flex justify-end gap-2 pt-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() =>
-                                                setIsScopeModalOpen(false)
+                                {form.data.scope_type === 'annex' && (
+                                    <div>
+                                        <label className="mb-1 block text-sm font-medium">
+                                            Select Annex
+                                        </label>
+                                        <select
+                                            className="w-full rounded-md border border-border bg-background px-3 py-2"
+                                            value={form.data.annex_id}
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'annex_id',
+                                                    event.target.value,
+                                                )
                                             }
+                                            required
                                         >
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            type="submit"
-                                            disabled={form.processing}
-                                        >
-                                            Assign Scope
-                                        </Button>
+                                            <option value="">
+                                                Select Annex
+                                            </option>
+                                            {facilities.annexes?.map(
+                                                (annex: any) => (
+                                                    <option
+                                                        key={annex.id}
+                                                        value={annex.id}
+                                                    >
+                                                        {annex.name}
+                                                    </option>
+                                                ),
+                                            )}
+                                        </select>
                                     </div>
-                                </form>
-                            </div>
-                        </div>
-                    )}
+                                )}
+
+                                {form.data.scope_type === 'dormitory' && (
+                                    <div>
+                                        <label className="mb-1 block text-sm font-medium">
+                                            Select Dormitory
+                                        </label>
+                                        <select
+                                            className="w-full rounded-md border border-border bg-background px-3 py-2"
+                                            value={form.data.dormitory_id}
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'dormitory_id',
+                                                    event.target.value,
+                                                )
+                                            }
+                                            required
+                                        >
+                                            <option value="">
+                                                Select Dormitory
+                                            </option>
+                                            {facilities.dormitories?.map(
+                                                (dorm: any) => (
+                                                    <option
+                                                        key={dorm.id}
+                                                        value={dorm.id}
+                                                    >
+                                                        {dorm.name}
+                                                    </option>
+                                                ),
+                                            )}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {form.data.scope_type === 'cell' && (
+                                    <div>
+                                        <label className="mb-1 block text-sm font-medium">
+                                            Select Cell
+                                        </label>
+                                        <select
+                                            className="w-full rounded-md border border-border bg-background px-3 py-2"
+                                            value={form.data.cell_id}
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'cell_id',
+                                                    event.target.value,
+                                                )
+                                            }
+                                            required
+                                        >
+                                            <option value="">
+                                                Select Cell
+                                            </option>
+                                            {facilities.cells?.map(
+                                                (cell: any) => (
+                                                    <option
+                                                        key={cell.id}
+                                                        value={cell.id}
+                                                    >
+                                                        Cell{' '}
+                                                        {cell.cell_number} -{' '}
+                                                        {cell.annex?.name} (
+                                                        {
+                                                            cell.dormitory
+                                                                ?.name
+                                                        }
+                                                        )
+                                                    </option>
+                                                ),
+                                            )}
+                                        </select>
+                                    </div>
+                                )}
+
+                                <DialogFooter>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                            setIsScopeModalOpen(false)
+                                        }
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={form.processing}
+                                        className="bg-primary hover:bg-primary/90 text-white"
+                                    >
+                                        Assign Scope
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
         </AppLayout>
@@ -1068,7 +1005,7 @@ function LegacyJailWardenDashboard({
                         <h1 className="text-3xl font-bold">
                             Jail Warden Dashboard
                         </h1>
-                        <p className="mt-1 text-gray-500">
+                        <p className="mt-1 text-muted-foreground">
                             {branch.name} ({branch.code})
                         </p>
                     </div>
@@ -1081,7 +1018,7 @@ function LegacyJailWardenDashboard({
                             <div className="text-2xl font-bold">
                                 {overviewStats.total_dormitories}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted-foreground">
                                 Dormitories
                             </div>
                         </CardContent>
@@ -1091,7 +1028,7 @@ function LegacyJailWardenDashboard({
                             <div className="text-2xl font-bold">
                                 {overviewStats.total_annexes}
                             </div>
-                            <div className="text-sm text-gray-500">Annexes</div>
+                            <div className="text-sm text-muted-foreground">Annexes</div>
                         </CardContent>
                     </Card>
                     <Card>
@@ -1099,7 +1036,7 @@ function LegacyJailWardenDashboard({
                             <div className="text-2xl font-bold">
                                 {overviewStats.total_cells}
                             </div>
-                            <div className="text-sm text-gray-500">Cells</div>
+                            <div className="text-sm text-muted-foreground">Cells</div>
                         </CardContent>
                     </Card>
                     <Card>
@@ -1107,7 +1044,7 @@ function LegacyJailWardenDashboard({
                             <div className="text-2xl font-bold">
                                 {overviewStats.total_pdls}
                             </div>
-                            <div className="text-sm text-gray-500">PDLs</div>
+                            <div className="text-sm text-muted-foreground">PDLs</div>
                         </CardContent>
                     </Card>
                     <Card>
@@ -1115,7 +1052,7 @@ function LegacyJailWardenDashboard({
                             <div className="text-2xl font-bold">
                                 {overviewStats.total_jail_officers}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted-foreground">
                                 Jail Officers
                             </div>
                         </CardContent>
@@ -1125,7 +1062,7 @@ function LegacyJailWardenDashboard({
                             <div className="text-2xl font-bold">
                                 {overviewStats.active_scopes}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted-foreground">
                                 Active Scopes
                             </div>
                         </CardContent>
@@ -1225,7 +1162,7 @@ function LegacyJailWardenDashboard({
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <span className="text-gray-400">
+                                                            <span className="text-muted-foreground">
                                                                 No scopes
                                                                 assigned
                                                             </span>
@@ -1272,7 +1209,7 @@ function LegacyJailWardenDashboard({
                                                 <h4 className="text-xl font-bold">
                                                     {dorm.name}
                                                 </h4>
-                                                <p className="text-sm text-gray-500">
+                                                <p className="text-sm text-muted-foreground">
                                                     Type: {dorm.type} |
                                                     Capacity: {dorm.capacity}
                                                 </p>
@@ -1282,11 +1219,11 @@ function LegacyJailWardenDashboard({
                                                 <strong className="text-sm">
                                                     Annex:
                                                 </strong>
-                                                <div className="ml-4 rounded bg-gray-50 p-3">
+                                                <div className="ml-4 rounded bg-muted p-3">
                                                     <div className="font-medium">
                                                         {dorm.annex.name}
                                                     </div>
-                                                    <div className="mt-1 text-sm text-gray-600">
+                                                    <div className="mt-1 text-sm text-muted-foreground">
                                                         {
                                                             dorm.annex.cells
                                                                 .length
@@ -1327,7 +1264,7 @@ function LegacyJailWardenDashboard({
                                                         (cell: any) => (
                                                             <div
                                                                 key={cell.id}
-                                                                className="rounded bg-yellow-50 p-3"
+                                                                className="rounded bg-amber-50 p-3"
                                                             >
                                                                 <div className="font-medium">
                                                                     Cell{' '}
@@ -1340,7 +1277,7 @@ function LegacyJailWardenDashboard({
                                                                     }
                                                                     )
                                                                 </div>
-                                                                <div className="mt-1 text-sm text-gray-600">
+                                                                <div className="mt-1 text-sm text-muted-foreground">
                                                                     Capacity:{' '}
                                                                     {
                                                                         cell.current_inmates
@@ -1401,202 +1338,205 @@ function LegacyJailWardenDashboard({
                 </Tabs>
 
                 {/* Scope Assignment Modal */}
-                {isScopeModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                        <div className="w-full max-w-md rounded-lg bg-white p-6">
-                            <h2 className="mb-4 text-xl font-bold">
+                <Dialog open={isScopeModalOpen} onOpenChange={setIsScopeModalOpen}>
+                    <DialogContent className="sm:max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>
                                 {selectedOfficer
                                     ? `Assign Scope to ${selectedOfficer.name}`
                                     : 'Assign Scope to Officer'}
-                            </h2>
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                {!selectedOfficer && (
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium">
-                                            Jail Officer
-                                        </label>
-                                        <select
-                                            className="w-full rounded-md border px-3 py-2"
-                                            value={form.data.jail_officer_id}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'jail_officer_id',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            required
-                                        >
-                                            <option value="">
-                                                Select Officer
-                                            </option>
-                                            {jailOfficers.map(
-                                                (officer: any) => (
-                                                    <option
-                                                        key={officer.id}
-                                                        value={officer.id}
-                                                    >
-                                                        {officer.name}
-                                                    </option>
-                                                ),
-                                            )}
-                                        </select>
-                                    </div>
-                                )}
-
+                            </DialogTitle>
+                            <DialogDescription>
+                                Select the facility scope level and specific facility for this officer.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {!selectedOfficer && (
                                 <div>
                                     <label className="mb-1 block text-sm font-medium">
-                                        Scope Level
+                                        Jail Officer
                                     </label>
                                     <select
-                                        className="w-full rounded-md border px-3 py-2"
-                                        value={form.data.scope_type}
-                                        onChange={(e) => {
+                                        className="w-full rounded-md border border-border px-3 py-2"
+                                        value={form.data.jail_officer_id}
+                                        onChange={(e) =>
                                             form.setData(
-                                                'scope_type',
+                                                'jail_officer_id',
                                                 e.target.value,
-                                            );
-                                            form.setData('annex_id', '');
-                                            form.setData('dormitory_id', '');
-                                            form.setData('cell_id', '');
-                                        }}
+                                            )
+                                        }
                                         required
                                     >
-                                        <option value="annex">
-                                            🏢 Annex Level (Broadest)
+                                        <option value="">
+                                            Select Officer
                                         </option>
-                                        <option value="dormitory">
-                                            🛏️ Dormitory Level (Specific dorm in
-                                            annex)
-                                        </option>
-                                        <option value="cell">
-                                            📍 Cell Level (Most specific)
-                                        </option>
+                                        {jailOfficers.map(
+                                            (officer: any) => (
+                                                <option
+                                                    key={officer.id}
+                                                    value={officer.id}
+                                                >
+                                                    {officer.name}
+                                                </option>
+                                            ),
+                                        )}
                                     </select>
                                 </div>
+                            )}
 
-                                {form.data.scope_type === 'annex' && (
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium">
-                                            Select Annex
-                                        </label>
-                                        <select
-                                            className="w-full rounded-md border px-3 py-2"
-                                            value={form.data.annex_id}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'annex_id',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            required
-                                        >
-                                            <option value="">
-                                                Select Annex
-                                            </option>
-                                            {facilities.annexes.map(
-                                                (annex: any) => (
-                                                    <option
-                                                        key={annex.id}
-                                                        value={annex.id}
-                                                    >
-                                                        {annex.name} (
-                                                        {annex.dormitory.name})
-                                                    </option>
-                                                ),
-                                            )}
-                                        </select>
-                                    </div>
-                                )}
+                            <div>
+                                <label className="mb-1 block text-sm font-medium">
+                                    Scope Level
+                                </label>
+                                <select
+                                    className="w-full rounded-md border border-border px-3 py-2"
+                                    value={form.data.scope_type}
+                                    onChange={(e) => {
+                                        form.setData(
+                                            'scope_type',
+                                            e.target.value,
+                                        );
+                                        form.setData('annex_id', '');
+                                        form.setData('dormitory_id', '');
+                                        form.setData('cell_id', '');
+                                    }}
+                                    required
+                                >
+                                    <option value="annex">
+                                        Annex Level
+                                    </option>
+                                    <option value="dormitory">
+                                        Dormitory Level
+                                    </option>
+                                    <option value="cell">
+                                        Cell Level
+                                    </option>
+                                </select>
+                            </div>
 
-                                {form.data.scope_type === 'dormitory' && (
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium">
-                                            Select Dormitory
-                                        </label>
-                                        <select
-                                            className="w-full rounded-md border px-3 py-2"
-                                            value={form.data.dormitory_id}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'dormitory_id',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            required
-                                        >
-                                            <option value="">
-                                                Select Dormitory
-                                            </option>
-                                            {facilities.dormitories.map(
-                                                (dorm: any) => (
-                                                    <option
-                                                        key={dorm.id}
-                                                        value={dorm.id}
-                                                    >
-                                                        {dorm.name}
-                                                    </option>
-                                                ),
-                                            )}
-                                        </select>
-                                    </div>
-                                )}
-
-                                {form.data.scope_type === 'cell' && (
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium">
-                                            Select Cell
-                                        </label>
-                                        <select
-                                            className="w-full rounded-md border px-3 py-2"
-                                            value={form.data.cell_id}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'cell_id',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            required
-                                        >
-                                            <option value="">
-                                                Select Cell
-                                            </option>
-                                            {facilities.cells.map(
-                                                (cell: any) => (
-                                                    <option
-                                                        key={cell.id}
-                                                        value={cell.id}
-                                                    >
-                                                        Cell {cell.cell_number}{' '}
-                                                        - {cell.annex.name} (
-                                                        {cell.dormitory.name})
-                                                    </option>
-                                                ),
-                                            )}
-                                        </select>
-                                    </div>
-                                )}
-
-                                <div className="flex justify-end gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() =>
-                                            setIsScopeModalOpen(false)
+                            {form.data.scope_type === 'annex' && (
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium">
+                                        Select Annex
+                                    </label>
+                                    <select
+                                        className="w-full rounded-md border border-border px-3 py-2"
+                                        value={form.data.annex_id}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'annex_id',
+                                                e.target.value,
+                                            )
                                         }
+                                        required
                                     >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={form.processing}
-                                    >
-                                        Assign Scope
-                                    </Button>
+                                        <option value="">
+                                            Select Annex
+                                        </option>
+                                        {facilities.annexes.map(
+                                            (annex: any) => (
+                                                <option
+                                                    key={annex.id}
+                                                    value={annex.id}
+                                                >
+                                                    {annex.name} (
+                                                    {annex.dormitory.name})
+                                                </option>
+                                            ),
+                                        )}
+                                    </select>
                                 </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
+                            )}
+
+                            {form.data.scope_type === 'dormitory' && (
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium">
+                                        Select Dormitory
+                                    </label>
+                                    <select
+                                        className="w-full rounded-md border border-border px-3 py-2"
+                                        value={form.data.dormitory_id}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'dormitory_id',
+                                                e.target.value,
+                                            )
+                                        }
+                                        required
+                                    >
+                                        <option value="">
+                                            Select Dormitory
+                                        </option>
+                                        {facilities.dormitories.map(
+                                            (dorm: any) => (
+                                                <option
+                                                    key={dorm.id}
+                                                    value={dorm.id}
+                                                >
+                                                    {dorm.name}
+                                                </option>
+                                            ),
+                                        )}
+                                    </select>
+                                </div>
+                            )}
+
+                            {form.data.scope_type === 'cell' && (
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium">
+                                        Select Cell
+                                    </label>
+                                    <select
+                                        className="w-full rounded-md border border-border px-3 py-2"
+                                        value={form.data.cell_id}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'cell_id',
+                                                e.target.value,
+                                            )
+                                        }
+                                        required
+                                    >
+                                        <option value="">
+                                            Select Cell
+                                        </option>
+                                        {facilities.cells.map(
+                                            (cell: any) => (
+                                                <option
+                                                    key={cell.id}
+                                                    value={cell.id}
+                                                >
+                                                    Cell {cell.cell_number}{' '}
+                                                    - {cell.annex.name} (
+                                                    {cell.dormitory.name})
+                                                </option>
+                                            ),
+                                        )}
+                                    </select>
+                                </div>
+                            )}
+
+                            <DialogFooter>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() =>
+                                        setIsScopeModalOpen(false)
+                                    }
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={form.processing}
+                                    className="bg-primary hover:bg-primary/90 text-white"
+                                >
+                                    Assign Scope
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
         </AppLayout>
     );

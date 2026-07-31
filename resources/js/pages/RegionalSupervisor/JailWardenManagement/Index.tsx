@@ -77,8 +77,6 @@ export default function JailWardenIndex(props: any) {
             analytics={props.analytics}
             filters={props.filters}
             icon={Shield}
-            showReportsTab
-            reportsDescription="Approval status distribution and warden coverage across branches in your region."
         />
     );
 }

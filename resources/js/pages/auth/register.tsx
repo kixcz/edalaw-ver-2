@@ -87,12 +87,13 @@ export default function Register({ visitor_role_id }: Props) {
     return (
         <>
             <Head title="Register" />
-            <div className="grid min-h-svh lg:grid-cols-2">
+            {/* theme-orange pins the primary color to orange; dashboard theme colors only apply to dashboards */}
+            <div className="theme-orange grid min-h-svh lg:grid-cols-2">
                 {/* Left Column - Cover Image (Fixed) */}
                 <div className="relative hidden lg:block">
                     <div className="sticky top-0 h-svh">
-                    {/* Orange gradient background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700" />
+                    {/* Primary gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-primary/80" />
                     
                     {/* Decorative elements */}
                     <div className="absolute inset-0 opacity-10">
@@ -188,12 +189,12 @@ export default function Register({ visitor_role_id }: Props) {
                     <div className="flex flex-1 items-center justify-center">
                         <div className="w-full max-w-2xl">
                             {/* Privacy Notice - Top of Form Container */}
-                            <div className="mb-6 bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-4">
+                            <div className="mb-6 bg-primary/10 border-2 border-primary/20 rounded-xl p-4">
                                 <div className="flex items-start gap-3">
-                                    <svg className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <svg className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
                                     </svg>
-                                    <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                                    <p className="text-xs text-primary leading-relaxed">
                                         The personal information collected through this registration form will be used solely for account creation, identity verification, visitation management, communication, security monitoring, and other legitimate operational purposes of the eDalaw system. Your information will be processed in accordance with Republic Act No. 10173 (Data Privacy Act of 2012) and applicable institutional privacy policies. Only authorized personnel shall have access to your information, and it will be retained only for as long as necessary to fulfill legitimate purposes and legal obligations.
                                     </p>
                                 </div>
@@ -419,7 +420,7 @@ export default function Register({ visitor_role_id }: Props) {
                         </div>
                     </div>
 
-                    <div className="rounded-lg border-l-4 border-l-orange-500 bg-muted/40 p-5 space-y-3">
+                    <div className="rounded-lg border-l-4 border-l-primary bg-muted/40 p-5 space-y-3">
                         <div className="flex items-start gap-3">
                             <Checkbox
                                 id="consent_accepted"
@@ -434,7 +435,7 @@ export default function Register({ visitor_role_id }: Props) {
                                 className="text-sm font-normal leading-relaxed cursor-pointer"
                             >
                                 <span className="text-muted-foreground">I have read, understood, and agree to the </span>
-                                <Link href="/privacy-policy" className="text-orange-600 dark:text-orange-400 hover:underline font-medium">
+                                <Link href="/privacy-policy" className="text-primary hover:underline font-medium">
                                     Data Privacy Policy and Terms of Use
                                 </Link>
                                 <span className="text-muted-foreground">. By creating an eDalaw account, I voluntarily provide my personal information and consent to its collection, processing, storage, and use for account registration, identity verification, visitation management, security monitoring, communication, and other legitimate system operations. I understand that my personal data will be processed in accordance with Republic Act No. 10173, otherwise known as the Data Privacy Act of 2012, and applicable institutional policies. I certify that the information I provide is true, accurate, and complete, and I acknowledge that any falsification, misrepresentation, or omission of material information may result in the denial, suspension, or termination of my access to the system and may subject me to applicable administrative, civil, or criminal liabilities.</span>

@@ -36,12 +36,12 @@ export default function Contact() {
                 
                 <div className="relative z-10 container mx-auto px-4 max-w-7xl">
                     <div className="max-w-4xl mx-auto text-center">
-                        <div className="inline-flex items-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
+                        <div className="inline-flex items-center gap-2 bg-primary/15 border border-primary/30 text-primary text-xs font-semibold tracking-wide px-4 py-1.5 rounded-full mb-6">
                             <Headphones className="w-3.5 h-3.5" />
                             GET IN TOUCH
                         </div>
                         <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
-                            Contact <span className="text-orange-400">Us</span>
+                            Contact <span className="text-primary">Us</span>
                         </h1>
                         <p className="text-lg text-white/70 leading-relaxed max-w-3xl mx-auto">
                             We're here to help with any questions or concerns
@@ -59,8 +59,8 @@ export default function Contact() {
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">Get in Touch</h2>
                             <div className="space-y-6">
                                 <div className="flex items-start gap-4">
-                                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <MapPin className="w-5 h-5 text-orange-600" />
+                                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <MapPin className="w-5 h-5 text-primary" />
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-gray-900 mb-1">Office Address</h3>
@@ -72,8 +72,8 @@ export default function Contact() {
                                 </div>
 
                                 <div className="flex items-start gap-4">
-                                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <Mail className="w-5 h-5 text-orange-600" />
+                                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <Mail className="w-5 h-5 text-primary" />
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-gray-900 mb-1">Email Address</h3>
@@ -83,8 +83,8 @@ export default function Contact() {
                                 </div>
 
                                 <div className="flex items-start gap-4">
-                                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <Phone className="w-5 h-5 text-orange-600" />
+                                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <Phone className="w-5 h-5 text-primary" />
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-gray-900 mb-1">Phone Number</h3>
@@ -94,8 +94,8 @@ export default function Contact() {
                                 </div>
 
                                 <div className="flex items-start gap-4">
-                                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <Clock className="w-5 h-5 text-orange-600" />
+                                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <Clock className="w-5 h-5 text-primary" />
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-gray-900 mb-1">Office Hours</h3>
@@ -124,7 +124,7 @@ export default function Contact() {
                                             required
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                                             placeholder="Enter your full name"
                                         />
                                     </div>
@@ -139,7 +139,7 @@ export default function Contact() {
                                             required
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                                             placeholder="your.email@example.com"
                                         />
                                     </div>
@@ -154,7 +154,7 @@ export default function Contact() {
                                             required
                                             value={formData.subject}
                                             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                                             placeholder="What is this about?"
                                         />
                                     </div>
@@ -169,14 +169,14 @@ export default function Contact() {
                                             value={formData.message}
                                             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                                             rows={6}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all resize-vertical"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all resize-vertical"
                                             placeholder="Please describe your inquiry in detail..."
                                         />
                                     </div>
 
                                     <button
                                         type="submit"
-                                        className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-all shadow-md hover:shadow-lg"
+                                        className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-md hover:shadow-lg"
                                     >
                                         <Send className="w-5 h-5" />
                                         Send Message
@@ -204,7 +204,7 @@ export default function Contact() {
                             href="https://maps.google.com/?q=BJMP+National+Headquarters+Quezon+City"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-block px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-all"
+                            className="inline-block px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all"
                         >
                             Open in Google Maps
                         </a>

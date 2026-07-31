@@ -359,7 +359,7 @@ export default function AssignedSessions({ sessions, filters: initialFilters, us
                 </Card>
 
                 <Dialog open={!!beforeScheduleSession} onOpenChange={(open) => !open && setBeforeScheduleSession(null)}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Session not started yet</DialogTitle>
                             <DialogDescription>

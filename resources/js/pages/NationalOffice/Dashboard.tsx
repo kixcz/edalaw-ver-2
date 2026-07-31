@@ -1,387 +1,218 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
-import { Head } from '@inertiajs/react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Head, router } from '@inertiajs/react';
 import {
-    Activity,
-    BarChart3,
-    Building2,
-    CalendarDays,
-    Database,
-    DoorClosed,
-    Download,
-    Filter,
-    Home,
     Landmark,
-    Search,
-    ShieldCheck,
-    TrendingUp,
+    GitBranch,
+    Columns4,
+    Grid3X3,
     Users,
+    List,
+    BarChart2,
+    Calendar,
 } from 'lucide-react';
-import type { ElementType, ReactNode } from 'react';
-import { useMemo, useState } from 'react';
-import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from 'recharts';
 
-type Row = { id: number; [key: string]: unknown };
-type Column<T extends Row> = {
-    key: string;
-    label: string;
-    align?: 'right';
-    render?: (row: T) => ReactNode;
-};
 type ChartItem = { name: string; count: number };
-type MetricTone = 'blue' | 'green' | 'amber' | 'rose' | 'violet' | 'slate';
+
+type RegionRow = {
+    id: number;
+    code: string;
+    name: string;
+    status: string;
+    total_branches: number;
+    total_jails: number;
+    total_dormitories: number;
+    total_cells: number;
+    total_pdls: number;
+};
+
+type BranchRow = {
+    id: number;
+    code: string;
+    name: string;
+    type: string;
+    status: string;
+    region: { code: string; name: string };
+    jail_warden: { id: number; name: string; email: string } | null;
+    total_jails: number;
+    total_dormitories: number;
+    total_annexes: number;
+    total_cells: number;
+    total_pdls: number;
+};
 
 type Props = {
     overviewStats: Record<string, number>;
-    regions: Row[];
-    branches: Row[];
-    jailOfficers: Row[];
-    annexes: Row[];
-    dormitories: Row[];
-    cells: Row[];
-    pdls: Row[];
+    regions: RegionRow[];
+    branches: BranchRow[];
     analytics: Record<string, ChartItem[]>;
     filters: { date_from: string; date_to: string };
-};
-
-const ITEMS_PER_PAGE = 10;
-const chartFill = '#2563eb';
-const mutedChartFill = '#64748b';
-const accentChartFill = '#0f766e';
-const breadcrumbs = [
-    { title: 'National Office Dashboard', href: '/dashboard/national-office' },
-];
-
-const toneStyles: Record<MetricTone, string> = {
-    blue: 'border-blue-100 bg-blue-50 text-blue-700 dark:border-blue-950 dark:bg-blue-950/30 dark:text-blue-300',
-    green: 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-300',
-    amber: 'border-amber-100 bg-amber-50 text-amber-700 dark:border-amber-950 dark:bg-amber-950/30 dark:text-amber-300',
-    rose: 'border-rose-100 bg-rose-50 text-rose-700 dark:border-rose-950 dark:bg-rose-950/30 dark:text-rose-300',
-    violet: 'border-violet-100 bg-violet-50 text-violet-700 dark:border-violet-950 dark:bg-violet-950/30 dark:text-violet-300',
-    slate: 'border-slate-100 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300',
 };
 
 function formatNumber(value: unknown) {
     return new Intl.NumberFormat('en-US').format(Number(value ?? 0));
 }
 
-function getValue(row: unknown, path: string): unknown {
-    return path.split('.').reduce<unknown>((value, key) => {
-        if (value && typeof value === 'object' && key in value) {
-            return (value as Record<string, unknown>)[key];
-        }
-
-        return undefined;
-    }, row);
-}
-
-function textValue(row: Row, path: string) {
-    const value = getValue(row, path);
-    return value === null || value === undefined || value === ''
-        ? '—'
-        : String(value);
-}
-
-function StatusBadge({ value }: { value: unknown }) {
-    const status = String(value || 'Unknown');
-    const isActive = status.toLowerCase() === 'active';
-
-    return (
-        <Badge variant={isActive ? 'default' : 'secondary'} className="w-fit">
-            {status}
-        </Badge>
-    );
-}
-
-function MetricCard({
-    label,
-    value,
-    detail,
-    icon: Icon,
-    tone = 'slate',
-}: {
+const StatCard: React.FC<{
+    icon: React.ReactNode;
+    value: number | string;
     label: string;
-    value: number;
-    detail: string;
-    icon: ElementType;
-    tone?: MetricTone;
-}) {
-    return (
-        <Card className="overflow-hidden border-0 shadow-none ring-1 ring-border/70">
-            <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                            {label}
-                        </p>
-                        <p className="mt-2 text-3xl font-semibold tracking-tight">
-                            {formatNumber(value)}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                            {detail}
-                        </p>
+    accent: string;
+    iconBg: string;
+    iconColor: string;
+}> = ({
+    icon, value, label, accent, iconBg, iconColor,
+}) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>
+                        {icon}
                     </div>
-                    <div
-                        className={`rounded-2xl border p-3 ${toneStyles[tone]}`}
-                    >
-                        <Icon className="h-5 w-5" />
+                    <div>
+                        <div className="text-2xl font-bold text-foreground leading-none">{formatNumber(value)}</div>
+                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
                     </div>
                 </div>
-            </CardContent>
-        </Card>
-    );
+            </div>
+        </CardContent>
+    </Card>
+);
+
+interface PaginationControlsProps {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    onPageChange: (page: number) => void;
 }
 
-function HighlightCard({
-    title,
-    value,
-    detail,
-    icon: Icon,
-}: {
-    title: string;
-    value: number;
-    detail: string;
-    icon: ElementType;
-}) {
+const PaginationControls: React.FC<PaginationControlsProps> = ({ currentPage, totalPages, totalItems, onPageChange }) => {
+    if (totalPages <= 1) return null;
+
+    const getPageNumbers = () => {
+        const pages: (number | string)[] = [];
+        const showEllipsis = totalPages > 5;
+        if (!showEllipsis) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            pages.push(1);
+            if (currentPage > 3) pages.push('...');
+            for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                if (!pages.includes(i)) pages.push(i);
+            }
+            if (currentPage < totalPages - 2) pages.push('...');
+            if (!pages.includes(totalPages)) pages.push(totalPages);
+        }
+        return pages;
+    };
+
     return (
-        <div className="rounded-2xl border bg-background p-4">
-            <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-muted-foreground">
-                    {title}
-                </p>
-                <Icon className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+            <p className="text-sm text-muted-foreground">
+                Page <span className="font-medium text-foreground">{currentPage}</span> of{' '}
+                <span className="font-medium text-foreground">{totalPages}</span>
+                <span className="ml-2 text-muted-foreground">({totalItems} total)</span>
+            </p>
+            <div className="flex items-center gap-1">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="h-8 px-3 text-xs"
+                >
+                    Previous
+                </Button>
+                {getPageNumbers().map((page, index) =>
+                    typeof page === 'number' ? (
+                        <Button
+                            key={index}
+                            variant={page === currentPage ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => onPageChange(page)}
+                            className={`h-8 w-8 p-0 text-xs ${page === currentPage ? 'bg-primary hover:bg-primary/90 border-primary' : ''}`}
+                        >
+                            {page}
+                        </Button>
+                    ) : (
+                        <span key={index} className="px-1 text-muted-foreground text-sm">…</span>
+                    )
+                )}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="h-8 px-3 text-xs"
+                >
+                    Next
+                </Button>
             </div>
-            <p className="mt-3 text-2xl font-semibold">{formatNumber(value)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
         </div>
     );
+};
+
+function statusBadgeClass(status: string) {
+    const map: Record<string, string> = {
+        active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        inactive: 'bg-muted text-muted-foreground border-border',
+        maintenance: 'bg-primary/10 text-primary border-primary/20',
+    };
+    return map[status?.toLowerCase()] ?? 'bg-muted text-muted-foreground border-border';
 }
 
-function RegistryTable<T extends Row>({
-    title,
-    description,
-    rows,
-    columns,
-    page,
-    pageKey,
-    searchTerm,
-    onPageChange,
-}: {
-    title: string;
-    description: string;
-    rows: T[];
-    columns: Column<T>[];
-    page: number;
-    pageKey: string;
-    searchTerm: string;
-    onPageChange: (pageKey: string, page: number) => void;
-}) {
-    const filteredRows = useMemo(() => {
-        const query = searchTerm.trim().toLowerCase();
-        if (!query) return rows;
-
-        return rows.filter((row) =>
-            JSON.stringify(row).toLowerCase().includes(query),
-        );
-    }, [rows, searchTerm]);
-
-    const totalPages = Math.max(
-        1,
-        Math.ceil(filteredRows.length / ITEMS_PER_PAGE),
-    );
-    const safePage = Math.min(page, totalPages);
-    const visibleRows = filteredRows.slice(
-        (safePage - 1) * ITEMS_PER_PAGE,
-        safePage * ITEMS_PER_PAGE,
-    );
-
-    return (
-        <Card className="overflow-hidden border-0 shadow-none ring-1 ring-border/70">
-            <CardHeader className="border-b pb-5">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <CardTitle className="text-base">{title}</CardTitle>
-                        <CardDescription>{description}</CardDescription>
-                    </div>
-                    <Badge variant="outline" className="w-fit">
-                        {formatNumber(filteredRows.length)} records
-                    </Badge>
-                </div>
-            </CardHeader>
-            <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-muted/40 hover:bg-muted/40">
-                                {columns.map((column) => (
-                                    <TableHead
-                                        key={column.key}
-                                        className={
-                                            column.align === 'right'
-                                                ? 'text-right'
-                                                : undefined
-                                        }
-                                    >
-                                        {column.label}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {visibleRows.length > 0 ? (
-                                visibleRows.map((row) => (
-                                    <TableRow key={row.id}>
-                                        {columns.map((column) => (
-                                            <TableCell
-                                                key={`${row.id}-${column.key}`}
-                                                className={
-                                                    column.align === 'right'
-                                                        ? 'text-right'
-                                                        : undefined
-                                                }
-                                            >
-                                                {column.render
-                                                    ? column.render(row)
-                                                    : textValue(
-                                                          row,
-                                                          column.key,
-                                                      )}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-28 text-center text-muted-foreground"
-                                    >
-                                        No records found for this view.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-                {totalPages > 1 && (
-                    <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-sm text-muted-foreground">
-                            Page {safePage} of {totalPages}
-                        </p>
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={safePage === 1}
-                                onClick={() =>
-                                    onPageChange(pageKey, safePage - 1)
-                                }
-                            >
-                                Previous
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={safePage === totalPages}
-                                onClick={() =>
-                                    onPageChange(pageKey, safePage + 1)
-                                }
-                            >
-                                Next
-                            </Button>
-                        </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
+function branchTypeBadgeClass(type: string) {
+    const map: Record<string, string> = {
+        provincial: 'bg-violet-50 text-violet-700 border-violet-200',
+        district: 'bg-sky-50 text-sky-700 border-sky-200',
+        'sub-provincial': 'bg-amber-50 text-amber-700 border-amber-200',
+    };
+    return map[type?.toLowerCase()] ?? 'bg-muted text-muted-foreground border-border';
 }
 
-function ChartCard({
-    title,
-    description,
-    data,
-    fill = chartFill,
-}: {
-    title: string;
-    description: string;
-    data?: ChartItem[];
-    fill?: string;
-}) {
-    const rows = data ?? [];
+const chartTooltipStyle = {
+    borderRadius: '8px',
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+    fontSize: 12,
+} as const;
 
+function AnalyticsChart({ title, description, data }: { title: string; description: string; data?: ChartItem[] }) {
+    const chartData = data ?? [];
     return (
-        <Card className="border-0 shadow-none ring-1 ring-border/70">
-            <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <CardTitle className="text-base">{title}</CardTitle>
-                        <CardDescription>{description}</CardDescription>
-                    </div>
-                    <Badge variant="outline">
-                        Top {Math.min(rows.length, 12)}
-                    </Badge>
-                </div>
-            </CardHeader>
-            <CardContent>
-                {rows.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={320}>
-                        <BarChart
-                            data={rows.slice(0, 12)}
-                            margin={{ top: 8, right: 16, left: 0, bottom: 72 }}
-                        >
-                            <CartesianGrid
-                                strokeDasharray="3 3"
-                                vertical={false}
-                                stroke="#e5e7eb"
-                            />
+        <Card className="border-0 shadow-sm">
+            <div className="px-6 pt-5 pb-2 border-b border-border">
+                <h4 className="font-semibold text-foreground text-sm">{title}</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+            </div>
+            <CardContent className="p-4 pt-5">
+                {chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 60 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                             <XAxis
                                 dataKey="name"
-                                angle={-35}
+                                angle={-40}
                                 textAnchor="end"
+                                tick={{ fontSize: 11, fill: '#64748b' }}
+                                axisLine={false}
+                                tickLine={false}
                                 interval={0}
-                                height={90}
-                                tick={{ fontSize: 11, fill: '#6b7280' }}
                             />
-                            <YAxis
-                                allowDecimals={false}
-                                tick={{ fontSize: 12, fill: '#6b7280' }}
-                            />
-                            <Tooltip cursor={{ fill: '#f3f4f6' }} />
-                            <Bar
-                                dataKey="count"
-                                fill={fill}
-                                radius={[6, 6, 0, 0]}
-                            />
+                            <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                            <Tooltip contentStyle={chartTooltipStyle} />
+                            <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 ) : (
-                    <div className="flex h-80 items-center justify-center rounded-2xl border border-dashed text-sm text-muted-foreground">
+                    <div className="h-[280px] flex items-center justify-center text-sm text-muted-foreground">
                         No analytics data available.
                     </div>
                 )}
@@ -390,1533 +221,298 @@ function ChartCard({
     );
 }
 
-function MiniBarList({ title, data }: { title: string; data?: ChartItem[] }) {
-    const rows = (data ?? []).slice(0, 5);
-    const maxValue = Math.max(...rows.map((row) => Number(row.count)), 1);
+export default function NationalOfficeDashboard({ overviewStats, regions, branches, analytics, filters }: Props) {
+    const [currentPage, setCurrentPage] = useState<Record<string, number>>({ regions: 1, branches: 1 });
+    const ITEMS_PER_PAGE = 10;
+
+    const paginate = <T,>(data: T[], pageKey: string) => {
+        const page = currentPage[pageKey] || 1;
+        const start = (page - 1) * ITEMS_PER_PAGE;
+        return {
+            data: data.slice(start, start + ITEMS_PER_PAGE),
+            totalPages: Math.ceil(data.length / ITEMS_PER_PAGE),
+            totalItems: data.length,
+        };
+    };
+
+    const handlePageChange = (key: string, page: number) =>
+        setCurrentPage(prev => ({ ...prev, [key]: page }));
+
+    const [dateFrom, setDateFrom] = useState(filters?.date_from ?? '');
+    const [dateTo, setDateTo] = useState(filters?.date_to ?? '');
+
+    const applyDateFilter = () => {
+        router.get('/dashboard/national-office', { date_from: dateFrom, date_to: dateTo }, { preserveState: true, preserveScroll: true });
+    };
+
+    const paginatedRegions = paginate(regions, 'regions');
+    const paginatedBranches = paginate(branches, 'branches');
 
     return (
-        <Card className="border-0 shadow-none ring-1 ring-border/70">
-            <CardHeader>
-                <CardTitle className="text-base">{title}</CardTitle>
-                <CardDescription>
-                    Highest-volume national records.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {rows.length > 0 ? (
-                    rows.map((row) => (
-                        <div key={row.name} className="space-y-2">
-                            <div className="flex items-center justify-between gap-3 text-sm">
-                                <span className="truncate font-medium">
-                                    {row.name}
-                                </span>
-                                <span className="text-muted-foreground">
-                                    {formatNumber(row.count)}
-                                </span>
-                            </div>
-                            <div className="h-2 overflow-hidden rounded-full bg-muted">
-                                <div
-                                    className="h-full rounded-full bg-primary"
-                                    style={{
-                                        width: `${Math.max(8, (row.count / maxValue) * 100)}%`,
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="flex h-48 items-center justify-center rounded-2xl border border-dashed text-sm text-muted-foreground">
-                        No ranking data available.
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
-
-export default function NationalOfficeDashboard({
-    overviewStats,
-    regions,
-    branches,
-    jailOfficers,
-    annexes,
-    dormitories,
-    cells,
-    pdls,
-    analytics,
-    filters,
-}: Props) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [pages, setPages] = useState<Record<string, number>>({
-        regions: 1,
-        branches: 1,
-        officers: 1,
-        annexes: 1,
-        dormitories: 1,
-        cells: 1,
-        pdls: 1,
-    });
-
-    const setPage = (pageKey: string, page: number) =>
-        setPages((current) => ({ ...current, [pageKey]: page }));
-    const resetPages = () =>
-        setPages({
-            regions: 1,
-            branches: 1,
-            officers: 1,
-            annexes: 1,
-            dormitories: 1,
-            cells: 1,
-            pdls: 1,
-        });
-
-    const dateWindow =
-        filters.date_from && filters.date_to
-            ? `${filters.date_from} - ${filters.date_to}`
-            : 'Current analytics window';
-
-    const metrics = [
-        {
-            label: 'Regions',
-            value: overviewStats.total_regions,
-            detail: 'National coverage areas',
-            icon: Landmark,
-            tone: 'blue' as const,
-        },
-        {
-            label: 'Branches',
-            value: overviewStats.total_branches,
-            detail: 'BJMP operating branches',
-            icon: Building2,
-            tone: 'green' as const,
-        },
-        {
-            label: 'Jails',
-            value: overviewStats.total_jails,
-            detail: 'Facilities in hierarchy',
-            icon: ShieldCheck,
-            tone: 'violet' as const,
-        },
-        {
-            label: 'PDLs',
-            value: overviewStats.total_pdls,
-            detail: 'Persons deprived of liberty',
-            icon: Users,
-            tone: 'amber' as const,
-        },
-    ];
-
-    const registryMetrics = [
-        {
-            label: 'Dormitories',
-            value: overviewStats.total_dormitories,
-            detail: 'Housing units tracked',
-            icon: Home,
-            tone: 'slate' as const,
-        },
-        {
-            label: 'Annexes',
-            value: overviewStats.total_annexes,
-            detail: 'Buildings under jails',
-            icon: DoorClosed,
-            tone: 'slate' as const,
-        },
-        {
-            label: 'Visits',
-            value: overviewStats.total_visits,
-            detail: 'Submitted schedules',
-            icon: CalendarDays,
-            tone: 'rose' as const,
-        },
-        {
-            label: 'Active Sessions',
-            value: overviewStats.active_visit_sessions,
-            detail: 'Currently open monitoring',
-            icon: Activity,
-            tone: 'green' as const,
-        },
-    ];
-
-    return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title="National Office Dashboard" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4 sm:p-6">
-                <div className="rounded-3xl border bg-card p-6 shadow-sm">
-                    <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-                        <div className="max-w-3xl">
-                            <Badge variant="secondary" className="mb-4 gap-2">
-                                <BarChart3 className="h-4 w-4" />
-                                National Command Center
-                            </Badge>
-                            <h1 className="text-3xl font-semibold tracking-tight">
-                                National Office Dashboard
-                            </h1>
-                            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                                Consolidated operational visibility across
-                                regions, BJMP branches, facilities, personnel
-                                assignments, PDL housing, and visit activity.
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col gap-3 rounded-2xl border bg-muted/20 p-4 sm:flex-row sm:items-center">
-                            <div className="flex items-center gap-3 text-sm">
-                                <div className="rounded-xl bg-background p-2 text-muted-foreground">
-                                    <CalendarDays className="h-4 w-4" />
-                                </div>
-                                <div>
-                                    <p className="font-medium">
-                                        Analytics window
-                                    </p>
-                                    <p className="text-muted-foreground">
-                                        {dateWindow}
-                                    </p>
-                                </div>
+            <div className="min-h-screen bg-background">
+                {/* Page Header */}
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-primary rounded-xl">
+                                <Landmark className="w-5 h-5 text-white" />
                             </div>
-                            <Button variant="outline" className="gap-2">
-                                <Download className="h-4 w-4" />
-                                Export
-                            </Button>
+                            <div>
+                                <h1 className="text-lg font-bold text-foreground leading-none">National Office</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">Nationwide BJMP Oversight & Analytics</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <Tabs defaultValue="overview" className="space-y-6">
-                    <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border bg-card p-1 sm:w-fit">
-                        <TabsTrigger value="overview" className="rounded-xl">
-                            Overview
-                        </TabsTrigger>
-                        <TabsTrigger value="reports" className="rounded-xl">
-                            Reports
-                        </TabsTrigger>
-                        <TabsTrigger value="registry" className="rounded-xl">
-                            Registry
-                        </TabsTrigger>
-                    </TabsList>
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<Columns4 className="w-5 h-5" />} value={overviewStats.total_regions} label="Total Regions" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
+                        <StatCard icon={<GitBranch className="w-5 h-5" />} value={overviewStats.total_branches} label="Total Branches" accent="bg-amber-500" iconBg="bg-amber-50 dark:bg-amber-950/30" iconColor="text-amber-600 dark:text-amber-400" />
+                        <StatCard icon={<Grid3X3 className="w-5 h-5" />} value={overviewStats.total_cells} label="Total Cells" accent="bg-emerald-500" iconBg="bg-emerald-50 dark:bg-emerald-950/30" iconColor="text-emerald-600 dark:text-emerald-400" />
+                        <StatCard icon={<Users className="w-5 h-5" />} value={overviewStats.total_pdls} label="Total PDLs" accent="bg-sky-500" iconBg="bg-sky-50 dark:bg-sky-950/30" iconColor="text-sky-600 dark:text-sky-400" />
+                    </div>
 
-                    <TabsContent value="overview" className="space-y-6">
-                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                            {metrics.map((metric) => (
-                                <MetricCard key={metric.label} {...metric} />
-                            ))}
-                        </div>
+                    {/* Main Tabs */}
+                    <Tabs defaultValue="regions" className="space-y-4">
+                        <TabsList className="bg-card border border-border p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger
+                                value="regions"
+                                className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all"
+                            >
+                                <Columns4 className="w-4 h-4" />
+                                Regions
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="branches"
+                                className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all"
+                            >
+                                <List className="w-4 h-4" />
+                                Branches
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="analytics"
+                                className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all"
+                            >
+                                <BarChart2 className="w-4 h-4" />
+                                Reports & Analytics
+                            </TabsTrigger>
+                        </TabsList>
 
-                        <div className="grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
-                            <ChartCard
-                                title="PDLs per Branch"
-                                description="Top branch-level PDL distribution across the national registry."
-                                data={analytics.pdl_per_branch}
-                            />
+                        {/* REGIONS TAB */}
+                        <TabsContent value="regions">
+                            <Card className="border-0 shadow-sm">
+                                <div className="px-6 py-4 border-b border-border">
+                                    <h3 className="font-semibold text-foreground">Regional Offices</h3>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{regions.length} regions nationwide — manage them in the Regions module</p>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pl-6">Code</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Region</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Branches</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Jails</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Dorms</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Cells</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right pr-6">PDLs</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {paginatedRegions.data.map((region) => (
+                                                <TableRow key={region.id} className="hover:bg-muted/50 transition-colors">
+                                                    <TableCell className="pl-6">
+                                                        <span className="font-mono text-xs bg-muted text-foreground px-2 py-1 rounded">{region.code}</span>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className="font-semibold text-foreground text-sm">{region.name}</span>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize ${statusBadgeClass(region.status)}`}>
+                                                            {region.status}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">{formatNumber(region.total_branches)}</TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">{formatNumber(region.total_jails)}</TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">{formatNumber(region.total_dormitories)}</TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">{formatNumber(region.total_cells)}</TableCell>
+                                                    <TableCell className="text-right pr-6">
+                                                        <span className="text-sm font-bold text-foreground">{formatNumber(region.total_pdls)}</span>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            {paginatedRegions.data.length === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground text-sm">
+                                                        No regions found. Create regions in the Regions module.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                                <PaginationControls
+                                    currentPage={currentPage.regions}
+                                    totalPages={paginatedRegions.totalPages}
+                                    totalItems={paginatedRegions.totalItems}
+                                    onPageChange={(page) => handlePageChange('regions', page)}
+                                />
+                            </Card>
+                        </TabsContent>
 
-                            <Card className="border-0 shadow-none ring-1 ring-border/70">
-                                <CardHeader>
-                                    <CardTitle className="text-base">
-                                        National Highlights
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Facility and visit signals for the
-                                        selected reporting window.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                                    {registryMetrics.map((metric) => (
-                                        <HighlightCard
-                                            key={metric.label}
-                                            title={metric.label}
-                                            value={metric.value}
-                                            detail={metric.detail}
-                                            icon={metric.icon}
+                        {/* BRANCHES TAB */}
+                        <TabsContent value="branches">
+                            <Card className="border-0 shadow-sm">
+                                <div className="px-6 py-4 border-b border-border">
+                                    <h3 className="font-semibold text-foreground">BJMP Branches</h3>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{branches.length} branches — manage them in the Branches module</p>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pl-6">Code</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Branch Name</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Type</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Region</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Jail Warden</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Annexes</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Dorms</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Cells</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">PDLs</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pr-6">Status</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {paginatedBranches.data.map((branch) => (
+                                                <TableRow key={branch.id} className="hover:bg-muted/50 transition-colors">
+                                                    <TableCell className="pl-6">
+                                                        <span className="font-mono text-xs bg-muted text-foreground px-2 py-1 rounded">{branch.code}</span>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className="font-semibold text-foreground text-sm">{branch.name}</span>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize ${branchTypeBadgeClass(branch.type)}`}>
+                                                            {branch.type}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground">{branch.region?.name ?? '—'}</TableCell>
+                                                    <TableCell>
+                                                        {branch.jail_warden ? (
+                                                            <div>
+                                                                <div className="text-sm font-medium text-foreground">{branch.jail_warden.name}</div>
+                                                                <div className="text-xs text-muted-foreground">{branch.jail_warden.email}</div>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground italic">Unassigned</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">{formatNumber(branch.total_annexes)}</TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">{formatNumber(branch.total_dormitories)}</TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">{formatNumber(branch.total_cells)}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <span className="text-sm font-bold text-foreground">{formatNumber(branch.total_pdls)}</span>
+                                                    </TableCell>
+                                                    <TableCell className="pr-6">
+                                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize ${statusBadgeClass(branch.status)}`}>
+                                                            {branch.status}
+                                                        </span>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            {paginatedBranches.data.length === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={10} className="text-center py-12 text-muted-foreground text-sm">
+                                                        No branches found. Create branches in the Branches module.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                                <PaginationControls
+                                    currentPage={currentPage.branches}
+                                    totalPages={paginatedBranches.totalPages}
+                                    totalItems={paginatedBranches.totalItems}
+                                    onPageChange={(page) => handlePageChange('branches', page)}
+                                />
+                            </Card>
+                        </TabsContent>
+
+                        {/* ANALYTICS TAB */}
+                        <TabsContent value="analytics" className="space-y-4">
+                            {/* Date Range Filter (applies to visit-based charts) */}
+                            <Card className="border-0 shadow-sm">
+                                <CardContent className="px-6 py-4 flex flex-wrap items-end gap-3">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">From</label>
+                                        <input
+                                            type="date"
+                                            value={dateFrom}
+                                            onChange={(e) => setDateFrom(e.target.value)}
+                                            className="h-9 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                                         />
-                                    ))}
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">To</label>
+                                        <input
+                                            type="date"
+                                            value={dateTo}
+                                            onChange={(e) => setDateTo(e.target.value)}
+                                            className="h-9 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                        />
+                                    </div>
+                                    <Button onClick={applyDateFilter} className="h-9 bg-primary hover:bg-primary/90 text-white gap-1.5 text-sm">
+                                        <Calendar className="w-4 h-4" />
+                                        Apply
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground pb-2.5">Date range applies to visit-based charts.</p>
                                 </CardContent>
                             </Card>
-                        </div>
 
-                        <div className="grid gap-6 lg:grid-cols-2">
-                            <MiniBarList
-                                title="Branches by PDL Population"
-                                data={analytics.pdl_per_branch}
-                            />
-                            <MiniBarList
-                                title="Visits by Region"
-                                data={analytics.visits_per_region}
-                            />
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent value="reports" className="space-y-6">
-                        <Card className="border-0 shadow-none ring-1 ring-border/70">
-                            <CardContent className="p-4">
-                                <form
-                                    method="get"
-                                    action="/dashboard/national-office"
-                                    className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
-                                >
-                                    <div>
-                                        <div className="flex items-center gap-2 text-sm font-medium">
-                                            <Filter className="h-4 w-4" />
-                                            Report filters
-                                        </div>
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            Date filters are handled by the
-                                            existing National Office dashboard
-                                            request.
-                                        </p>
-                                    </div>
-                                    <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-                                        <label className="space-y-1 text-sm">
-                                            <span className="text-muted-foreground">
-                                                From
-                                            </span>
-                                            <input
-                                                type="date"
-                                                name="date_from"
-                                                defaultValue={filters.date_from}
-                                                className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-foreground/40"
-                                            />
-                                        </label>
-                                        <label className="space-y-1 text-sm">
-                                            <span className="text-muted-foreground">
-                                                To
-                                            </span>
-                                            <input
-                                                type="date"
-                                                name="date_to"
-                                                defaultValue={filters.date_to}
-                                                className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-foreground/40"
-                                            />
-                                        </label>
-                                        <Button type="submit" className="gap-2">
-                                            <TrendingUp className="h-4 w-4" />
-                                            Apply
-                                        </Button>
-                                    </div>
-                                </form>
-                            </CardContent>
-                        </Card>
-
-                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                            {registryMetrics.map((metric) => (
-                                <MetricCard key={metric.label} {...metric} />
-                            ))}
-                        </div>
-
-                        <div className="grid gap-4 xl:grid-cols-2">
-                            <ChartCard
-                                title="Branches per Region"
-                                description="Regional branch coverage."
-                                data={analytics.branch_per_region}
-                                fill={mutedChartFill}
-                            />
-                            <ChartCard
-                                title="Cells per Branch"
-                                description="Cell inventory by branch."
-                                data={analytics.cell_per_branch}
-                                fill={accentChartFill}
-                            />
-                            <ChartCard
-                                title="Visits per Region"
-                                description="Scheduled visits within selected analytics window."
-                                data={analytics.visits_per_region}
-                                fill={mutedChartFill}
-                            />
-                            <ChartCard
-                                title="Visits per Branch"
-                                description="Branch-level visit volume."
-                                data={analytics.visits_per_branch}
-                            />
-                            <ChartCard
-                                title="Top Cells by Visits"
-                                description="Cells with the highest linked visit activity."
-                                data={analytics.visits_per_cell}
-                                fill={accentChartFill}
-                            />
-                            <ChartCard
-                                title="PDLs per Branch"
-                                description="National custody distribution by branch."
-                                data={analytics.pdl_per_branch}
-                            />
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent value="registry" className="space-y-6">
-                        <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <div className="flex items-center gap-2 text-sm font-medium">
-                                    <Database className="h-4 w-4" />
-                                    Facility Registry
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                    Search applies to the active operational
-                                    table.
-                                </p>
-                            </div>
-                            <div className="relative w-full sm:max-w-sm">
-                                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                <input
-                                    value={searchTerm}
-                                    onChange={(event) => {
-                                        setSearchTerm(event.target.value);
-                                        resetPages();
-                                    }}
-                                    placeholder="Search records..."
-                                    className="h-10 w-full rounded-md border bg-background pr-3 pl-9 text-sm transition outline-none focus:border-foreground/40"
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <AnalyticsChart
+                                    title="PDLs per Branch"
+                                    description="Population of persons deprived of liberty"
+                                    data={analytics.pdl_per_branch}
+                                />
+                                <AnalyticsChart
+                                    title="Branches per Region"
+                                    description="Branch distribution across regions"
+                                    data={analytics.branch_per_region}
+                                />
+                                <AnalyticsChart
+                                    title="Cells per Branch"
+                                    description="Cell capacity distribution"
+                                    data={analytics.cell_per_branch}
+                                />
+                                <AnalyticsChart
+                                    title="Visits per Region"
+                                    description="Visit activity within the selected date range"
+                                    data={analytics.visits_per_region}
+                                />
+                                <AnalyticsChart
+                                    title="Visits per Branch"
+                                    description="Visit activity within the selected date range"
+                                    data={analytics.visits_per_branch}
+                                />
+                                <AnalyticsChart
+                                    title="Visits per Dormitory"
+                                    description="Visit activity within the selected date range"
+                                    data={analytics.visits_per_dormitory}
                                 />
                             </div>
-                        </div>
-
-                        <Tabs defaultValue="regions" className="space-y-4">
-                            <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-2xl border bg-card p-1">
-                                <TabsTrigger value="regions">
-                                    Regions
-                                </TabsTrigger>
-                                <TabsTrigger value="branches">
-                                    Branches
-                                </TabsTrigger>
-                                <TabsTrigger value="officers">
-                                    Officers
-                                </TabsTrigger>
-                                <TabsTrigger value="annexes">
-                                    Annexes
-                                </TabsTrigger>
-                                <TabsTrigger value="dormitories">
-                                    Dormitories
-                                </TabsTrigger>
-                                <TabsTrigger value="cells">Cells</TabsTrigger>
-                                <TabsTrigger value="pdls">PDLs</TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="regions">
-                                <RegistryTable
-                                    title="Regional Offices"
-                                    description="High-level facility and population distribution per region."
-                                    rows={regions}
-                                    pageKey="regions"
-                                    page={pages.regions}
-                                    searchTerm={searchTerm}
-                                    onPageChange={setPage}
-                                    columns={[
-                                        { key: 'code', label: 'Code' },
-                                        { key: 'name', label: 'Region' },
-                                        {
-                                            key: 'status',
-                                            label: 'Status',
-                                            render: (row) => (
-                                                <StatusBadge
-                                                    value={row.status}
-                                                />
-                                            ),
-                                        },
-                                        {
-                                            key: 'total_branches',
-                                            label: 'Branches',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'total_jails',
-                                            label: 'Jails',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'total_dormitories',
-                                            label: 'Dormitories',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'total_cells',
-                                            label: 'Cells',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'total_pdls',
-                                            label: 'PDLs',
-                                            align: 'right',
-                                        },
-                                    ]}
-                                />
-                            </TabsContent>
-
-                            <TabsContent value="branches">
-                                <RegistryTable
-                                    title="BJMP Branches"
-                                    description="Branch-level operational counts with assigned jail wardens."
-                                    rows={branches}
-                                    pageKey="branches"
-                                    page={pages.branches}
-                                    searchTerm={searchTerm}
-                                    onPageChange={setPage}
-                                    columns={[
-                                        { key: 'code', label: 'Code' },
-                                        { key: 'name', label: 'Branch' },
-                                        { key: 'region.name', label: 'Region' },
-                                        {
-                                            key: 'jail_warden',
-                                            label: 'Jail Warden',
-                                            render: (row) =>
-                                                getValue(
-                                                    row,
-                                                    'jail_warden.name',
-                                                ) ? (
-                                                    <div>
-                                                        <div className="font-medium">
-                                                            {textValue(
-                                                                row,
-                                                                'jail_warden.name',
-                                                            )}
-                                                        </div>
-                                                        <div className="text-xs text-muted-foreground">
-                                                            {textValue(
-                                                                row,
-                                                                'jail_warden.email',
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-muted-foreground">
-                                                        Not assigned
-                                                    </span>
-                                                ),
-                                        },
-                                        {
-                                            key: 'total_jails',
-                                            label: 'Jails',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'total_annexes',
-                                            label: 'Annexes',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'total_cells',
-                                            label: 'Cells',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'total_pdls',
-                                            label: 'PDLs',
-                                            align: 'right',
-                                        },
-                                    ]}
-                                />
-                            </TabsContent>
-
-                            <TabsContent value="officers">
-                                <RegistryTable
-                                    title="Jail Officers"
-                                    description="Personnel assignments and active operational scopes."
-                                    rows={jailOfficers}
-                                    pageKey="officers"
-                                    page={pages.officers}
-                                    searchTerm={searchTerm}
-                                    onPageChange={setPage}
-                                    columns={[
-                                        { key: 'name', label: 'Officer' },
-                                        { key: 'email', label: 'Email' },
-                                        {
-                                            key: 'branch.name',
-                                            label: 'Branch',
-                                            render: (row) =>
-                                                textValue(row, 'branch.name'),
-                                        },
-                                        {
-                                            key: 'branch.region',
-                                            label: 'Region',
-                                            render: (row) =>
-                                                textValue(row, 'branch.region'),
-                                        },
-                                        {
-                                            key: 'scopes',
-                                            label: 'Active Scopes',
-                                            render: (row) =>
-                                                Array.isArray(row.scopes) &&
-                                                row.scopes.length > 0 ? (
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {row.scopes.map(
-                                                            (scope, index) => (
-                                                                <Badge
-                                                                    key={index}
-                                                                    variant="outline"
-                                                                    className="font-normal"
-                                                                >
-                                                                    {String(
-                                                                        (
-                                                                            scope as Record<
-                                                                                string,
-                                                                                unknown
-                                                                            >
-                                                                        )
-                                                                            .description ??
-                                                                            'Scope',
-                                                                    )}
-                                                                </Badge>
-                                                            ),
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-muted-foreground">
-                                                        No active scope
-                                                    </span>
-                                                ),
-                                        },
-                                    ]}
-                                />
-                            </TabsContent>
-
-                            <TabsContent value="annexes">
-                                <RegistryTable
-                                    title="Annexes / Buildings"
-                                    description="Building-level registry under jail facilities."
-                                    rows={annexes}
-                                    pageKey="annexes"
-                                    page={pages.annexes}
-                                    searchTerm={searchTerm}
-                                    onPageChange={setPage}
-                                    columns={[
-                                        { key: 'name', label: 'Annex' },
-                                        { key: 'jail.name', label: 'Jail' },
-                                        { key: 'branch.name', label: 'Branch' },
-                                        { key: 'region.name', label: 'Region' },
-                                        {
-                                            key: 'total_dormitories',
-                                            label: 'Dormitories',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'total_cells',
-                                            label: 'Cells',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'assigned_officers',
-                                            label: 'Assigned Officers',
-                                            align: 'right',
-                                        },
-                                    ]}
-                                />
-                            </TabsContent>
-
-                            <TabsContent value="dormitories">
-                                <RegistryTable
-                                    title="Dormitories"
-                                    description="Housing units mapped to annexes, jails, branches, and regions."
-                                    rows={dormitories}
-                                    pageKey="dormitories"
-                                    page={pages.dormitories}
-                                    searchTerm={searchTerm}
-                                    onPageChange={setPage}
-                                    columns={[
-                                        { key: 'name', label: 'Dormitory' },
-                                        { key: 'type', label: 'Type' },
-                                        { key: 'annex.name', label: 'Annex' },
-                                        { key: 'jail.name', label: 'Jail' },
-                                        { key: 'branch.name', label: 'Branch' },
-                                        { key: 'region.name', label: 'Region' },
-                                        {
-                                            key: 'total_cells',
-                                            label: 'Cells',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'total_pdls',
-                                            label: 'PDLs',
-                                            align: 'right',
-                                        },
-                                    ]}
-                                />
-                            </TabsContent>
-
-                            <TabsContent value="cells">
-                                <RegistryTable
-                                    title="Cells"
-                                    description="Cell occupancy and officer assignment coverage."
-                                    rows={cells}
-                                    pageKey="cells"
-                                    page={pages.cells}
-                                    searchTerm={searchTerm}
-                                    onPageChange={setPage}
-                                    columns={[
-                                        { key: 'cell_number', label: 'Cell' },
-                                        {
-                                            key: 'status',
-                                            label: 'Status',
-                                            render: (row) => (
-                                                <StatusBadge
-                                                    value={row.status}
-                                                />
-                                            ),
-                                        },
-                                        { key: 'annex.name', label: 'Annex' },
-                                        {
-                                            key: 'dormitory.name',
-                                            label: 'Dormitory',
-                                        },
-                                        { key: 'jail.name', label: 'Jail' },
-                                        { key: 'branch.name', label: 'Branch' },
-                                        {
-                                            key: 'capacity',
-                                            label: 'Capacity',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'total_pdls',
-                                            label: 'PDLs',
-                                            align: 'right',
-                                        },
-                                        {
-                                            key: 'assigned_officers',
-                                            label: 'Officers',
-                                            align: 'right',
-                                        },
-                                    ]}
-                                />
-                            </TabsContent>
-
-                            <TabsContent value="pdls">
-                                <RegistryTable
-                                    title="Persons Deprived of Liberty"
-                                    description="PDL housing location by facility hierarchy."
-                                    rows={pdls}
-                                    pageKey="pdls"
-                                    page={pages.pdls}
-                                    searchTerm={searchTerm}
-                                    onPageChange={setPage}
-                                    columns={[
-                                        {
-                                            key: 'full_name',
-                                            label: 'Full Name',
-                                        },
-                                        {
-                                            key: 'age',
-                                            label: 'Age',
-                                            align: 'right',
-                                        },
-                                        { key: 'gender', label: 'Gender' },
-                                        {
-                                            key: 'cell.cell_number',
-                                            label: 'Cell',
-                                        },
-                                        { key: 'annex.name', label: 'Annex' },
-                                        {
-                                            key: 'dormitory.name',
-                                            label: 'Dormitory',
-                                        },
-                                        { key: 'jail.name', label: 'Jail' },
-                                        { key: 'branch.name', label: 'Branch' },
-                                        { key: 'region.name', label: 'Region' },
-                                    ]}
-                                />
-                            </TabsContent>
-                        </Tabs>
-                    </TabsContent>
-                </Tabs>
+                        </TabsContent>
+                    </Tabs>
+                </div>
             </div>
         </AppLayout>
     );
 }
-
-/*
-type Row = { id: number; [key: string]: unknown };
-type Column<T extends Row> = {
-    key: string;
-    label: string;
-    align?: 'right';
-    render?: (row: T) => ReactNode;
-};
-type ChartItem = { name: string; count: number };
-
-type Props = {
-    overviewStats: Record<string, number>;
-    regions: Row[];
-    branches: Row[];
-    jailOfficers: Row[];
-    annexes: Row[];
-    dormitories: Row[];
-    cells: Row[];
-    pdls: Row[];
-    analytics: Record<string, ChartItem[]>;
-    filters: { date_from: string; date_to: string };
-};
-
-const ITEMS_PER_PAGE = 10;
-const chartFill = '#374151';
-const mutedChartFill = '#6b7280';
-const breadcrumbs = [
-    { title: 'National Office Dashboard', href: '/dashboard/national-office' },
-];
-
-function formatNumber(value: unknown) {
-    return new Intl.NumberFormat('en-US').format(Number(value ?? 0));
-}
-
-function getValue(row: unknown, path: string): unknown {
-    return path.split('.').reduce<unknown>((value, key) => {
-        if (value && typeof value === 'object' && key in value) {
-            return (value as Record<string, unknown>)[key];
-        }
-
-        return undefined;
-    }, row);
-}
-
-function textValue(row: Row, path: string) {
-    const value = getValue(row, path);
-    return value === null || value === undefined || value === ''
-        ? '—'
-        : String(value);
-}
-
-function StatusBadge({ value }: { value: unknown }) {
-    const status = String(value || 'Unknown');
-    return (
-        <Badge
-            variant={
-                status.toLowerCase() === 'active' ? 'default' : 'secondary'
-            }
-        >
-            {status}
-        </Badge>
-    );
-}
-
-function MetricCard({
-    label,
-    value,
-    detail,
-    icon: Icon,
-}: {
-    label: string;
-    value: number;
-    detail: string;
-    icon: ElementType;
-}) {
-    return (
-        <Card className="shadow-none">
-            <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                            {label}
-                        </p>
-                        <p className="mt-2 text-3xl font-semibold tracking-tight">
-                            {formatNumber(value)}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                            {detail}
-                        </p>
-                    </div>
-                    <div className="rounded-md border p-2 text-muted-foreground">
-                        <Icon className="h-4 w-4" />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
-
-function RegistryTable<T extends Row>({
-    title,
-    description,
-    rows,
-    columns,
-    page,
-    pageKey,
-    searchTerm,
-    onPageChange,
-}: {
-    title: string;
-    description: string;
-    rows: T[];
-    columns: Column<T>[];
-    page: number;
-    pageKey: string;
-    searchTerm: string;
-    onPageChange: (pageKey: string, page: number) => void;
-}) {
-    const filteredRows = useMemo(() => {
-        const query = searchTerm.trim().toLowerCase();
-        if (!query) return rows;
-
-        return rows.filter((row) =>
-            JSON.stringify(row).toLowerCase().includes(query),
-        );
-    }, [rows, searchTerm]);
-
-    const totalPages = Math.max(
-        1,
-        Math.ceil(filteredRows.length / ITEMS_PER_PAGE),
-    );
-    const safePage = Math.min(page, totalPages);
-    const visibleRows = filteredRows.slice(
-        (safePage - 1) * ITEMS_PER_PAGE,
-        safePage * ITEMS_PER_PAGE,
-    );
-
-    return (
-        <Card className="overflow-hidden shadow-none">
-            <CardHeader className="border-b pb-5">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <CardTitle className="text-base">{title}</CardTitle>
-                        <CardDescription>{description}</CardDescription>
-                    </div>
-                    <Badge variant="outline" className="w-fit">
-                        {formatNumber(filteredRows.length)} records
-                    </Badge>
-                </div>
-            </CardHeader>
-            <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-muted/40 hover:bg-muted/40">
-                                {columns.map((column) => (
-                                    <TableHead
-                                        key={column.key}
-                                        className={
-                                            column.align === 'right'
-                                                ? 'text-right'
-                                                : undefined
-                                        }
-                                    >
-                                        {column.label}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {visibleRows.length > 0 ? (
-                                visibleRows.map((row) => (
-                                    <TableRow key={row.id}>
-                                        {columns.map((column) => (
-                                            <TableCell
-                                                key={`${row.id}-${column.key}`}
-                                                className={
-                                                    column.align === 'right'
-                                                        ? 'text-right'
-                                                        : undefined
-                                                }
-                                            >
-                                                {column.render
-                                                    ? column.render(row)
-                                                    : textValue(
-                                                          row,
-                                                          column.key,
-                                                      )}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-28 text-center text-muted-foreground"
-                                    >
-                                        No records found for this view.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-                {totalPages > 1 && (
-                    <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-sm text-muted-foreground">
-                            Page {safePage} of {totalPages}
-                        </p>
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={safePage === 1}
-                                onClick={() =>
-                                    onPageChange(pageKey, safePage - 1)
-                                }
-                            >
-                                Previous
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={safePage === totalPages}
-                                onClick={() =>
-                                    onPageChange(pageKey, safePage + 1)
-                                }
-                            >
-                                Next
-                            </Button>
-                        </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
-
-function ChartCard({
-    title,
-    description,
-    data,
-    fill = chartFill,
-}: {
-    title: string;
-    description: string;
-    data?: ChartItem[];
-    fill?: string;
-}) {
-    const rows = data ?? [];
-
-    return (
-        <Card className="shadow-none">
-            <CardHeader>
-                <CardTitle className="text-base">{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {rows.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={320}>
-                        <BarChart
-                            data={rows.slice(0, 12)}
-                            margin={{ top: 8, right: 16, left: 0, bottom: 72 }}
-                        >
-                            <CartesianGrid
-                                strokeDasharray="3 3"
-                                vertical={false}
-                                stroke="#e5e7eb"
-                            />
-                            <XAxis
-                                dataKey="name"
-                                angle={-35}
-                                textAnchor="end"
-                                interval={0}
-                                height={90}
-                                tick={{ fontSize: 11, fill: '#6b7280' }}
-                            />
-                            <YAxis
-                                allowDecimals={false}
-                                tick={{ fontSize: 12, fill: '#6b7280' }}
-                            />
-                            <Tooltip cursor={{ fill: '#f3f4f6' }} />
-                            <Bar
-                                dataKey="count"
-                                fill={fill}
-                                radius={[4, 4, 0, 0]}
-                            />
-                        </BarChart>
-                    </ResponsiveContainer>
-                ) : (
-                    <div className="flex h-80 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
-                        No analytics data available.
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
-
-export default function NationalOfficeDashboard({
-    overviewStats,
-    regions,
-    branches,
-    jailOfficers,
-    annexes,
-    dormitories,
-    cells,
-    pdls,
-    analytics,
-    filters,
-}: Props) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [pages, setPages] = useState<Record<string, number>>({
-        regions: 1,
-        branches: 1,
-        officers: 1,
-        annexes: 1,
-        dormitories: 1,
-        cells: 1,
-        pdls: 1,
-    });
-
-    const setPage = (pageKey: string, page: number) =>
-        setPages((current) => ({ ...current, [pageKey]: page }));
-    const resetPages = () =>
-        setPages({
-            regions: 1,
-            branches: 1,
-            officers: 1,
-            annexes: 1,
-            dormitories: 1,
-            cells: 1,
-            pdls: 1,
-        });
-
-    const metrics = [
-        {
-            label: 'Regions',
-            value: overviewStats.total_regions,
-            detail: 'National coverage areas',
-            icon: Landmark,
-        },
-        {
-            label: 'Branches',
-            value: overviewStats.total_branches,
-            detail: 'BJMP operating branches',
-            icon: Building2,
-        },
-        {
-            label: 'Jails',
-            value: overviewStats.total_jails,
-            detail: 'Facilities in hierarchy',
-            icon: ShieldCheck,
-        },
-        {
-            label: 'PDLs',
-            value: overviewStats.total_pdls,
-            detail: 'Persons deprived of liberty',
-            icon: Users,
-        },
-        {
-            label: 'Dormitories',
-            value: overviewStats.total_dormitories,
-            detail: 'Housing units tracked',
-            icon: Home,
-        },
-        {
-            label: 'Annexes',
-            value: overviewStats.total_annexes,
-            detail: 'Buildings under jails',
-            icon: DoorClosed,
-        },
-        {
-            label: 'Visits',
-            value: overviewStats.total_visits,
-            detail: 'All submitted schedules',
-            icon: CalendarDays,
-        },
-        {
-            label: 'Active Sessions',
-            value: overviewStats.active_visit_sessions,
-            detail: 'Currently open monitoring',
-            icon: Activity,
-        },
-    ];
-
-    return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="National Office Dashboard" />
-
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-6">
-                <div className="rounded-xl border bg-card p-6">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                        <div className="max-w-3xl">
-                            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                                <BarChart3 className="h-4 w-4" />
-                                National Command Overview
-                            </div>
-                            <h1 className="text-2xl font-semibold tracking-tight">
-                                National Office Dashboard
-                            </h1>
-                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                Consolidated operational visibility across
-                                regions, BJMP branches, facilities, personnel
-                                assignments, PDL housing, and visit activity.
-                            </p>
-                        </div>
-                        <div className="rounded-lg border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-                            Analytics window:{' '}
-                            <span className="font-medium text-foreground">
-                                {filters.date_from}
-                            </span>{' '}
-                            to{' '}
-                            <span className="font-medium text-foreground">
-                                {filters.date_to}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {metrics.map((metric) => (
-                        <MetricCard key={metric.label} {...metric} />
-                    ))}
-                </div>
-
-                <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 className="text-sm font-medium">
-                            Facility Registry
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                            Search applies to the active operational table.
-                        </p>
-                    </div>
-                    <div className="relative w-full sm:max-w-sm">
-                        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <input
-                            value={searchTerm}
-                            onChange={(event) => {
-                                setSearchTerm(event.target.value);
-                                resetPages();
-                            }}
-                            placeholder="Search records..."
-                            className="h-10 w-full rounded-md border bg-background pr-3 pl-9 text-sm transition outline-none focus:border-foreground/40"
-                        />
-                    </div>
-                </div>
-
-                <Tabs defaultValue="regions" className="space-y-4">
-                    <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-lg border bg-card p-1">
-                        <TabsTrigger value="regions">Regions</TabsTrigger>
-                        <TabsTrigger value="branches">Branches</TabsTrigger>
-                        <TabsTrigger value="officers">Officers</TabsTrigger>
-                        <TabsTrigger value="annexes">Annexes</TabsTrigger>
-                        <TabsTrigger value="dormitories">
-                            Dormitories
-                        </TabsTrigger>
-                        <TabsTrigger value="cells">Cells</TabsTrigger>
-                        <TabsTrigger value="pdls">PDLs</TabsTrigger>
-                        <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="regions">
-                        <RegistryTable
-                            title="Regional Offices"
-                            description="High-level facility and population distribution per region."
-                            rows={regions}
-                            pageKey="regions"
-                            page={pages.regions}
-                            searchTerm={searchTerm}
-                            onPageChange={setPage}
-                            columns={[
-                                { key: 'code', label: 'Code' },
-                                { key: 'name', label: 'Region' },
-                                {
-                                    key: 'status',
-                                    label: 'Status',
-                                    render: (row) => (
-                                        <StatusBadge value={row.status} />
-                                    ),
-                                },
-                                {
-                                    key: 'total_branches',
-                                    label: 'Branches',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'total_jails',
-                                    label: 'Jails',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'total_dormitories',
-                                    label: 'Dormitories',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'total_cells',
-                                    label: 'Cells',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'total_pdls',
-                                    label: 'PDLs',
-                                    align: 'right',
-                                },
-                            ]}
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="branches">
-                        <RegistryTable
-                            title="BJMP Branches"
-                            description="Branch-level operational counts with assigned jail wardens."
-                            rows={branches}
-                            pageKey="branches"
-                            page={pages.branches}
-                            searchTerm={searchTerm}
-                            onPageChange={setPage}
-                            columns={[
-                                { key: 'code', label: 'Code' },
-                                { key: 'name', label: 'Branch' },
-                                { key: 'region.name', label: 'Region' },
-                                {
-                                    key: 'jail_warden',
-                                    label: 'Jail Warden',
-                                    render: (row) =>
-                                        getValue(row, 'jail_warden.name') ? (
-                                            <div>
-                                                <div className="font-medium">
-                                                    {textValue(
-                                                        row,
-                                                        'jail_warden.name',
-                                                    )}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {textValue(
-                                                        row,
-                                                        'jail_warden.email',
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <span className="text-muted-foreground">
-                                                Not assigned
-                                            </span>
-                                        ),
-                                },
-                                {
-                                    key: 'total_jails',
-                                    label: 'Jails',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'total_annexes',
-                                    label: 'Annexes',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'total_cells',
-                                    label: 'Cells',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'total_pdls',
-                                    label: 'PDLs',
-                                    align: 'right',
-                                },
-                            ]}
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="officers">
-                        <RegistryTable
-                            title="Jail Officers"
-                            description="Personnel assignments and active operational scopes."
-                            rows={jailOfficers}
-                            pageKey="officers"
-                            page={pages.officers}
-                            searchTerm={searchTerm}
-                            onPageChange={setPage}
-                            columns={[
-                                { key: 'name', label: 'Officer' },
-                                { key: 'email', label: 'Email' },
-                                {
-                                    key: 'branch.name',
-                                    label: 'Branch',
-                                    render: (row) =>
-                                        textValue(row, 'branch.name'),
-                                },
-                                {
-                                    key: 'branch.region',
-                                    label: 'Region',
-                                    render: (row) =>
-                                        textValue(row, 'branch.region'),
-                                },
-                                {
-                                    key: 'scopes',
-                                    label: 'Active Scopes',
-                                    render: (row) =>
-                                        Array.isArray(row.scopes) &&
-                                        row.scopes.length > 0 ? (
-                                            <div className="flex flex-wrap gap-1">
-                                                {row.scopes.map(
-                                                    (scope, index) => (
-                                                        <Badge
-                                                            key={index}
-                                                            variant="outline"
-                                                            className="font-normal"
-                                                        >
-                                                            {String(
-                                                                (
-                                                                    scope as Record<
-                                                                        string,
-                                                                        unknown
-                                                                    >
-                                                                ).description ??
-                                                                    'Scope',
-                                                            )}
-                                                        </Badge>
-                                                    ),
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <span className="text-muted-foreground">
-                                                No active scope
-                                            </span>
-                                        ),
-                                },
-                            ]}
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="annexes">
-                        <RegistryTable
-                            title="Annexes / Buildings"
-                            description="Building-level registry under jail facilities."
-                            rows={annexes}
-                            pageKey="annexes"
-                            page={pages.annexes}
-                            searchTerm={searchTerm}
-                            onPageChange={setPage}
-                            columns={[
-                                { key: 'name', label: 'Annex' },
-                                { key: 'jail.name', label: 'Jail' },
-                                { key: 'branch.name', label: 'Branch' },
-                                { key: 'region.name', label: 'Region' },
-                                {
-                                    key: 'total_dormitories',
-                                    label: 'Dormitories',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'total_cells',
-                                    label: 'Cells',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'assigned_officers',
-                                    label: 'Assigned Officers',
-                                    align: 'right',
-                                },
-                            ]}
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="dormitories">
-                        <RegistryTable
-                            title="Dormitories"
-                            description="Housing units mapped to annexes, jails, branches, and regions."
-                            rows={dormitories}
-                            pageKey="dormitories"
-                            page={pages.dormitories}
-                            searchTerm={searchTerm}
-                            onPageChange={setPage}
-                            columns={[
-                                { key: 'name', label: 'Dormitory' },
-                                { key: 'type', label: 'Type' },
-                                { key: 'annex.name', label: 'Annex' },
-                                { key: 'jail.name', label: 'Jail' },
-                                { key: 'branch.name', label: 'Branch' },
-                                { key: 'region.name', label: 'Region' },
-                                {
-                                    key: 'total_cells',
-                                    label: 'Cells',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'total_pdls',
-                                    label: 'PDLs',
-                                    align: 'right',
-                                },
-                            ]}
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="cells">
-                        <RegistryTable
-                            title="Cells"
-                            description="Cell occupancy and officer assignment coverage."
-                            rows={cells}
-                            pageKey="cells"
-                            page={pages.cells}
-                            searchTerm={searchTerm}
-                            onPageChange={setPage}
-                            columns={[
-                                { key: 'cell_number', label: 'Cell' },
-                                {
-                                    key: 'status',
-                                    label: 'Status',
-                                    render: (row) => (
-                                        <StatusBadge value={row.status} />
-                                    ),
-                                },
-                                { key: 'annex.name', label: 'Annex' },
-                                { key: 'dormitory.name', label: 'Dormitory' },
-                                { key: 'jail.name', label: 'Jail' },
-                                { key: 'branch.name', label: 'Branch' },
-                                {
-                                    key: 'capacity',
-                                    label: 'Capacity',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'total_pdls',
-                                    label: 'PDLs',
-                                    align: 'right',
-                                },
-                                {
-                                    key: 'assigned_officers',
-                                    label: 'Officers',
-                                    align: 'right',
-                                },
-                            ]}
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="pdls">
-                        <RegistryTable
-                            title="Persons Deprived of Liberty"
-                            description="PDL housing location by facility hierarchy."
-                            rows={pdls}
-                            pageKey="pdls"
-                            page={pages.pdls}
-                            searchTerm={searchTerm}
-                            onPageChange={setPage}
-                            columns={[
-                                { key: 'full_name', label: 'Full Name' },
-                                { key: 'age', label: 'Age', align: 'right' },
-                                { key: 'gender', label: 'Gender' },
-                                { key: 'cell.cell_number', label: 'Cell' },
-                                { key: 'annex.name', label: 'Annex' },
-                                { key: 'dormitory.name', label: 'Dormitory' },
-                                { key: 'jail.name', label: 'Jail' },
-                                { key: 'branch.name', label: 'Branch' },
-                                { key: 'region.name', label: 'Region' },
-                            ]}
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="analytics">
-                        <div className="grid gap-4 xl:grid-cols-2">
-                            <ChartCard
-                                title="PDLs per Branch"
-                                description="Top branch-level PDL distribution."
-                                data={analytics.pdl_per_branch}
-                            />
-                            <ChartCard
-                                title="Branches per Region"
-                                description="Regional branch coverage."
-                                data={analytics.branch_per_region}
-                                fill={mutedChartFill}
-                            />
-                            <ChartCard
-                                title="Cells per Branch"
-                                description="Cell inventory by branch."
-                                data={analytics.cell_per_branch}
-                            />
-                            <ChartCard
-                                title="Visits per Region"
-                                description="Scheduled visits within selected analytics window."
-                                data={analytics.visits_per_region}
-                                fill={mutedChartFill}
-                            />
-                            <ChartCard
-                                title="Visits per Branch"
-                                description="Branch-level visit volume."
-                                data={analytics.visits_per_branch}
-                            />
-                            <ChartCard
-                                title="Top Cells by Visits"
-                                description="Cells with the highest linked visit activity."
-                                data={analytics.visits_per_cell}
-                                fill={mutedChartFill}
-                            />
-                        </div>
-                    </TabsContent>
-                </Tabs>
-            </div>
-        </AppLayout>
-    );
-}
-*/

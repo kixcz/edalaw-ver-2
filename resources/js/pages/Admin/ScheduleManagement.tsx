@@ -768,7 +768,7 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
 
                 {/* Create Schedule Modal */}
                 <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Create Schedule</DialogTitle>
                             <DialogDescription>
@@ -776,7 +776,7 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit}>
-                            <div className="space-y-4">
+                            <div className="space-y-4 py-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="visit_type">
                                         Visit Type <span className="text-destructive">*</span>
@@ -956,7 +956,7 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={form.processing}>
+                                <Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">
                                     {form.processing ? 'Creating...' : 'Create Schedule'}
                                 </Button>
                             </DialogFooter>
@@ -966,7 +966,7 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
 
                 {/* Reject Modal */}
                 <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Reject Schedule</DialogTitle>
                             <DialogDescription>
@@ -1020,7 +1020,7 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
 
                 {/* Approve Modal */}
                 <Dialog open={isApproveModalOpen} onOpenChange={setIsApproveModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Approve Schedule</DialogTitle>
                             <DialogDescription>
@@ -1094,7 +1094,7 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
                             >
                                 Cancel
                             </Button>
-                            <Button onClick={handleApprove} disabled={approveForm.processing}>
+                            <Button onClick={handleApprove} disabled={approveForm.processing} className="bg-primary hover:bg-primary/90 text-white">
                                 {approveForm.processing ? 'Approving...' : 'Approve Schedule'}
                             </Button>
                         </DialogFooter>
@@ -1103,7 +1103,7 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
 
                 {/* Update Status Modal */}
                 <Dialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Update Schedule Status</DialogTitle>
                             <DialogDescription>
@@ -1196,6 +1196,7 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
                             <Button
                                 onClick={handleUpdateStatus}
                                 disabled={statusForm.processing}
+                                className="bg-primary hover:bg-primary/90 text-white"
                             >
                                 {statusForm.processing ? 'Updating...' : 'Update Status'}
                             </Button>
@@ -1423,7 +1424,7 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
 
                 {/* Delete Confirmation Modal */}
                 <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Delete Schedule</DialogTitle>
                             <DialogDescription>

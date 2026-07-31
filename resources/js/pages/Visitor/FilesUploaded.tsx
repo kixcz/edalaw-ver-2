@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { FileText, Upload, Eye, Calendar, Folder, X } from 'lucide-react';
+import { FileText, Upload, Eye, Calendar, Folder, X, FolderOpen, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +35,23 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/visitor/files-uploaded',
     },
 ];
+
+const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
+    <Card className="border-0 shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+            <div className="flex items-stretch">
+                <div className={`w-1.5 shrink-0 ${accent}`} />
+                <div className="flex items-center gap-4 px-5 py-4 flex-1">
+                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                    </div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 type Props = {
     files: Array<{
@@ -123,84 +140,34 @@ export default function FilesUploaded({ files, stats }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Files Uploaded" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold">Files Uploaded</h1>
-                        <p className="text-muted-foreground">
-                            View all documents you have uploaded across all applications
-                        </p>
+            <div className="min-h-screen bg-slate-50">
+                {/* Header */}
+                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-orange-600 rounded-xl"><FolderOpen className="w-5 h-5 text-white" /></div>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-900 leading-none">File Archive</h1>
+                                <p className="text-xs text-slate-500 mt-0.5">View all documents you have uploaded across all applications</p>
+                            </div>
+                        </div>
+                        <Link
+                            href="/dashboard/visitor"
+                            className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                        >
+                            ← Back to Dashboard
+                        </Link>
                     </div>
-                    <Link
-                        href="/dashboard/visitor"
-                        className="inline-flex items-center justify-center rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-                    >
-                        ← Back to Dashboard
-                    </Link>
                 </div>
 
-                {/* Statistics Cards */}
-                <div className="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Total Files
-                            </CardTitle>
-                            <Upload className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.total_files}</div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                All uploaded documents
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Visit Documents
-                            </CardTitle>
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.visit_documents}</div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                Visit application files
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                E-Burol Documents
-                            </CardTitle>
-                            <Folder className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.eburol_documents}</div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                E-Burol application files
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Registration Documents
-                            </CardTitle>
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.registration_documents}</div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                ID and registration files
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
+                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<FolderOpen className="w-5 h-5" />} value={stats?.total_files || 0} label="Total Files" accent="bg-orange-600" iconBg="bg-orange-50" iconColor="text-orange-600" />
+                        <StatCard icon={<Calendar className="w-5 h-5" />} value={stats?.visit_documents || 0} label="Visit Docs" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
+                        <StatCard icon={<FileText className="w-5 h-5" />} value={stats?.eburol_documents || 0} label="E-Burol Docs" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
+                        <StatCard icon={<Upload className="w-5 h-5" />} value={stats?.registration_documents || 0} label="Registration" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
+                    </div>
 
                 {/* Files Table */}
                 <Card>
@@ -441,6 +408,7 @@ export default function FilesUploaded({ files, stats }: Props) {
                         </div>
                     </DialogContent>
                 </Dialog>
+            </div>
             </div>
         </AppLayout>
     );

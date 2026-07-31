@@ -600,7 +600,7 @@ export default function EburolManagement({ eburols, stats, visitors = [], monito
 
                 {/* Delete confirmation modal */}
                 <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Delete E-Burol application</DialogTitle>
                             <DialogDescription>
@@ -645,7 +645,7 @@ export default function EburolManagement({ eburols, stats, visitors = [], monito
 
                 {/* Approve Modal */}
                 <Dialog open={isApproveModalOpen} onOpenChange={setIsApproveModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Approve E-Burol Application</DialogTitle>
                             <DialogDescription>
@@ -703,7 +703,7 @@ export default function EburolManagement({ eburols, stats, visitors = [], monito
 
                 {/* Reject Modal */}
                 <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Reject E-Burol Application</DialogTitle>
                             <DialogDescription>
@@ -759,7 +759,7 @@ export default function EburolManagement({ eburols, stats, visitors = [], monito
 
                 {/* Update Status Modal */}
                 <Dialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Update E-Burol Status</DialogTitle>
                             <DialogDescription>

@@ -586,7 +586,7 @@ export default function AppealsOversight({ appeals, stats }: Props) {
 
                 {/* Update Status Modal */}
                 <Dialog open={isUpdateStatusModalOpen} onOpenChange={setIsUpdateStatusModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Update Appeal Status</DialogTitle>
                             <DialogDescription>

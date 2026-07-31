@@ -262,18 +262,18 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
     return (
         <AppLayout>
             <Head title="Cell Schedule Templates" />
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-background">
                 {/* Header */}
-                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
                     <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-violet-600 rounded-xl"><Calendar className="w-5 h-5 text-white" /></div>
+                            <div className="p-2 bg-primary rounded-xl"><Calendar className="w-5 h-5 text-white" /></div>
                             <div>
-                                <h1 className="text-lg font-bold text-slate-900 leading-none">Cell Schedule Templates</h1>
-                                <p className="text-xs text-slate-500 mt-0.5">Set which days each cell allows virtual and physical visits</p>
+                                <h1 className="text-lg font-bold text-foreground leading-none">Cell Schedule Templates</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">Set which days each cell allows virtual and physical visits</p>
                             </div>
                         </div>
-                        <Button onClick={openBuilderForAll} className="bg-violet-600 hover:bg-violet-700 text-white shadow-sm gap-1.5 text-sm">
+                        <Button onClick={openBuilderForAll} className="bg-primary hover:bg-primary/90 text-white shadow-sm gap-1.5 text-sm">
                             <Sparkles className="w-4 h-4" />Open Schedule Builder
                         </Button>
                     </div>
@@ -514,7 +514,7 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
             {/* Schedule builder modal                                            */}
             {/* ---------------------------------------------------------------- */}
             <Dialog open={builderOpen} onOpenChange={setBuilderOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
                     <DialogHeader className="shrink-0">
                         <DialogTitle>Schedule builder</DialogTitle>
                         <DialogDescription>

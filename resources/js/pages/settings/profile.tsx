@@ -452,10 +452,10 @@ export default function Profile({
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border bg-orange-50/80 p-4 dark:border-orange-900 dark:bg-orange-950/20">
+                    <div className="rounded-2xl border bg-primary/10 p-4">
                         <div className="flex items-start gap-3">
-                            <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-600 dark:text-orange-400" />
-                            <p className="text-xs leading-relaxed text-orange-800 dark:text-orange-200">
+                            <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
+                            <p className="text-xs leading-relaxed text-primary">
                                 The information provided in this profile will be
                                 used for identity verification, account
                                 maintenance, communication, and visitation
@@ -661,10 +661,10 @@ export default function Profile({
                                 <CardContent>
                                     {showUpdateForm ? (
                                         <div className="space-y-5">
-                                            <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 dark:border-orange-900 dark:bg-orange-950/20">
+                                            <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
                                                 <div className="flex items-start gap-3">
-                                                    <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-600 dark:text-orange-400" />
-                                                    <p className="text-xs leading-relaxed text-orange-800 dark:text-orange-200">
+                                                    <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
+                                                    <p className="text-xs leading-relaxed text-primary">
                                                         Personal information
                                                         updated through this
                                                         form will be used solely

@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { Toaster } from 'sonner';
 import '../css/app.css';
 import { initializeTheme } from './hooks/use-appearance';
+import { initializeThemeColor } from './hooks/use-theme';
 
 // Initialize Laravel Echo for real-time notifications
 import './echo';
@@ -34,3 +35,5 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+// Initialize theme color on load...
+initializeThemeColor();

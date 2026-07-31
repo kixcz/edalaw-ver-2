@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table';
 import InputError from '@/components/input-error';
+import { PrivacyNotice } from '@/components/privacy-notice';
 import { TimeSlotPicker } from '@/components/TimeSlotPicker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -1108,7 +1109,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard icon={<CalendarDays className="w-5 h-5" />} value={stats?.total_visits || 0} label="Total Visits" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
                         <StatCard icon={<Hourglass className="w-5 h-5" />} value={stats?.pending_visits || 0} label="Pending" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
                         <StatCard icon={<CircleCheck className="w-5 h-5" />} value={stats?.approved_visits || 0} label="Approved" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
@@ -1170,15 +1171,15 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                     </Card>
 
                 <Dialog open={videoTermsModalOpen} onOpenChange={setVideoTermsModalOpen}>
-                    <DialogContent className="sm:max-w-2xl border-l-4 border-l-orange-500">
-                      
+                    <DialogContent className="sm:max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>Video Session Consent</DialogTitle>
+                            <DialogDescription>
+                                Please review and accept the following conditions before joining the video session.
+                            </DialogDescription>
+                        </DialogHeader>
                         <div className="space-y-6 py-4">
-                            <div className="bg-orange-50 p-4 rounded-md">
-                                <p className="text-sm text-gray-800 leading-relaxed">
-                                    <strong className="font-semibold text-gray-900">Session Participation Consent:</strong>{" "}
-                                    <span className="text-gray-700">By joining this session, I acknowledge and agree that the session may be monitored, recorded, reviewed, and documented by authorized personnel for security, compliance, audit, documentation, incident investigation, and legitimate operational purposes. I understand that chat messages, audio, video, and other session-related activities may be logged and retained in accordance with applicable policies and retention requirements. I further understand that any violation of applicable rules, regulations, or visitation policies may result in the immediate termination of the session and may be subject to appropriate administrative or legal action.</span>
-                                </p>
-                            </div>
+                            <PrivacyNotice variant="consent" />
 
                             <div className="flex items-start gap-3">
                                 <Checkbox
@@ -1225,7 +1226,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                         alert('Error accepting consent. Please try again.');
                                     }
                                 }}
-                                className="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 text-white"
+                                className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-white"
                             >
                                 {acceptingTerms ? 'Processing...' : 'I Accept'}
                             </Button>
@@ -1235,7 +1236,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
 
                 {/* Session Not Started Yet Modal */}
                 <Dialog open={!!beforeScheduleSession} onOpenChange={(open) => !open && setBeforeScheduleSession(null)}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Session not started yet</DialogTitle>
                             <DialogDescription>
@@ -1257,7 +1258,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
 
                 {/* View Details Modal */}
                 <Dialog open={isViewDetailsModalOpen} onOpenChange={(open) => !open && setIsViewDetailsModalOpen(false)}>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <Eye className="h-5 w-5 text-blue-600" />
@@ -1271,10 +1272,10 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                         {selectedVisitForDetails && (
                             <div className="space-y-5">
                                 {/* Visit Information Section */}
-                                <div className="bg-gray-50 rounded-lg p-5 space-y-4">
+                                <div className="bg-muted rounded-lg p-5 space-y-4">
                                     <div className="flex items-center gap-2 mb-3">
-                                        <CalendarClock className="h-4 w-4 text-gray-700" />
-                                        <h3 className="font-semibold text-sm text-gray-900 uppercase tracking-wide">Visit Information</h3>
+                                        <CalendarClock className="h-4 w-4 text-foreground/80" />
+                                        <h3 className="font-semibold text-sm text-foreground uppercase tracking-wide">Visit Information</h3>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
@@ -1305,7 +1306,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                         <div>
                                             <span className="text-muted-foreground text-xs block mb-1.5">Scheduled Time</span>
                                             <div className="font-medium text-sm flex items-center gap-1.5">
-                                                <Clock className="h-3.5 w-3.5 text-gray-600" />
+                                                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                                                 {selectedVisitForDetails.scheduled_time || 'Not specified'}
                                             </div>
                                         </div>
@@ -1319,16 +1320,16 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                             <div>
                                                 <span className="text-muted-foreground text-xs block mb-1.5">Assigned Jail Officer</span>
                                                 <div className="font-medium text-sm flex items-center gap-1.5">
-                                                    <ShieldCheck className="h-3.5 w-3.5 text-gray-600" />
+                                                    <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
                                                     {selectedVisitForDetails.jail_officer_name}
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                     {selectedVisitForDetails.notes && (
-                                        <div className="pt-3 border-t border-gray-200">
+                                        <div className="pt-3 border-t border-border">
                                             <span className="text-muted-foreground text-xs block mb-1.5">Your Notes</span>
-                                            <div className="text-sm bg-white border border-gray-200 rounded-lg p-3 mt-1.5 leading-relaxed">
+                                            <div className="text-sm bg-card border border-border rounded-lg p-3 mt-1.5 leading-relaxed">
                                                 {selectedVisitForDetails.notes}
                                             </div>
                                         </div>
@@ -1355,8 +1356,8 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                 {(selectedVisitForDetails.relationship_proof_path || selectedVisitForDetails.additional_proof_path) && (
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2">
-                                            <FileText className="h-4 w-4 text-gray-700" />
-                                            <h3 className="font-semibold text-sm text-gray-900 uppercase tracking-wide">Submitted Documents</h3>
+                                            <FileText className="h-4 w-4 text-foreground/80" />
+                                            <h3 className="font-semibold text-sm text-foreground uppercase tracking-wide">Submitted Documents</h3>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {selectedVisitForDetails.relationship_proof_path && (
@@ -1378,10 +1379,10 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                 )}
 
                                 {/* Metadata */}
-                                <div className="pt-4 border-t border-gray-200">
+                                <div className="pt-4 border-t border-border">
                                     <span className="text-muted-foreground text-xs block mb-1.5">Request Submitted</span>
-                                    <p className="text-sm text-gray-700 flex items-center gap-1.5">
-                                        <Clock className="h-3.5 w-3.5 text-gray-600" />
+                                    <p className="text-sm text-foreground/80 flex items-center gap-1.5">
+                                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                                         {new Date(selectedVisitForDetails.created_at).toLocaleString('en-US', {
                                             month: 'long',
                                             day: 'numeric',
@@ -1405,7 +1406,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
 
                 {/* Apply Schedule Modal - vertical layout, moderate width */}
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                    <DialogContent className="max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Apply for Visit Schedule</DialogTitle>
                             <DialogDescription>
@@ -1413,22 +1414,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                             </DialogDescription>
                         </DialogHeader>
                         
-                        {/* Privacy Notice */}
-                        <div style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 24px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                            <ShieldCheck style={{ width: '14px', height: '14px', color: '#6B7280', flexShrink: 0, marginTop: '1px' }} />
-                            <div>
-                                <div style={{ fontSize: '9px', fontWeight: 700, color: '#374151', marginBottom: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                                    Data Privacy Notice
-                                </div>
-                                <div style={{ fontSize: '9px', lineHeight: '1.5', color: '#4B5563' }}>
-                                    The information provided in this visitation request will be collected and processed solely for identity verification, visitation scheduling, approval processing, security monitoring, record management, and other legitimate operational purposes. All information shall be handled in accordance with the Data Privacy Act of 2012 and applicable privacy and security policies.
-                                    <br />
-                                    <span style={{ fontStyle: 'italic' }}>
-                                        (Ang impormasyon nga gihatag niini nga hangyo sa pagbisita mocollect ug giproseso lamang alang sa pag-verify sa pagkatawo, pag-iskedyul sa pagbisita, pagproseso sa apruba, pag-monitor sa seguridad, pagdumala sa rekord, ug uban pa nga lehitimo nga katuyoan sa operasyon. Ang tanan nga impormasyon gipangdumala sumala sa Data Privacy Act of 2012 ug mga nahisgutan nga privacy ug security policies.)
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                        <PrivacyNotice variant="visitation" />
 
                         <form onSubmit={handleSubmit}>
                             <div className="flex flex-col gap-4">
@@ -1993,7 +1979,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
 
                 {/* Reschedule Modal */}
                 <Dialog open={isRescheduleModalOpen} onOpenChange={setIsRescheduleModalOpen}>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Reschedule Visit</DialogTitle>
                             <DialogDescription>
@@ -2108,7 +2094,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
 
                 {/* Appeal Modal */}
                 <Dialog open={isAppealModalOpen} onOpenChange={setIsAppealModalOpen}>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="sm:max-w-2xl">
                         <DialogHeader>
                             <DialogTitle>Submit Appeal</DialogTitle>
                             <DialogDescription>

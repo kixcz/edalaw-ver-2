@@ -49,8 +49,8 @@ const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: Rea
                 <div className="flex items-center gap-4 px-5 py-4 flex-1">
                     <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
                     <div>
-                        <div className="text-2xl font-bold text-slate-800 leading-none">{value}</div>
-                        <div className="text-xs text-slate-500 mt-1 font-medium uppercase tracking-wide">{label}</div>
+                        <div className="text-2xl font-bold text-foreground leading-none">{value}</div>
+                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
                     </div>
                 </div>
             </div>
@@ -105,7 +105,7 @@ function getStatusBadge(status: string) {
         rejected: { label: 'Rejected', className: 'bg-red-50 text-red-700 border-red-200' },
         completed: { label: 'Completed', className: 'bg-blue-50 text-blue-700 border-blue-200' },
     };
-    const config = map[status] ?? { label: status, className: 'bg-slate-100 text-slate-500 border-slate-200' };
+    const config = map[status] ?? { label: status, className: 'bg-muted text-muted-foreground border-border' };
     return <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${config.className}`}>{config.label}</span>;
 }
 
@@ -125,15 +125,15 @@ function DocumentCard({ title, path, icon }: { title: string; path: string; icon
     const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension || '');
 
     return (
-        <div className="border border-slate-200 rounded-lg p-4 bg-white hover:border-slate-300 transition-colors">
+        <div className="border border-border rounded-lg p-4 bg-card hover:border-border transition-colors">
             <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div className="bg-blue-50 text-blue-600 rounded-lg p-2 flex-shrink-0">
                         {icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm text-slate-900 truncate">{title}</h4>
-                        <p className="text-xs text-slate-500 truncate mt-0.5">{fileName}</p>
+                        <h4 className="font-medium text-sm text-foreground truncate">{title}</h4>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{fileName}</p>
                     </div>
                 </div>
                 <a
@@ -147,7 +147,7 @@ function DocumentCard({ title, path, icon }: { title: string; path: string; icon
                 </a>
             </div>
             {isImage && (
-                <div className="mt-3 rounded-lg overflow-hidden border border-slate-100">
+                <div className="mt-3 rounded-lg overflow-hidden border border-border">
                     <img 
                         src={fileUrl} 
                         alt={title}
@@ -181,7 +181,7 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
             cell: ({ row }) => (
                 <div>
                     <div className="font-medium">{row.original.visitor_name}</div>
-                    <div className="text-xs text-slate-500">{row.original.visitor_email}</div>
+                    <div className="text-xs text-muted-foreground">{row.original.visitor_email}</div>
                 </div>
             ),
         },
@@ -192,7 +192,7 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                 <div>
                     <div className="font-medium">{row.original.inmate_name}</div>
                     {row.original.cell_info && (
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-muted-foreground">
                             {row.original.cell_info.cell_number}, {row.original.cell_info.floor}
                         </div>
                     )}
@@ -211,7 +211,7 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                 return (
                     <div className="space-y-1">
                         <div className="font-medium">{dateStr}</div>
-                        <div className="text-xs text-slate-500">{timeStr}</div>
+                        <div className="text-xs text-muted-foreground">{timeStr}</div>
                     </div>
                 );
             },
@@ -275,7 +275,7 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                             {isApproved && (
                                 <>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuLabel className="text-xs text-slate-500 font-normal">Media Controls</DropdownMenuLabel>
+                                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Media Controls</DropdownMenuLabel>
                                     <DropdownMenuItem 
                                         onClick={() => {
                                             const videoWindow = window.open('', '_blank');
@@ -348,15 +348,15 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
     return (
         <AppLayout>
             <Head title="Assigned Visit Sessions" />
-            <div className="min-h-screen bg-slate-50">
+            <div className="min-h-screen bg-background">
                 {/* Header */}
-                <div className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-30 shadow-sm">
+                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
                     <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-indigo-600 rounded-xl"><Calendar className="w-5 h-5 text-white" /></div>
+                            <div className="p-2 bg-primary rounded-xl"><Calendar className="w-5 h-5 text-white" /></div>
                             <div>
-                                <h1 className="text-lg font-bold text-slate-900 leading-none">Assigned Visit Sessions</h1>
-                                <p className="text-xs text-slate-500 mt-0.5">Review and manage virtual visit schedules for PDLs in your assigned area</p>
+                                <h1 className="text-lg font-bold text-foreground leading-none">Assigned Visit Sessions</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">Review and manage virtual visit schedules for PDLs in your assigned area</p>
                             </div>
                         </div>
                     </div>
@@ -364,32 +364,30 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-                        <StatCard icon={<Calendar className="w-5 h-5" />} value={stats.total_visits} label="Total Visits" accent="bg-indigo-600" iconBg="bg-indigo-50" iconColor="text-indigo-600" />
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard icon={<Calendar className="w-5 h-5" />} value={stats.total_visits} label="Total Visits" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
                         <StatCard icon={<Clock className="w-5 h-5" />} value={stats.pending_visits} label="Pending" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
                         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} value={stats.approved_visits} label="Approved" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
                         <StatCard icon={<AlertCircle className="w-5 h-5" />} value={stats.rejected_visits} label="Rejected" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
-                        <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats.completed_visits} label="Completed" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
-                        <StatCard icon={<Camera className="w-5 h-5" />} value={stats.virtual_visits} label="Virtual" accent="bg-purple-600" iconBg="bg-purple-50" iconColor="text-purple-600" />
                     </div>
 
                     {/* Tabs */}
                     <Tabs defaultValue="records" className="space-y-4">
-                        <TabsList className="bg-white border border-slate-200 p-1 rounded-xl shadow-sm h-auto gap-1">
-                            <TabsTrigger value="records" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                        <TabsList className="bg-card border border-border p-1 rounded-xl shadow-sm h-auto gap-1">
+                            <TabsTrigger value="records" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <List className="w-4 h-4" />Visits
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 text-sm font-medium text-slate-600 gap-2 transition-all">
+                            <TabsTrigger value="analytics" className="data-[state=active]:text-primary rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground gap-2 transition-all">
                                 <BarChart2 className="w-4 h-4" />Analytics
                             </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="records">
                             <Card className="border-0 shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                                     <div>
-                                        <h3 className="font-semibold text-slate-800">Visit Records</h3>
-                                        <p className="text-xs text-slate-500 mt-0.5">{filteredVisits.length} of {visits.length} visits</p>
+                                        <h3 className="font-semibold text-foreground">Visit Records</h3>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{filteredVisits.length} of {visits.length} visits</p>
                                     </div>
                                     <div className="flex gap-2">
                                         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -431,9 +429,9 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                         <TabsContent value="analytics">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Visits by Status</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Distribution of visit statuses</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Visits by Status</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Distribution of visit statuses</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -447,9 +445,9 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                                     </CardContent>
                                 </Card>
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-slate-100">
-                                        <h4 className="font-semibold text-slate-800 text-sm">Visits by Type</h4>
-                                        <p className="text-xs text-slate-500 mt-0.5">Virtual vs Physical distribution</p>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">Visits by Type</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Virtual vs Physical distribution</p>
                                     </div>
                                     <CardContent className="p-4 pt-5">
                                         <ResponsiveContainer width="100%" height={280}>
@@ -471,7 +469,7 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
 
             {/* Approve Modal */}
             <Dialog open={isApproveModalOpen} onOpenChange={setIsApproveModalOpen}>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <CheckCircle className="h-5 w-5 text-green-600" />
@@ -484,26 +482,26 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                     
                     {selectedVisit && (
                         <div className="py-4 space-y-6">
-                            <div className="bg-slate-50 rounded-lg p-4 space-y-4">
-                                <h3 className="font-semibold text-sm text-slate-900 uppercase tracking-wide">Visit Details</h3>
+                            <div className="bg-muted rounded-lg p-4 space-y-4">
+                                <h3 className="font-semibold text-sm text-foreground uppercase tracking-wide">Visit Details</h3>
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div>
-                                        <span className="text-slate-500 text-xs block mb-1">Visitor</span>
+                                        <span className="text-muted-foreground text-xs block mb-1">Visitor</span>
                                         <div className="font-medium">{selectedVisit.visitor_name}</div>
-                                        <div className="text-xs text-slate-500">{selectedVisit.visitor_email}</div>
+                                        <div className="text-xs text-muted-foreground">{selectedVisit.visitor_email}</div>
                                     </div>
                                     <div>
-                                        <span className="text-slate-500 text-xs block mb-1">PDL</span>
+                                        <span className="text-muted-foreground text-xs block mb-1">PDL</span>
                                         <div className="font-medium">{selectedVisit.inmate_name}</div>
                                         {selectedVisit.cell_info && (
-                                            <div className="text-xs text-slate-500">
+                                            <div className="text-xs text-muted-foreground">
                                                 {selectedVisit.cell_info.cell_number}
                                                 {selectedVisit.cell_info.floor && `, Floor ${selectedVisit.cell_info.floor}`}
                                             </div>
                                         )}
                                     </div>
                                     <div>
-                                        <span className="text-slate-500 text-xs block mb-1">Date</span>
+                                        <span className="text-muted-foreground text-xs block mb-1">Date</span>
                                         <div className="font-medium">
                                             {new Date(selectedVisit.scheduled_date).toLocaleDateString('en-US', { 
                                                 month: 'long', 
@@ -513,24 +511,24 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                                         </div>
                                     </div>
                                     <div>
-                                        <span className="text-slate-500 text-xs block mb-1">Time</span>
+                                        <span className="text-muted-foreground text-xs block mb-1">Time</span>
                                         <div className="font-medium">{selectedVisit.scheduled_time}</div>
                                     </div>
                                     <div>
-                                        <span className="text-slate-500 text-xs block mb-1">Visit Type</span>
+                                        <span className="text-muted-foreground text-xs block mb-1">Visit Type</span>
                                         <div className="font-medium capitalize">{selectedVisit.visit_type}</div>
                                     </div>
                                     {selectedVisit.cell_info?.annex_name && (
                                         <div>
-                                            <span className="text-slate-500 text-xs block mb-1">Building</span>
+                                            <span className="text-muted-foreground text-xs block mb-1">Building</span>
                                             <div className="font-medium">{selectedVisit.cell_info.annex_name}</div>
                                         </div>
                                     )}
                                 </div>
                                 {selectedVisit.notes && (
                                     <div>
-                                        <span className="text-slate-500 text-xs block mb-1">Visitor Notes</span>
-                                        <div className="text-sm bg-white border border-slate-200 rounded p-3 mt-1">
+                                        <span className="text-muted-foreground text-xs block mb-1">Visitor Notes</span>
+                                        <div className="text-sm bg-card border border-border rounded p-3 mt-1">
                                             {selectedVisit.notes}
                                         </div>
                                     </div>
@@ -539,7 +537,7 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
 
                             {(selectedVisit.relationship_proof_path || selectedVisit.additional_proof_path) && (
                                 <div className="space-y-4">
-                                    <h3 className="font-semibold text-sm text-slate-900 uppercase tracking-wide">Attached Documents</h3>
+                                    <h3 className="font-semibold text-sm text-foreground uppercase tracking-wide">Attached Documents</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {selectedVisit.relationship_proof_path && (
                                             <DocumentCard
@@ -561,7 +559,7 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                         </div>
                     )}
 
-                    <DialogFooter className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-slate-200">
+                    <DialogFooter className="sticky bottom-0 bg-card pt-4 pb-2 border-t border-border">
                         <Button variant="outline" onClick={() => setIsApproveModalOpen(false)}>
                             Cancel
                         </Button>
@@ -575,7 +573,7 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
 
             {/* Reject Modal */}
             <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Reject Visit Schedule</DialogTitle>
                         <DialogDescription>
@@ -587,11 +585,11 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                         <div className="py-4 space-y-4">
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div>
-                                    <span className="text-slate-500">Visitor:</span>
+                                    <span className="text-muted-foreground">Visitor:</span>
                                     <div className="font-medium">{selectedVisit.visitor_name}</div>
                                 </div>
                                 <div>
-                                    <span className="text-slate-500">PDL:</span>
+                                    <span className="text-muted-foreground">PDL:</span>
                                     <div className="font-medium">{selectedVisit.inmate_name}</div>
                                 </div>
                             </div>

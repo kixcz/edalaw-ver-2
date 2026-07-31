@@ -239,7 +239,7 @@ export default function CallLogs({ callLogs, stats }: Props) {
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard icon={<PhoneCall className="w-5 h-5" />} value={stats?.total_calls || 0} label="Total Calls" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
                         <StatCard icon={<CheckCircle className="w-5 h-5" />} value={stats?.completed_calls || 0} label="Completed" accent="bg-green-600" iconBg="bg-green-50" iconColor="text-green-600" />
                         <StatCard icon={<PhoneMissed className="w-5 h-5" />} value={stats?.missed_calls || 0} label="Missed" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
@@ -266,7 +266,7 @@ export default function CallLogs({ callLogs, stats }: Props) {
 
                 {/* View Details Modal */}
                 <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Call Log Details</DialogTitle>
                             <DialogDescription>

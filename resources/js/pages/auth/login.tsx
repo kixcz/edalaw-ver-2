@@ -53,7 +53,8 @@ export default function Login({
     return (
         <>
             <Head title="Log in" />
-            <div className="grid min-h-svh lg:grid-cols-2">
+            {/* theme-orange pins the primary color to orange; dashboard theme colors only apply to dashboards */}
+            <div className="theme-orange grid min-h-svh lg:grid-cols-2">
                 {/* Left Column - Form (Scrollable) */}
                 <div className="flex flex-col gap-4 p-6 md:p-10 overflow-y-auto">
                     {/* Top Bar with Logo and Theme Toggle */}
@@ -95,10 +96,10 @@ export default function Login({
                             )}
 
                             {/* Privacy Notice - Top of Form Container */}
-                            <div className="mb-6 bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-4">
+                            <div className="mb-6 bg-primary/10 border-2 border-primary/20 rounded-xl p-4">
                                 <div className="flex items-start gap-3">
-                                    <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
-                                    <p className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                                    <ShieldCheck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-primary leading-relaxed">
                                         Login activities are recorded for security, audit, and compliance purposes. Access logs may be retained and reviewed by authorized personnel to protect the integrity and security of the eDalaw system.
                                     </p>
                                 </div>
@@ -220,8 +221,8 @@ export default function Login({
                 {/* Right Column - Cover Image (Fixed) */}
                 <div className="relative hidden lg:block">
                     <div className="sticky top-0 h-svh">
-                    {/* Orange gradient background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700" />
+                    {/* Primary gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-primary/80" />
                     
                     {/* Decorative elements */}
                     <div className="absolute inset-0 opacity-10">
