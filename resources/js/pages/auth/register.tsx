@@ -319,6 +319,7 @@ export default function Register({ visitor_role_id }: Props) {
                                 <Input
                                     id="contact_number"
                                     type="tel"
+                                    required
                                     tabIndex={7}
                                     autoComplete="tel"
                                     name="contact_number"

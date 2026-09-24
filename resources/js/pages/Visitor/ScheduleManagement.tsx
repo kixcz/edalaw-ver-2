@@ -460,7 +460,10 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
             }
         }
         
-        form.post(visitor.schedule.store().url, {
+        form.transform((data) => ({
+            ...data,
+            use_existing_documents: !!isInmateTagged,
+        })).post(visitor.schedule.store().url, {
             preserveScroll: true,
             forceFormData: true,
             onSuccess: () => {

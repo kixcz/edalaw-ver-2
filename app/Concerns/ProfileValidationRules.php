@@ -19,6 +19,7 @@ trait ProfileValidationRules
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => $this->emailRules($userId),
+            'contact_number' => ['required', 'string', 'max:255'],
             'dob' => ['required', 'date', 'before:today'],
             'gender' => ['required', 'string', 'in:male,female,other'],
             'street' => ['required', 'string', 'max:255'],
