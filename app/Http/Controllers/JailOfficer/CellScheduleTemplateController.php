@@ -74,10 +74,54 @@ class CellScheduleTemplateController extends Controller
             6 => 'Saturday',
         ];
 
+        $virtualDuration = \App\Models\TimeSlotCapacity::where('visit_type', 'virtual')
+            ->orderByDesc('updated_at')
+            ->value('duration_minutes') ?? 20;
+        $virtualInterval = \App\Models\TimeSlotCapacity::where('visit_type', 'virtual')
+            ->orderByDesc('updated_at')
+            ->value('interval_minutes') ?? 5;
+        $physicalDuration = \App\Models\TimeSlotCapacity::where('visit_type', 'physical')
+            ->orderByDesc('updated_at')
+            ->value('duration_minutes') ?? 30;
+        $physicalInterval = \App\Models\TimeSlotCapacity::where('visit_type', 'physical')
+            ->orderByDesc('updated_at')
+            ->value('interval_minutes') ?? 10;
+
         return Inertia::render('JailOfficer/CellScheduleTemplate', [
             'cells' => $formattedCells,
             'dayNames' => $dayNames,
+            'settings' => [
+                'virtual_duration' => $virtualDuration,
+                'virtual_interval' => $virtualInterval,
+                'physical_duration' => $physicalDuration,
+                'physical_interval' => $physicalInterval,
+            ]
         ]);
+    }
+
+    /**
+     * Update time slot settings for visits.
+     */
+    public function updateTimeSlotSettings(Request $request)
+    {
+        $request->validate([
+            'virtual_duration' => ['required', 'integer', 'min:1', 'max:180'],
+            'virtual_interval' => ['required', 'integer', 'min:0', 'max:60'],
+            'physical_duration' => ['required', 'integer', 'min:1', 'max:180'],
+            'physical_interval' => ['required', 'integer', 'min:0', 'max:60'],
+        ]);
+
+        \App\Models\TimeSlotCapacity::where('visit_type', 'virtual')->update([
+            'duration_minutes' => $request->virtual_duration,
+            'interval_minutes' => $request->virtual_interval,
+        ]);
+
+        \App\Models\TimeSlotCapacity::where('visit_type', 'physical')->update([
+            'duration_minutes' => $request->physical_duration,
+            'interval_minutes' => $request->physical_interval,
+        ]);
+
+        return redirect()->back()->with('success', 'Visit time allocation settings updated successfully.');
     }
 
     /**

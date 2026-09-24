@@ -103,6 +103,7 @@ class InmateTunnelController extends Controller
                     'visitor_name' => $visitorName,
                     'inmate_name' => $inmateName ?: 'Unknown',
                     'created_at' => $t->created_at->toIso8601String(),
+                    'is_in_schedule' => $session ? $session->isWithinSchedule() : false,
                 ];
             });
 
@@ -151,5 +152,43 @@ class InmateTunnelController extends Controller
                 'status' => $request->status ?? 'all',
             ],
         ]);
+    }
+    /**
+     * Mark a used tunnel back as valid.
+     */
+    public function markAsValid(Request $request, InmateTunnel $tunnel)
+    {
+        $user = $request->user();
+        
+        // Ensure the jail officer has access to this tunnel's session
+        $hasAccess = \App\Models\VisitSession::where('id', $tunnel->visit_session_id)
+            ->where(function ($sessionQuery) use ($user) {
+                $sessionQuery->where('monitor_id', $user->id)
+                    ->orWhereHas('visit', function ($visitQuery) use ($user) {
+                        $visitQuery->where('jail_officer_id', $user->id);
+                    });
+            })
+            ->exists();
+
+        if (!$hasAccess) {
+            abort(403, 'Unauthorized access to this tunnel.');
+        }
+
+        if (!$tunnel->is_used) {
+            return back()->with('error', 'Tunnel is already valid.');
+        }
+
+        if ($tunnel->expires_at->isPast()) {
+            return back()->with('error', 'Cannot validate an expired tunnel.');
+        }
+
+        $session = $tunnel->visitSession;
+        if ($session && !$session->isWithinSchedule()) {
+            return back()->with('error', 'Cannot mark as valid outside the scheduled time window.');
+        }
+
+        $tunnel->update(['is_used' => false]);
+
+        return back()->with('success', 'Tunnel has been successfully marked as valid.');
     }
 }

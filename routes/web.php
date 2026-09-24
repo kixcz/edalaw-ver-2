@@ -707,6 +707,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('cell-schedules.update');
         Route::post('cell-schedules/bulk-update', [\App\Http\Controllers\JailOfficer\CellScheduleTemplateController::class, 'bulkUpdate'])
             ->name('cell-schedules.bulk-update');
+        Route::post('cell-schedules/time-slot-settings', [\App\Http\Controllers\JailOfficer\CellScheduleTemplateController::class, 'updateTimeSlotSettings'])
+            ->name('cell-schedules.update-time-slot-settings');
     });
 
     Route::middleware(['role:jail_officer', 'resolve_jo_scope'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
@@ -871,6 +873,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         // Inmate Tunnels
         Route::get('inmate-tunnels', [\App\Http\Controllers\JailOfficer\InmateTunnelController::class, 'index'])
             ->name('inmate-tunnels.index');
+        Route::post('inmate-tunnels/{tunnel}/mark-valid', [\App\Http\Controllers\JailOfficer\InmateTunnelController::class, 'markAsValid'])
+            ->name('inmate-tunnels.mark-valid');
 
         // Appeal Review
         Route::get('appeals', [\App\Http\Controllers\JailOfficer\AppealReviewController::class, 'index'])

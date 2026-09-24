@@ -206,32 +206,22 @@ export function TimeSlotPicker({
                                         disabled={disabled}
                                         onClick={() => handleSlotClick(slot)}
                                         className={cn(
-                                            'w-full text-xs font-medium transition-all',
+                                            'w-full text-xs font-medium transition-all min-h-[52px]',
                                             isSelected && 'bg-primary text-primary-foreground shadow-md',
-                                            disabled && 'opacity-40 cursor-not-allowed hover:opacity-40',
+                                            disabled && 'bg-destructive/5 border-destructive/20 opacity-70 cursor-not-allowed hover:bg-destructive/5 hover:opacity-70',
                                             !disabled && !isSelected && 'hover:bg-accent'
                                         )}
                                         title={disabled ? getDisabledTooltip(slot) : `${slot.rangeLabel} — ${Math.max(0, (slot.maxCapacity ?? 0) - (slot.currentBookings ?? 0))}/${slot.maxCapacity} available`}
                                     >
-                                        <div className="flex flex-col items-center gap-1">
+                                        <div className="flex flex-col items-center gap-0.5 leading-none py-1">
                                             <span>{slot.label}</span>
-                                            {slot.maxCapacity && (
-                                                <span className={cn(
-                                                    'text-[10px]',
-                                                    slot.isFull ? 'text-destructive' : 'text-muted-foreground'
-                                                )}>
-                                                    {Math.max(0, (slot.maxCapacity ?? 0) - (slot.currentBookings ?? 0))}/{slot.maxCapacity} available
+                                            {disabled && (
+                                                <span className="text-[10px] font-semibold text-destructive mt-1">
+                                                    {isInmateBooked(slot) ? 'Booked' : isUserBooked(slot) ? 'Your slot' : isPastTimeSlot(slot) ? 'Passed' : 'Full'}
                                                 </span>
                                             )}
                                         </div>
                                     </Button>
-                                    {disabled && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-destructive/10 rounded-md pointer-events-none">
-                                            <span className="text-[10px] font-medium text-destructive">
-                                                {isUserBooked(slot) ? 'Your slot' : isPastTimeSlot(slot) ? 'Passed' : 'Full'}
-                                            </span>
-                                        </div>
-                                    )}
                                 </div>
                             );
                         })}
@@ -253,32 +243,22 @@ export function TimeSlotPicker({
                                         disabled={disabled}
                                         onClick={() => handleSlotClick(slot)}
                                         className={cn(
-                                            'w-full text-xs font-medium transition-all',
+                                            'w-full text-xs font-medium transition-all min-h-[52px]',
                                             isSelected && 'bg-primary text-primary-foreground shadow-md',
-                                            disabled && 'opacity-40 cursor-not-allowed hover:opacity-40',
+                                            disabled && 'bg-destructive/5 border-destructive/20 opacity-70 cursor-not-allowed hover:bg-destructive/5 hover:opacity-70',
                                             !disabled && !isSelected && 'hover:bg-accent'
                                         )}
                                         title={disabled ? getDisabledTooltip(slot) : `${slot.rangeLabel} — ${Math.max(0, (slot.maxCapacity ?? 0) - (slot.currentBookings ?? 0))}/${slot.maxCapacity} available`}
                                     >
-                                        <div className="flex flex-col items-center gap-1">
+                                        <div className="flex flex-col items-center gap-0.5 leading-none py-1">
                                             <span>{slot.label}</span>
-                                            {slot.maxCapacity && (
-                                                <span className={cn(
-                                                    'text-[10px]',
-                                                    slot.isFull ? 'text-destructive' : 'text-muted-foreground'
-                                                )}>
-                                                    {Math.max(0, (slot.maxCapacity ?? 0) - (slot.currentBookings ?? 0))}/{slot.maxCapacity} available
+                                            {disabled && (
+                                                <span className="text-[10px] font-semibold text-destructive mt-1">
+                                                    {isInmateBooked(slot) ? 'Booked' : isUserBooked(slot) ? 'Your slot' : isPastTimeSlot(slot) ? 'Passed' : 'Full'}
                                                 </span>
                                             )}
                                         </div>
                                     </Button>
-                                    {disabled && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-destructive/10 rounded-md pointer-events-none">
-                                            <span className="text-[10px] font-medium text-destructive">
-                                                {isUserBooked(slot) ? 'Your slot' : isPastTimeSlot(slot) ? 'Passed' : 'Full'}
-                                            </span>
-                                        </div>
-                                    )}
                                 </div>
                             );
                         })}

@@ -13,6 +13,7 @@ import {
     X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,12 @@ type Cell = {
 type Props = {
     cells: Cell[];
     dayNames: Record<number, string>;
+    settings: {
+        virtual_duration: number;
+        virtual_interval: number;
+        physical_duration: number;
+        physical_interval: number;
+    };
 };
 
 // Monday -> Sunday
@@ -106,7 +113,7 @@ function activeDayCount(week: Record<number, ScheduleDay>, type: VisitType): num
     return DAYS.filter((d) => week[d][`${type}_available`]).length;
 }
 
-export default function CellScheduleTemplate({ cells, dayNames }: Props) {
+export default function CellScheduleTemplate({ cells, dayNames, settings }: Props) {
     const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
 
     const originalSchedules = useMemo(() => buildScheduleMap(cells), [cells]);
@@ -115,6 +122,14 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
     const [selectedCellIds, setSelectedCellIds] = useState<Set<number>>(new Set());
+
+    const [isSavingSettings, setIsSavingSettings] = useState(false);
+    const [settingsForm, setSettingsForm] = useState({
+        virtual_duration: settings?.virtual_duration ?? 20,
+        virtual_interval: settings?.virtual_interval ?? 5,
+        physical_duration: settings?.physical_duration ?? 30,
+        physical_interval: settings?.physical_interval ?? 10,
+    });
 
     // --- Builder modal state ---
     const [builderOpen, setBuilderOpen] = useState(false);
@@ -248,10 +263,19 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
             })),
         }));
 
-        router.put(
-            '/jail-officer/cell-schedules/bulk',
-            { cells: payload },
-            { onFinish: () => setIsSaving(false) }
+        router.post(
+            '/jail-officer/cell-schedules/bulk-update',
+            { cell_schedules: payload },
+            { 
+                onSuccess: () => {
+                    setDirtyCellIds(new Set());
+                    toast.success('Cell schedules updated successfully.');
+                },
+                onError: () => {
+                    toast.error('Failed to update cell schedules.');
+                },
+                onFinish: () => setIsSaving(false) 
+            }
         );
     };
 
@@ -280,13 +304,78 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
                 </div>
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
-                    {flash?.success && (
-                        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg text-sm">{flash.success}</div>
-                    )}
-                    {flash?.error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{flash.error}</div>
-                    )}
+                    {/* Settings Card */}
+                    <Card className="border-0 shadow-sm mb-6">
+                        <div className="border-b px-5 py-4">
+                            <h2 className="text-base font-semibold">Visit Time Allocation & Intervals</h2>
+                            <p className="text-sm text-muted-foreground">Adjust the duration and intervals for physical and virtual visits.</p>
+                        </div>
+                        <CardContent className="p-5">
+                            <form 
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    setIsSavingSettings(true);
+                                    router.post('/jail-officer/cell-schedules/time-slot-settings', settingsForm, {
+                                        preserveScroll: true,
+                                        onSuccess: () => toast.success('Visit time settings updated successfully.'),
+                                        onError: () => toast.error('Failed to update visit time settings.'),
+                                        onFinish: () => setIsSavingSettings(false),
+                                    });
+                                }}
+                                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                            >
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-medium flex items-center gap-2"><Monitor className="w-4 h-4 text-blue-500"/> Virtual Visits</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium">Duration (minutes)</label>
+                                            <Input 
+                                                type="number" min="1" 
+                                                value={settingsForm.virtual_duration} 
+                                                onChange={e => setSettingsForm({...settingsForm, virtual_duration: e.target.value === '' ? '' as any : Number(e.target.value)})}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium">Interval (minutes)</label>
+                                            <Input 
+                                                type="number" min="0" 
+                                                value={settingsForm.virtual_interval} 
+                                                onChange={e => setSettingsForm({...settingsForm, virtual_interval: e.target.value === '' ? '' as any : Number(e.target.value)})}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-medium flex items-center gap-2"><UserCheck className="w-4 h-4 text-green-500"/> Physical Visits</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium">Duration (minutes)</label>
+                                            <Input 
+                                                type="number" min="1" 
+                                                value={settingsForm.physical_duration} 
+                                                onChange={e => setSettingsForm({...settingsForm, physical_duration: e.target.value === '' ? '' as any : Number(e.target.value)})}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium">Interval (minutes)</label>
+                                            <Input 
+                                                type="number" min="0" 
+                                                value={settingsForm.physical_interval} 
+                                                onChange={e => setSettingsForm({...settingsForm, physical_interval: e.target.value === '' ? '' as any : Number(e.target.value)})}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
 
+                                <div className="md:col-span-2 flex justify-end">
+                                    <Button type="submit" disabled={isSavingSettings} className="gap-2">
+                                        <Save className="w-4 h-4" /> {isSavingSettings ? 'Saving...' : 'Save Settings'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
                     {/* Table Card */}
                     <Card className="border-0 shadow-sm">
                     {/* Toolbar */}

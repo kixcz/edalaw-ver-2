@@ -172,11 +172,16 @@ class ScheduleController extends Controller
             'physical_visits' => $visits->where('visit_type', VisitType::Physical)->count(),
         ];
         
+        $physicalSettings = \App\Models\TimeSlotCapacity::getTimeConfig($userBranchId, 'physical');
+        $physicalDuration = $physicalSettings?->duration_minutes ?? 30;
+
         return Inertia::render('Visitor/ScheduleManagement', [
             'visits' => $visits,
             'bookedTimeSlots' => $bookedTimeSlots,
             'today_unavailable' => $todayUnavailable,
             'stats' => $stats,
+            'virtualDuration' => $durationMinutes,
+            'physicalDuration' => $physicalDuration,
         ]);
     }
 
@@ -470,6 +475,19 @@ class ScheduleController extends Controller
                 ->withInput();
         }
 
+        // Check if the inmate is already booked for this time
+        $inmateAlreadyBooked = Visit::where('inmate_id', $inmate->id)
+            ->where('scheduled_date', $request->scheduled_date)
+            ->where('scheduled_time', $scheduledTime)
+            ->whereIn('status', [VisitStatus::Pending, VisitStatus::Approved])
+            ->exists();
+
+        if ($inmateAlreadyBooked) {
+            return redirect()->back()
+                ->withErrors(['scheduled_time' => 'The selected PDL is already scheduled for a visit at this time. Please choose another time slot.'])
+                ->withInput();
+        }
+
         // Auto-assign jail officer based on inmate's cell and jail_officer_scopes
         $assignedJailOfficerId = $this->assignJailOfficerToInmate($inmate->id);
 
@@ -599,6 +617,20 @@ class ScheduleController extends Controller
 
             return redirect()->back()
                 ->withErrors(['scheduled_time' => "This time slot is full (maximum capacity: {$capacity} visitors). Please select another time."])
+                ->withInput();
+        }
+
+        // Check if the inmate is already booked for this time
+        $inmateAlreadyBooked = Visit::where('inmate_id', $visit->inmate_id)
+            ->where('scheduled_date', $request->scheduled_date)
+            ->where('scheduled_time', $request->scheduled_time)
+            ->whereIn('status', [VisitStatus::Pending, VisitStatus::Approved])
+            ->where('id', '!=', $visit->id)
+            ->exists();
+
+        if ($inmateAlreadyBooked) {
+            return redirect()->back()
+                ->withErrors(['scheduled_time' => 'The selected PDL is already scheduled for a visit at this time. Please choose another time slot.'])
                 ->withInput();
         }
 

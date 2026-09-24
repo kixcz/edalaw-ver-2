@@ -25,21 +25,17 @@ class TimeSlotConfigurationController extends Controller
         $physicalStartTime = $physicalCap?->start_time?->format('H:i') ?? '07:00';
         $physicalEndTime = $physicalCap?->end_time?->format('H:i') ?? '18:00';
         
-        // Get duration and interval settings - use groupBy to get consistent values across all slots
+        // Get duration and interval settings
         $virtualDuration = TimeSlotCapacity::where('visit_type', 'virtual')
-            ->groupBy('duration_minutes')
             ->orderByDesc('updated_at')
             ->value('duration_minutes') ?? 20;
         $virtualInterval = TimeSlotCapacity::where('visit_type', 'virtual')
-            ->groupBy('interval_minutes')
             ->orderByDesc('updated_at')
             ->value('interval_minutes') ?? 5;
         $physicalDuration = TimeSlotCapacity::where('visit_type', 'physical')
-            ->groupBy('duration_minutes')
             ->orderByDesc('updated_at')
             ->value('duration_minutes') ?? 30;
         $physicalInterval = TimeSlotCapacity::where('visit_type', 'physical')
-            ->groupBy('interval_minutes')
             ->orderByDesc('updated_at')
             ->value('interval_minutes') ?? 10;
         

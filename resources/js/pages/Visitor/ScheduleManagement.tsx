@@ -115,6 +115,8 @@ type Props = {
         virtual_visits: number;
         physical_visits: number;
     };
+    virtualDuration?: number;
+    physicalDuration?: number;
 };
 
 const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
@@ -261,7 +263,7 @@ function formatTimeUntil(scheduledStart: string): string {
 }
 
 
-export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats }: Props) {
+export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats, virtualDuration = 20, physicalDuration = 30 }: Props) {
     const { props } = usePage<{ bookedTimeSlots?: string[] }>();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
@@ -463,7 +465,9 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
         form.transform((data) => ({
             ...data,
             use_existing_documents: !!isInmateTagged,
-        })).post(visitor.schedule.store().url, {
+        }));
+        
+        form.post(visitor.schedule.store().url, {
             preserveScroll: true,
             forceFormData: true,
             onSuccess: () => {
@@ -1443,8 +1447,8 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                             <SelectValue placeholder="Select visit type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="virtual">Virtual ({durationMinutes}-min)</SelectItem>
-                                            <SelectItem value="physical">Physical ({durationMinutes}-min)</SelectItem>
+                                            <SelectItem value="virtual">Virtual ({virtualDuration}-min)</SelectItem>
+                                            <SelectItem value="physical">Physical ({physicalDuration}-min)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <input type="hidden" name="visit_type" value={currentVisitType} />

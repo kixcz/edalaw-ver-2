@@ -48,6 +48,7 @@ type TunnelRow = {
     visitor_name: string | null;
     inmate_name: string | null;
     created_at: string;
+    is_in_schedule: boolean;
 };
 
 type PaginationLink = { url: string | null; label: string; active: boolean };
@@ -113,6 +114,31 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
             { accessorKey: 'inmate_name', header: 'Inmate', cell: ({ row }) => row.original.inmate_name ?? '—' },
             { accessorKey: 'expires_at', header: 'Expires', cell: ({ row }) => <div><div className="text-sm">{row.original.expires_at.slice(0, 16).replace('T', ' ')}</div><div className="text-xs text-muted-foreground">{row.original.expires_at_human}</div></div> },
             { accessorKey: 'status', header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> },
+            { 
+                accessorKey: 'actions', 
+                header: 'Actions', 
+                cell: ({ row }) => {
+                    if (row.original.status !== 'used') return null;
+                    if (!row.original.is_in_schedule) return <span className="text-[10px] text-muted-foreground">Outside schedule</span>;
+                    return (
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => {
+                                router.post(`/jail-officer/inmate-tunnels/${row.original.id}/mark-valid`, {}, {
+                                    preserveScroll: true,
+                                    onSuccess: () => {
+                                        // toast is handled by flash messages usually
+                                    }
+                                });
+                            }}
+                        >
+                            Mark Valid
+                        </Button>
+                    );
+                } 
+            },
         ],
         [copy]
     );
