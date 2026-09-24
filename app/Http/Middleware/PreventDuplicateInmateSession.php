@@ -55,10 +55,10 @@ class PreventDuplicateInmateSession
         // Refresh session to get latest state
         $session->refresh();
 
-        // CRITICAL: Check if session is already active (either inmate or visitor joined)
+        // CRITICAL: Check if session is already active (inmate joined)
         // This prevents duplicate entries even before the page loads
-        if ($session->inmate_joined_at || $session->visitor_joined_at) {
-            // Someone is already in this session - mark tunnel as used and block
+        if ($session->inmate_joined_at) {
+            // Inmate is already in this session - mark tunnel as used and block
             $tunnel->update(['is_used' => true]);
             return redirect()->route('inmate.tunnel-already-used', ['token' => $tunnel->tunnel_token]);
         }
