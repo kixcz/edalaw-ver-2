@@ -140,9 +140,7 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
             header: 'Schedule',
             cell: ({ row }) => {
                 const s = row.original;
-                const { dateLabel, timeLabel } = s.scheduled_date && s.scheduled_time && s.visit_type
-                    ? formatVisitSchedule(s.scheduled_date, s.scheduled_time, s.visit_type as 'virtual' | 'physical')
-                    : formatSessionSchedule(s.scheduled_start, s.scheduled_end);
+                const { dateLabel, timeLabel } = formatSessionSchedule(s.scheduled_start, s.scheduled_end);
                 return (
                     <div className="space-y-1">
                         <div className="font-medium">{dateLabel}</div>

@@ -84,11 +84,26 @@ class ScheduleController extends Controller
                     ? route('visit-session.show', $latestSession)
                     : null;
 
+                $durationMinutes = 20;
+                if ($latestSession && $latestSession->scheduled_start && $latestSession->scheduled_end) {
+                    $durationMinutes = $latestSession->scheduled_start->diffInMinutes($latestSession->scheduled_end);
+                } else {
+                    $capacity = \App\Models\TimeSlotCapacity::where('visit_type', $visit->visit_type->value)
+                        ->where('time_slot', '<=', $visit->scheduled_time)
+                        ->orderBy('time_slot', 'desc')
+                        ->first();
+                    if (!$capacity) {
+                        $capacity = \App\Models\TimeSlotCapacity::where('visit_type', $visit->visit_type->value)->first();
+                    }
+                    $durationMinutes = $capacity?->duration_minutes ?? ($visit->visit_type->value === 'virtual' ? 20 : 30);
+                }
+
                 return [
                     'id' => $visit->id,
                     'scheduled_date' => $visit->scheduled_date->format('Y-m-d'),
                     'scheduled_time' => $visit->scheduled_time,
                     'visit_type' => $visit->visit_type->value,
+                    'duration_minutes' => $durationMinutes,
                     'inmate_id' => $visit->inmate_id,
                     'inmate_first_name' => $visit->inmate_first_name,
                     'inmate_middle_name' => $visit->inmate_middle_name,

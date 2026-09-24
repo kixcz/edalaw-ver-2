@@ -81,6 +81,7 @@ type Visit = {
     scheduled_date: string;
     scheduled_time: string | null;
     visit_type: 'virtual' | 'physical';
+    duration_minutes: number;
     inmate_id: number;
     inmate_first_name: string;
     inmate_middle_name: string | null;
@@ -815,7 +816,8 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                 const { dateLabel, timeLabel } = formatVisitSchedule(
                     visit.scheduled_date,
                     visit.scheduled_time ?? null,
-                    visit.visit_type
+                    visit.visit_type,
+                    visit.duration_minutes
                 );
                 return (
                     <div className="space-y-1">
