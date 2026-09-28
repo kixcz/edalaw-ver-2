@@ -19,11 +19,19 @@ class DormitoryManagementController extends Controller
      */
     public function index(Request $request): Response
     {
+        $user = $request->user();
+        
+        // Get authorized dormitory and cell IDs
+        $authorizedDormitoryIds = $user->getAuthorizedDormitoryIds();
+        $authorizedCellIds = $user->getAuthorizedCellIds();
+
         $query = Dormitory::with(['annex.jail', 'cells' => function ($q) {
             $q->withCount(['inmates' => function ($iq) {
                 $iq->where('status', 'active');
             }]);
-        }]);
+        }])
+        ->withCount(['cells'])
+        ->whereIn('id', $authorizedDormitoryIds);
 
         // Filter by annex
         if ($annexId = $request->input('annex_id')) {
@@ -47,6 +55,11 @@ class DormitoryManagementController extends Controller
             $query->where('status', $status);
         }
 
+        // Search filter
+        if ($search = $request->input('search')) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
         $dormitories = $query->orderBy('name')->paginate(10)->withQueryString();
 
         // Get all jails and annexes for dropdowns
@@ -55,16 +68,16 @@ class DormitoryManagementController extends Controller
 
         // Summary stats
         $stats = [
-            'total_dormitories' => Dormitory::count(),
-            'active_dormitories' => Dormitory::where('status', 'active')->count(),
-            'total_cells' => Cell::count(),
-            'total_pdls' => Inmate::where('status', 'active')->count(),
+            'total_dormitories' => count($authorizedDormitoryIds),
+            'active_dormitories' => Dormitory::whereIn('id', $authorizedDormitoryIds)->where('status', 'active')->count(),
+            'total_cells' => count($authorizedCellIds),
+            'total_pdls' => Inmate::whereIn('cell_id', $authorizedCellIds)->where('status', 'active')->count(),
         ];
 
         // Chart data
         $chartData = [
-            'dormitories_by_type' => Dormitory::select('type')->selectRaw('count(*) as count')->groupBy('type')->get(),
-            'occupancy_by_dormitory' => Dormitory::with(['cells.inmates' => function($q) {
+            'dormitories_by_type' => Dormitory::whereIn('id', $authorizedDormitoryIds)->select('type')->selectRaw('count(*) as count')->groupBy('type')->get(),
+            'occupancy_by_dormitory' => Dormitory::whereIn('id', $authorizedDormitoryIds)->with(['cells.inmates' => function($q) {
                 $q->where('status', 'active');
             }])->get()->map(fn($d) => [
                 'name' => $d->name,
@@ -80,6 +93,7 @@ class DormitoryManagementController extends Controller
             'stats' => $stats,
             'chartData' => $chartData,
             'filters' => [
+                'search' => $search ?? '',
                 'annex_id' => $annexId ? (int) $annexId : null,
                 'jail_id' => $jailId ? (int) $jailId : null,
                 'type' => $type ?? 'all',

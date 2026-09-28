@@ -129,16 +129,8 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
                     </div>
                 </div>
 
-                {flash?.success && (
-                    <div className="rounded-md bg-green-500/10 p-4 text-green-600">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded-md bg-destructive/10 p-4 text-destructive">
-                        {flash.error}
-                    </div>
-                )}
+                
+                
 
                 <div className="grid gap-4">
                     {cells.length === 0 ? (

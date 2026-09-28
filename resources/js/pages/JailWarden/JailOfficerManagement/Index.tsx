@@ -46,7 +46,7 @@ export default function JailOfficerManagement({ auth, officers, facilities, stat
     const form = useForm({ first_name: '', middle_name: '', last_name: '', email: '', password: '', password_confirmation: '' });
 
     const openCreateModal = () => { form.setData({ first_name: '', middle_name: '', last_name: '', email: '', password: '', password_confirmation: '' }); setIsCreateModalOpen(true); };
-    const submitCreate = (e: React.FormEvent) => { e.preventDefault(); router.post('/jail-warden/officers', form.data, { onSuccess: () => { form.reset(); setIsCreateModalOpen(false); } }); };
+    const submitCreate = (e: React.FormEvent) => { e.preventDefault(); form.post('/jail-warden/officers', { onSuccess: () => { form.reset(); setIsCreateModalOpen(false); } }); };
 
     const columns: ColumnDef<any>[] = useMemo(() => [
         { accessorKey: 'name', header: 'Officer Name' },

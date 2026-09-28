@@ -37,28 +37,28 @@ const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: Rea
 type Props = {
     auth: { user: any };
     cells: { data: any[]; current_page: number; last_page: number; per_page: number; total: number };
-    annexes: any[];
+    dormitories: any[];
     stats: { total_cells: number; active_cells: number; inactive_cells: number; total_capacity: number };
-    chartData: { cells_by_status: { status: string; count: number }[]; cells_by_annex: { annex: string; count: number }[] };
+    chartData: { cells_by_status: { status: string; count: number }[]; cells_by_dormitory: { dormitory: string; count: number }[] };
 };
 
-export default function CellManagement({ auth, cells, annexes, stats, chartData }: Props) {
+export default function CellManagement({ auth, cells, dormitories, stats, chartData }: Props) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedCell, setSelectedCell] = useState<any>(null);
-    const form = useForm({ cell_number: '', capacity: '4', status: 'active', annex_id: '' });
+    const form = useForm({ cell_number: '', capacity: '4', status: 'active', dormitory_id: '' });
 
-    const openCreateModal = () => { form.setData({ cell_number: '', capacity: '4', status: 'active', annex_id: '' }); setIsCreateModalOpen(true); };
-    const openEditModal = (cell: any) => { setSelectedCell(cell); form.setData({ cell_number: cell.cell_number, capacity: cell.capacity.toString(), status: cell.status, annex_id: cell.annex?.id?.toString() || '' }); setIsEditModalOpen(true); };
-    const submitCreate = (e: React.FormEvent) => { e.preventDefault(); router.post('/dashboard/jail-warden/cells', form.data, { onSuccess: () => { form.reset(); setIsCreateModalOpen(false); } }); };
-    const submitUpdate = (e: React.FormEvent) => { e.preventDefault(); if (selectedCell) { router.put(`/dashboard/jail-warden/cells/${selectedCell.id}`, form.data, { onSuccess: () => { setIsEditModalOpen(false); setSelectedCell(null); } }); } };
-    const submitDelete = (cellId: number) => { router.delete(`/dashboard/jail-warden/cells/${cellId}`); };
+    const openCreateModal = () => { form.setData({ cell_number: '', capacity: '4', status: 'active', dormitory_id: '' }); setIsCreateModalOpen(true); };
+    const openEditModal = (cell: any) => { setSelectedCell(cell); form.setData({ cell_number: cell.cell_number, capacity: cell.capacity.toString(), status: cell.status, dormitory_id: cell.dormitory?.id?.toString() || '' }); setIsEditModalOpen(true); };
+    const submitCreate = (e: React.FormEvent) => { e.preventDefault(); router.post('/jail-warden/cells', form.data, { onSuccess: () => { form.reset(); setIsCreateModalOpen(false); } }); };
+    const submitUpdate = (e: React.FormEvent) => { e.preventDefault(); if (selectedCell) { router.put(`/jail-warden/cells/${selectedCell.id}`, form.data, { onSuccess: () => { setIsEditModalOpen(false); setSelectedCell(null); } }); } };
+    const submitDelete = (cellId: number) => { router.delete(`/jail-warden/cells/${cellId}`); };
 
     const columns: ColumnDef<any>[] = useMemo(() => [
         { accessorKey: 'cell_number', header: 'Cell Number' },
         { accessorKey: 'capacity', header: 'Capacity' },
         { accessorKey: 'status', header: 'Status', cell: ({ row }) => <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${row.original.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-muted text-muted-foreground border-border'}`}>{row.original.status}</span> },
-        { accessorKey: 'annex.name', header: 'Annex', cell: ({ row }) => row.original.annex?.name || '-' },
+        { accessorKey: 'dormitory.name', header: 'Dormitory', cell: ({ row }) => row.original.dormitory?.name || '-' },
         { id: 'actions', cell: ({ row }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => openEditModal(row.original)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem onClick={() => submitDelete(row.original.id)} className="text-red-600 focus:text-white focus:bg-red-600 [&_svg]:!text-red-600 focus:[&_svg]:!text-white"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu>), },
     ], []);
 
@@ -92,8 +92,8 @@ export default function CellManagement({ auth, cells, annexes, stats, chartData 
 
                         <TabsContent value="records">
                             <Card className="border-0 shadow-sm">
-                                <div className="px-6 py-4 border-b border-border"><h3 className="font-semibold text-foreground">Cell Records</h3><p className="text-xs text-muted-foreground mt-0.5">{cells.total} total cells</p></div>
-                                <div className="p-6"><DataTable columns={columns} data={cells.data || []} /></div>
+                                <div className="px-6 py-4 border-b border-border"><h3 className="font-semibold text-foreground">Cell Records</h3><p className="text-xs text-muted-foreground mt-0.5">{(Array.isArray(cells) ? cells.length : cells.total)} total cells</p></div>
+                                <div className="p-6"><DataTable columns={columns} data={Array.isArray(cells) ? cells : (cells.data || [])} /></div>
                             </Card>
                         </TabsContent>
 
@@ -106,9 +106,9 @@ export default function CellManagement({ auth, cells, annexes, stats, chartData 
                                     </CardContent>
                                 </Card>
                                 <Card className="border-0 shadow-sm">
-                                    <div className="px-6 pt-5 pb-2 border-b border-border"><h4 className="font-semibold text-foreground text-sm">Cells by Annex</h4><p className="text-xs text-muted-foreground mt-0.5">Distribution across annexes</p></div>
+                                    <div className="px-6 pt-5 pb-2 border-b border-border"><h4 className="font-semibold text-foreground text-sm">Cells by dormitory</h4><p className="text-xs text-muted-foreground mt-0.5">Distribution across dormitories</p></div>
                                     <CardContent className="p-4 pt-5">
-                                        <ResponsiveContainer width="100%" height={280}><BarChart data={chartData.cells_by_annex} margin={{ top: 5, right: 10, left: -20, bottom: 60 }}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis dataKey="annex" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" /><YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} /><RechartsTooltip /><Bar dataKey="count" fill="#16a34a" radius={[4, 4, 0, 0]} name="Cells" /></BarChart></ResponsiveContainer>
+                                        <ResponsiveContainer width="100%" height={280}><BarChart data={chartData.cells_by_dormitory} margin={{ top: 5, right: 10, left: -20, bottom: 60 }}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis dataKey="dormitory" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" /><YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} /><RechartsTooltip /><Bar dataKey="count" fill="#16a34a" radius={[4, 4, 0, 0]} name="Cells" /></BarChart></ResponsiveContainer>
                                     </CardContent>
                                 </Card>
                             </div>
@@ -118,11 +118,11 @@ export default function CellManagement({ auth, cells, annexes, stats, chartData 
             </div>
 
             <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                <DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle>Create New Cell</DialogTitle><DialogDescription>Add a new cell to an annex in your branch.</DialogDescription></DialogHeader>
+                <DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle>Create New Cell</DialogTitle><DialogDescription>Add a new cell to a dormitory in your branch.</DialogDescription></DialogHeader>
                     <form onSubmit={submitCreate}><div className="space-y-4 py-4">
                         <div className="space-y-2"><Label htmlFor="cell_number">Cell Number</Label><Input id="cell_number" value={form.data.cell_number} onChange={(e) => form.setData('cell_number', e.target.value)} placeholder="Enter cell number" />{form.errors.cell_number && <p className="text-sm text-destructive">{form.errors.cell_number}</p>}</div>
                         <div className="space-y-2"><Label htmlFor="capacity">Capacity</Label><Input id="capacity" type="number" value={form.data.capacity} onChange={(e) => form.setData('capacity', e.target.value)} />{form.errors.capacity && <p className="text-sm text-destructive">{form.errors.capacity}</p>}</div>
-                        <div className="space-y-2"><Label htmlFor="annex_id">Annex</Label><Select value={form.data.annex_id} onValueChange={(value) => form.setData('annex_id', value)}><SelectTrigger><SelectValue placeholder="Select annex" /></SelectTrigger><SelectContent>{annexes?.map((annex: any) => (<SelectItem key={annex.id} value={annex.id.toString()}>{annex.name}</SelectItem>))}</SelectContent></Select>{form.errors.annex_id && <p className="text-sm text-destructive">{form.errors.annex_id}</p>}</div>
+                        <div className="space-y-2"><Label htmlFor="dormitory_id">Dormitory</Label><Select value={form.data.dormitory_id} onValueChange={(value) => form.setData('dormitory_id', value)}><SelectTrigger><SelectValue placeholder="Select dormitory" /></SelectTrigger><SelectContent>{dormitories?.map((dormitory: any) => (<SelectItem key={dormitory.id} value={dormitory.id.toString()}>{dormitory.name}</SelectItem>))}</SelectContent></Select>{form.errors.dormitory_id && <p className="text-sm text-destructive">{form.errors.dormitory_id}</p>}</div>
                         <div className="space-y-2"><Label htmlFor="status">Status</Label><Select value={form.data.status} onValueChange={(value) => form.setData('status', value)}><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select>{form.errors.status && <p className="text-sm text-destructive">{form.errors.status}</p>}</div>
                     </div><DialogFooter><Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button><Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">Create Cell</Button></DialogFooter></form>
                 </DialogContent>
@@ -133,7 +133,7 @@ export default function CellManagement({ auth, cells, annexes, stats, chartData 
                     <form onSubmit={submitUpdate}><div className="space-y-4 py-4">
                         <div className="space-y-2"><Label htmlFor="edit-cell_number">Cell Number</Label><Input id="edit-cell_number" value={form.data.cell_number} onChange={(e) => form.setData('cell_number', e.target.value)} />{form.errors.cell_number && <p className="text-sm text-destructive">{form.errors.cell_number}</p>}</div>
                         <div className="space-y-2"><Label htmlFor="edit-capacity">Capacity</Label><Input id="edit-capacity" type="number" value={form.data.capacity} onChange={(e) => form.setData('capacity', e.target.value)} />{form.errors.capacity && <p className="text-sm text-destructive">{form.errors.capacity}</p>}</div>
-                        <div className="space-y-2"><Label htmlFor="edit-annex_id">Annex</Label><Select value={form.data.annex_id} onValueChange={(value) => form.setData('annex_id', value)}><SelectTrigger><SelectValue placeholder="Select annex" /></SelectTrigger><SelectContent>{annexes?.map((annex: any) => (<SelectItem key={annex.id} value={annex.id.toString()}>{annex.name}</SelectItem>))}</SelectContent></Select>{form.errors.annex_id && <p className="text-sm text-destructive">{form.errors.annex_id}</p>}</div>
+                        <div className="space-y-2"><Label htmlFor="edit-dormitory_id">Dormitory</Label><Select value={form.data.dormitory_id} onValueChange={(value) => form.setData('dormitory_id', value)}><SelectTrigger><SelectValue placeholder="Select dormitory" /></SelectTrigger><SelectContent>{dormitories?.map((dormitory: any) => (<SelectItem key={dormitory.id} value={dormitory.id.toString()}>{dormitory.name}</SelectItem>))}</SelectContent></Select>{form.errors.dormitory_id && <p className="text-sm text-destructive">{form.errors.dormitory_id}</p>}</div>
                         <div className="space-y-2"><Label htmlFor="edit-status">Status</Label><Select value={form.data.status} onValueChange={(value) => form.setData('status', value)}><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select>{form.errors.status && <p className="text-sm text-destructive">{form.errors.status}</p>}</div>
                     </div><DialogFooter><Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button><Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">Update Cell</Button></DialogFooter></form>
                 </DialogContent>

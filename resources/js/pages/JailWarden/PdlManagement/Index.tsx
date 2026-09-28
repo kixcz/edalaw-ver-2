@@ -47,7 +47,7 @@ export default function PdlManagement({ auth, inmates, cells, stats, chartData }
     const form = useForm({ inmate_number: '', first_name: '', middle_name: '', last_name: '', date_of_birth: '', cell_id: '' });
 
     const openCreateModal = () => { form.setData({ inmate_number: '', first_name: '', middle_name: '', last_name: '', date_of_birth: '', cell_id: '' }); setIsCreateModalOpen(true); };
-    const submitCreate = (e: React.FormEvent) => { e.preventDefault(); router.post('/jail-warden/pdl', form.data, { onSuccess: () => { form.reset(); setIsCreateModalOpen(false); } }); };
+    const submitCreate = (e: React.FormEvent) => { e.preventDefault(); router.post('/jail-warden/pdls', form.data, { onSuccess: () => { form.reset(); setIsCreateModalOpen(false); } }); };
 
     const columns: ColumnDef<any>[] = useMemo(() => [
         { accessorKey: 'inmate_number', header: 'PDL Number' },
@@ -55,7 +55,7 @@ export default function PdlManagement({ auth, inmates, cells, stats, chartData }
         { accessorKey: 'status', header: 'Status', cell: ({ row }) => <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${row.original.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-muted text-muted-foreground border-border'}`}>{row.original.status}</span> },
         { accessorKey: 'cell.cell_number', header: 'Cell', cell: ({ row }) => row.original.cell?.cell_number || '-' },
         { accessorKey: 'cell.annex.name', header: 'Annex', cell: ({ row }) => row.original.cell?.annex?.name || '-' },
-        { id: 'actions', cell: ({ row }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => router.get(`/jail-warden/pdl/${row.original.id}`)}><span className="mr-2 h-4 w-4">👁</span>View</DropdownMenuItem></DropdownMenuContent></DropdownMenu>), },
+        { id: 'actions', cell: ({ row }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => router.get(`/jail-warden/pdls/${row.original.id}`)}><span className="mr-2 h-4 w-4">👁</span>View</DropdownMenuItem></DropdownMenuContent></DropdownMenu>), },
     ], []);
 
     return (

@@ -8,9 +8,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Head, useForm, usePage, router } from '@inertiajs/react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Head, useForm, usePage, router, Link } from '@inertiajs/react';
 import { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { BedDouble, Plus, Pencil, Trash2, MoreVertical, List, BarChart2, CheckCircle2, Grid3X3, Users } from 'lucide-react';
 
 type Jail = { id: number; name: string; code: string };
@@ -19,6 +20,7 @@ type Dormitory = {
     id: number; annex_id: number; name: string; type: string; description: string | null;
     status: 'active' | 'inactive'; created_at: string; annex: Annex;
     cells_count?: number; inmates_count?: number;
+    cells?: { id: number; cell_number: string }[];
 };
 
 interface Props {
@@ -27,7 +29,7 @@ interface Props {
     annexes: Annex[];
     stats: { total_dormitories: number; active_dormitories: number; total_cells: number; total_pdls: number };
     chartData: { dormitories_by_type: { type: string; count: number }[]; occupancy_by_dormitory: { name: string; capacity: number; occupied: number }[] };
-    filters: { annex_id: number | null; jail_id: number | null; type: string; status: string };
+    filters: { search: string; annex_id: number | null; jail_id: number | null; type: string; status: string };
 }
 
 const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
@@ -54,6 +56,7 @@ const statusBadge = (status: string) => {
 
 export default function DormitoryManagement({ dormitories, jails, annexes, stats, chartData, filters }: Props) {
     const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
+    const [searchQuery, setSearchQuery] = useState(filters.search ?? '');
     const [annexFilter, setAnnexFilter] = useState(filters.annex_id ? String(filters.annex_id) : 'all');
     const [typeFilter, setTypeFilter] = useState(filters.type ?? 'all');
     const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');
@@ -65,6 +68,14 @@ export default function DormitoryManagement({ dormitories, jails, annexes, stats
     const createForm = useForm({ annex_id: '', name: '', type: '', description: '', status: 'active' });
     const editForm = useForm({ annex_id: '', name: '', type: '', description: '', status: 'active' });
     const deleteForm = useForm({});
+
+    const applyFilters = () => {
+        const query: Record<string, string> = { search: searchQuery };
+        if (annexFilter !== 'all') query.annex_id = annexFilter;
+        if (typeFilter !== 'all') query.type = typeFilter;
+        if (statusFilter !== 'all') query.status = statusFilter;
+        router.get('/jail-officer/dormitories', query, { preserveState: true, preserveScroll: true });
+    };
 
     const openCreate = () => { setSelected(null); createForm.reset(); setIsCreateOpen(true); };
     const openEdit = (d: Dormitory) => {
@@ -94,8 +105,8 @@ export default function DormitoryManagement({ dormitories, jails, annexes, stats
                 </div>
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
-                    {flash?.success && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg text-sm">{flash.success}</div>}
-                    {flash?.error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{flash.error}</div>}
+                    
+                    
 
                     <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard icon={<BedDouble className="w-5 h-5" />} value={stats.total_dormitories} label="Total Dormitories" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
@@ -122,11 +133,28 @@ export default function DormitoryManagement({ dormitories, jails, annexes, stats
                                         <p className="text-xs text-muted-foreground mt-0.5">{dormitories.total} dormitories total</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Select value={annexFilter} onValueChange={(v) => { setAnnexFilter(v); router.get('/jail-officer/dormitories', { annex_id: v !== 'all' ? v : '', type: typeFilter !== 'all' ? typeFilter : '', status: statusFilter !== 'all' ? statusFilter : '' }, { preserveState: true, preserveScroll: true }); }}>
+                                        <div className="relative">
+                                            <Input placeholder="Search dorms..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && applyFilters()} className="w-[200px] h-9 pl-3" />
+                                        </div>
+                                        <Select value={annexFilter} onValueChange={(v) => {
+                                            setAnnexFilter(v);
+                                            const query: Record<string, string> = { search: searchQuery };
+                                            if (statusFilter !== 'all') query.status = statusFilter;
+                                            if (v !== 'all') query.annex_id = v;
+                                            if (typeFilter !== 'all') query.type = typeFilter;
+                                            router.get('/jail-officer/dormitories', query, { preserveState: true, preserveScroll: true });
+                                        }}>
                                             <SelectTrigger className="w-[180px] h-9"><SelectValue placeholder="All Buildings" /></SelectTrigger>
                                             <SelectContent><SelectItem value="all">All Buildings</SelectItem>{annexes.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}</SelectContent>
                                         </Select>
-                                        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); router.get('/jail-officer/dormitories', { annex_id: annexFilter !== 'all' ? annexFilter : '', type: typeFilter !== 'all' ? typeFilter : '', status: v !== 'all' ? v : '' }, { preserveState: true, preserveScroll: true }); }}>
+                                        <Select value={statusFilter} onValueChange={(v) => {
+                                            setStatusFilter(v);
+                                            const query: Record<string, string> = { search: searchQuery };
+                                            if (v !== 'all') query.status = v;
+                                            if (annexFilter !== 'all') query.annex_id = annexFilter;
+                                            if (typeFilter !== 'all') query.type = typeFilter;
+                                            router.get('/jail-officer/dormitories', query, { preserveState: true, preserveScroll: true });
+                                        }}>
                                             <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Status" /></SelectTrigger>
                                             <SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent>
                                         </Select>
@@ -150,7 +178,30 @@ export default function DormitoryManagement({ dormitories, jails, annexes, stats
                                                     <TableCell className="pl-6"><span className="font-semibold text-foreground text-sm">{d.name}</span></TableCell>
                                                     <TableCell className="text-sm text-muted-foreground">{d.annex?.name ?? '—'}</TableCell>
                                                     <TableCell><span className="text-xs font-medium px-2.5 py-1 rounded-full border bg-sky-50 text-sky-700 border-sky-200 capitalize">{d.type}</span></TableCell>
-                                                    <TableCell className="text-right text-sm font-medium text-foreground">{d.cells_count ?? 0}</TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Link href={`/jail-officer/cells-hierarchical?dormitory_id=${d.id}`} className="hover:underline hover:text-primary cursor-pointer transition-colors">
+                                                                        {d.cells_count ?? 0}
+                                                                    </Link>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent className="max-w-[200px] text-xs">
+                                                                    {d.cells && d.cells.length > 0 ? (
+                                                                        <div className="flex flex-col gap-1">
+                                                                            <span className="font-semibold text-muted-foreground mb-1">Cells</span>
+                                                                            {d.cells.slice(0, 5).map(c => (
+                                                                                <span key={c.id}>• Cell {c.cell_number}</span>
+                                                                            ))}
+                                                                            {d.cells.length > 5 && (
+                                                                                <span className="text-muted-foreground italic">and {d.cells.length - 5} more...</span>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : "No cells"}
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    </TableCell>
                                                     <TableCell>{statusBadge(d.status)}</TableCell>
                                                     <TableCell className="pr-6">
                                                         <div className="flex items-center justify-end">
@@ -174,8 +225,16 @@ export default function DormitoryManagement({ dormitories, jails, annexes, stats
                                     <div className="px-6 pb-4 flex items-center justify-between pt-4 border-t border-border">
                                         <p className="text-sm text-muted-foreground">Page {dormitories.current_page} of {dormitories.last_page} ({dormitories.total} total)</p>
                                         <div className="flex gap-1">
-                                            {dormitories.current_page > 1 && <Button variant="outline" size="sm" onClick={() => router.get(`/jail-officer/dormitories?page=${dormitories.current_page - 1}`)}>Previous</Button>}
-                                            {dormitories.current_page < dormitories.last_page && <Button variant="outline" size="sm" onClick={() => router.get(`/jail-officer/dormitories?page=${dormitories.current_page + 1}`)}>Next</Button>}
+                                            {dormitories.current_page > 1 && <Button variant="outline" size="sm" onClick={() => {
+                                                const url = new URL(window.location.href);
+                                                url.searchParams.set('page', String(dormitories.current_page - 1));
+                                                router.get(url.toString());
+                                            }}>Previous</Button>}
+                                            {dormitories.current_page < dormitories.last_page && <Button variant="outline" size="sm" onClick={() => {
+                                                const url = new URL(window.location.href);
+                                                url.searchParams.set('page', String(dormitories.current_page + 1));
+                                                router.get(url.toString());
+                                            }}>Next</Button>}
                                         </div>
                                     </div>
                                 )}
@@ -195,7 +254,7 @@ export default function DormitoryManagement({ dormitories, jails, annexes, stats
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                                 <XAxis dataKey="type" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
                                                 <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', fontSize: 12 }} />
+                                                <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', fontSize: 12 }} />
                                                 <Bar dataKey="count" fill="#0284c7" radius={[4, 4, 0, 0]} />
                                             </BarChart>
                                         </ResponsiveContainer>
@@ -212,7 +271,7 @@ export default function DormitoryManagement({ dormitories, jails, annexes, stats
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                                 <XAxis dataKey="name" angle={-40} textAnchor="end" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} interval={0} />
                                                 <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', fontSize: 12 }} />
+                                                <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', fontSize: 12 }} />
                                                 <Bar dataKey="capacity" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Capacity" />
                                                 <Bar dataKey="occupied" fill="#10b981" radius={[4, 4, 0, 0]} name="Occupied" />
                                             </BarChart>

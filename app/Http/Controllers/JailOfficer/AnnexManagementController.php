@@ -19,13 +19,22 @@ class AnnexManagementController extends Controller
      */
     public function index(Request $request): Response
     {
+        $user = $request->user();
+        
+        // Get authorized building, dormitory, and cell IDs
+        $authorizedBuildingIds = $user->getAuthorizedBuildingIds();
+        $authorizedDormitoryIds = $user->getAuthorizedDormitoryIds();
+        $authorizedCellIds = $user->getAuthorizedCellIds();
+
         $query = Annex::with(['jail', 'dormitories' => function ($q) {
             $q->withCount(['cells']);
         }, 'cells' => function ($q) {
             $q->withCount(['inmates' => function ($iq) {
                 $iq->where('status', 'active');
             }]);
-        }]);
+        }])
+        ->withCount(['dormitories', 'cells'])
+        ->whereIn('id', $authorizedBuildingIds);
 
         // Filter by jail
         if ($jailId = $request->input('jail_id')) {
@@ -36,6 +45,11 @@ class AnnexManagementController extends Controller
         if ($status = $request->input('status')) {
             $query->where('status', $status);
         }
+        
+        // Search filter
+        if ($search = $request->input('search')) {
+            $query->where('name', 'like', "%{$search}%");
+        }
 
         $annexes = $query->orderBy('name')->paginate(10)->withQueryString();
 
@@ -44,20 +58,22 @@ class AnnexManagementController extends Controller
 
         // Summary stats
         $stats = [
-            'total_annexes' => Annex::count(),
-            'active_annexes' => Annex::where('status', 'active')->count(),
-            'total_dormitories' => Dormitory::count(),
-            'total_cells' => Cell::count(),
-            'total_pdls' => Inmate::where('status', 'active')->count(),
+            'total_annexes' => count($authorizedBuildingIds),
+            'active_annexes' => Annex::whereIn('id', $authorizedBuildingIds)->where('status', 'active')->count(),
+            'total_dormitories' => count($authorizedDormitoryIds),
+            'total_cells' => count($authorizedCellIds),
+            'total_pdls' => Inmate::whereIn('cell_id', $authorizedCellIds)->where('status', 'active')->count(),
         ];
 
         // Chart data
         $chartData = [
-            'annexes_by_jail' => Jail::withCount('annexes')->get()->map(fn($j) => [
+            'annexes_by_jail' => Jail::withCount(['annexes' => function($q) use ($authorizedBuildingIds) {
+                $q->whereIn('id', $authorizedBuildingIds);
+            }])->get()->map(fn($j) => [
                 'name' => $j->name,
                 'annexes' => $j->annexes_count
             ]),
-            'occupancy_by_annex' => Annex::with(['cells.inmates' => function($q) {
+            'occupancy_by_annex' => Annex::whereIn('id', $authorizedBuildingIds)->with(['cells.inmates' => function($q) {
                 $q->where('status', 'active');
             }])->get()->map(fn($a) => [
                 'name' => $a->name,
@@ -72,6 +88,7 @@ class AnnexManagementController extends Controller
             'stats' => $stats,
             'chartData' => $chartData,
             'filters' => [
+                'search' => $search ?? '',
                 'jail_id' => $jailId ? (int) $jailId : null,
                 'status' => $status ?? 'all',
             ],

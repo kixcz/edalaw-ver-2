@@ -98,8 +98,8 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                 </div>
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
-                    {flash?.success && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg text-sm">{flash.success}</div>}
-                    {flash?.error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{flash.error}</div>}
+                    
+                    
 
                     <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard icon={<Users className="w-5 h-5" />} value={stats.total_pdls} label="Total PDLs" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />

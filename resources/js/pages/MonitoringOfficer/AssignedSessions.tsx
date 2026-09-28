@@ -151,7 +151,7 @@ export default function AssignedSessions({ sessions, filters: initialFilters, us
                     : '';
                 const handleJoinClick = () => {
                     if (joinDisabled) return;
-                    const now = Date.now();
+                    const now = Date.now() + (5 * 60 * 1000); // 5-minute buffer for slow clocks
                     const start = new Date(s.scheduled_start).getTime();
                     if (start > now) {
                         setBeforeScheduleSession(s);

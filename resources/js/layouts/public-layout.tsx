@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Menu, X, Phone, Mail, MapPin, Moon, Sun } from 'lucide-react';
 import { useAppearance } from '@/hooks/use-appearance';
 import { home, about, services, howItWorks, faq, contact, login, register, privacy, terms, announcements } from '@/routes/public-routes';
+import { FlashToasts } from '@/components/flash-toasts';
 
 interface PublicLayoutProps {
     children: React.ReactNode;
@@ -29,6 +30,7 @@ export default function PublicLayout({ children, title, description }: PublicLay
     return (
         <>
             <Head title={title} />
+            <FlashToasts />
             {/* theme-orange pins the primary color to orange on public pages; dashboard theme colors only apply to dashboards */}
             <div className="theme-orange min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors duration-300">
                 {/* Header with Navigation */}

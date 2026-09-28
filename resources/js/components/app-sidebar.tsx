@@ -524,7 +524,7 @@ export function AppSidebar() {
             // Buildings/Annexes - show if officer has building-level access
             if (hasBuildingScope) {
                 facilityItems.push({
-                    title: 'Buildings',
+                    title: 'Annexes',
                     href: '/jail-officer/annexes',
                     icon: Warehouse,
                 });
@@ -732,6 +732,11 @@ export function AppSidebar() {
             {
                 label: 'Facility Management',
                 items: [
+                    {
+                        title: 'Jail',
+                        href: '/jail-warden/jails',
+                        icon: Building2,
+                    },
                     {
                         title: 'Annex',
                         href: '/jail-warden/annexes',

@@ -663,17 +663,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Server time synchronization to ensure countdown matches between all participants
+const serverTimeMs = {{ now()->timestamp * 1000 }};
+const localTimeMs = Date.now();
+const timeOffset = serverTimeMs - localTimeMs;
+const scheduledEndMs = {{ isset($scheduled_end) ? strtotime($scheduled_end) * 1000 : 'null' }};
+
 // Session timer countdown - always visible in bottom left
 function updateTimer() {
-    const scheduledEnd = @json($scheduled_end ?? null);
-    
-    if (!scheduledEnd) {
+    if (!scheduledEndMs) {
         return; // No end time set
     }
     
-    const endTime = new Date(scheduledEnd).getTime();
-    const now = Date.now();
-    const diff = endTime - now;
+    const now = Date.now() + timeOffset;
+    const diff = scheduledEndMs - now;
     
     const timerDisplay = document.getElementById('timer-display');
     const timerLabel = document.getElementById('timer-label');

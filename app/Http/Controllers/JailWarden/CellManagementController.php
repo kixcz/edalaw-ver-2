@@ -4,7 +4,7 @@ namespace App\Http\Controllers\JailWarden;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cell;
-use App\Models\Annex;
+use App\Models\Dormitory;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -29,19 +29,19 @@ class CellManagementController extends Controller
             ->with(['dormitory', 'dormitory.annex', 'dormitory.annex.jail'])
             ->select('cells.*')
             ->orderBy('cells.cell_number')
-            ->paginate(15)
-            ->through(fn($cell) => [
+            ->get()
+            ->map(fn($cell) => [
                 'id' => $cell->id,
                 'cell_number' => $cell->cell_number,
                 'capacity' => $cell->capacity,
                 'status' => $cell->status,
-                'annex' => $cell->dormitory?->annex ? [
-                    'id' => $cell->dormitory->annex->id,
-                    'name' => $cell->dormitory->annex->name,
-                    'dormitory' => $cell->dormitory ? [
-                        'id' => $cell->dormitory->id,
-                        'name' => $cell->dormitory->name,
-                        'jail' => $cell->dormitory->annex?->jail ? [
+                'dormitory' => $cell->dormitory ? [
+                    'id' => $cell->dormitory->id,
+                    'name' => $cell->dormitory->name,
+                    'annex' => $cell->dormitory->annex ? [
+                        'id' => $cell->dormitory->annex->id,
+                        'name' => $cell->dormitory->annex->name,
+                        'jail' => $cell->dormitory->annex->jail ? [
                             'id' => $cell->dormitory->annex->jail->id,
                             'name' => $cell->dormitory->annex->jail->name,
                         ] : null,
@@ -52,7 +52,7 @@ class CellManagementController extends Controller
 
         // Calculate stats
         $stats = [
-            'total_cells' => $cells->total(),
+            'total_cells' => $cells->count(),
             'active_cells' => $cells->where('status', 'active')->count(),
             'inactive_cells' => $cells->where('status', 'inactive')->count(),
             'total_capacity' => $cells->sum('capacity'),
@@ -64,9 +64,9 @@ class CellManagementController extends Controller
                 ['status' => 'Active', 'count' => $stats['active_cells']],
                 ['status' => 'Inactive', 'count' => $stats['inactive_cells']],
             ],
-            'cells_by_annex' => $cells->groupBy('annex.name')->map(function ($group, $annexName) {
+            'cells_by_dormitory' => $cells->groupBy('dormitory.name')->map(function ($group, $dormitoryName) {
                 return [
-                    'annex' => $annexName ?? 'Unassigned',
+                    'dormitory' => $dormitoryName ?? 'Unassigned',
                     'count' => $group->count(),
                 ];
             })->values()->toArray(),
@@ -74,12 +74,13 @@ class CellManagementController extends Controller
 
         return Inertia::render('JailWarden/CellManagement/Index', [
             'cells' => $cells,
-            'annexes' => Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
+            'dormitories' => Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
                 ->where('jails.branch_id', $user->branch_id)
-                ->where('annexes.status', 'active')
-                ->select('annexes.*')
-                ->orderBy('annexes.name')
-                ->get(['annexes.id', 'annexes.name']),
+                ->where('dormitories.status', 'active')
+                ->select('dormitories.*')
+                ->orderBy('dormitories.name')
+                ->get(['dormitories.id', 'dormitories.name']),
             'stats' => $stats,
             'chartData' => $chartData,
         ]);
@@ -100,28 +101,29 @@ class CellManagementController extends Controller
             'cell_number' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1|max:100',
             'status' => 'required|in:active,inactive',
-            'annex_id' => 'required|exists:annexes,id',
+            'dormitory_id' => 'required|exists:dormitories,id',
         ]);
 
-        // Check if cell number already exists in this annex
+        // Check if cell number already exists in this dormitory
         $existingCell = Cell::where('cell_number', $validated['cell_number'])
-            ->where('annex_id', $validated['annex_id'])
+            ->where('dormitory_id', $validated['dormitory_id'])
             ->first();
 
         if ($existingCell) {
             return back()->withErrors([
-                'cell_number' => "Cell '{$validated['cell_number']}' already exists in this annex."
+                'cell_number' => "Cell '{$validated['cell_number']}' already exists in this dormitory."
             ])->withInput();
         }
 
-        // Verify annex belongs to warden's branch through jail
-        $annex = Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
-            ->where('annexes.id', $validated['annex_id'])
+        // Verify dormitory belongs to warden's branch
+        $dormitory = Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+            ->where('dormitories.id', $validated['dormitory_id'])
             ->where('jails.branch_id', $user->branch_id)
-            ->select('annexes.*')
+            ->select('dormitories.*')
             ->firstOrFail();
 
-        $validated['annex_id'] = $annex->id;
+        $validated['dormitory_id'] = $dormitory->id;
 
         Cell::create($validated);
 
@@ -154,14 +156,15 @@ class CellManagementController extends Controller
             'cell_number' => 'required|string|max:255|unique:cells,cell_number,' . $cell->id,
             'capacity' => 'required|integer|min:1|max:100',
             'status' => 'required|in:active,inactive',
-            'annex_id' => 'required|exists:annexes,id',
+            'dormitory_id' => 'required|exists:dormitories,id',
         ]);
 
-        // Verify new annex belongs to warden's branch
-        $newAnnex = Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
-            ->where('annexes.id', $validated['annex_id'])
+        // Verify new dormitory belongs to warden's branch
+        $newDormitory = Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+            ->where('dormitories.id', $validated['dormitory_id'])
             ->where('jails.branch_id', $user->branch_id)
-            ->select('annexes.*')
+            ->select('dormitories.*')
             ->firstOrFail();
 
         $cell->update($validated);

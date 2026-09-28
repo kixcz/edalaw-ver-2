@@ -8,9 +8,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Head, useForm, usePage, router } from '@inertiajs/react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Head, useForm, usePage, router, Link } from '@inertiajs/react';
 import { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { Building2, Plus, Pencil, Trash2, MoreVertical, List, BarChart2, CheckCircle2, LayoutGrid } from 'lucide-react';
 
 type Jail = { id: number; name: string; code: string };
@@ -18,6 +19,8 @@ type Annex = {
     id: number; jail_id: number; name: string; description: string | null;
     status: 'active' | 'inactive'; created_at: string; jail: Jail;
     dormitories_count?: number; cells_count?: number;
+    dormitories?: { id: number; name: string }[];
+    cells?: { id: number; cell_number: string }[];
 };
 
 interface Props {
@@ -25,7 +28,7 @@ interface Props {
     jails: Jail[];
     stats: { total_annexes: number; active_annexes: number; total_dormitories: number; total_cells: number; total_pdls: number };
     chartData: { annexes_by_jail: { name: string; annexes: number }[]; occupancy_by_annex: { name: string; capacity: number; occupied: number }[] };
-    filters: { jail_id: number | null; status: string };
+    filters: { search: string; jail_id: number | null; status: string };
 }
 
 const StatCard = ({ icon, value, label, accent, iconBg, iconColor }: { icon: React.ReactNode; value: number | string; label: string; accent: string; iconBg: string; iconColor: string }) => (
@@ -59,6 +62,7 @@ const statusBadge = (status: string) => {
 
 export default function AnnexManagement({ annexes, jails, stats, chartData, filters }: Props) {
     const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
+    const [searchQuery, setSearchQuery] = useState(filters.search ?? '');
     const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');
     const [jailFilter, setJailFilter] = useState(filters.jail_id ? String(filters.jail_id) : 'all');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -71,10 +75,10 @@ export default function AnnexManagement({ annexes, jails, stats, chartData, filt
     const deleteForm = useForm({});
 
     const applyFilters = () => {
-        router.get('/jail-officer/annexes', {
-            status: statusFilter !== 'all' ? statusFilter : '',
-            jail_id: jailFilter !== 'all' ? jailFilter : '',
-        }, { preserveState: true, preserveScroll: true });
+        const query: Record<string, string> = { search: searchQuery };
+        if (statusFilter !== 'all') query.status = statusFilter;
+        if (jailFilter !== 'all') query.jail_id = jailFilter;
+        router.get('/jail-officer/annexes', query, { preserveState: true, preserveScroll: true });
     };
 
     const openCreate = () => { setSelected(null); createForm.reset(); setIsCreateOpen(true); };
@@ -106,12 +110,8 @@ export default function AnnexManagement({ annexes, jails, stats, chartData, filt
                 </div>
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
-                    {flash?.success && (
-                        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg text-sm">{flash.success}</div>
-                    )}
-                    {flash?.error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{flash.error}</div>
-                    )}
+                    
+                    
 
                     {/* Stats */}
                     <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -141,11 +141,26 @@ export default function AnnexManagement({ annexes, jails, stats, chartData, filt
                                         <p className="text-xs text-muted-foreground mt-0.5">{annexes.total} buildings total</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Select value={jailFilter} onValueChange={(v) => { setJailFilter(v); setTimeout(() => router.get('/jail-officer/annexes', { jail_id: v !== 'all' ? v : '', status: statusFilter !== 'all' ? statusFilter : '' }, { preserveState: true, preserveScroll: true }), 0); }}>
+                                        <div className="relative">
+                                            <Input placeholder="Search buildings..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && applyFilters()} className="w-[200px] h-9 pl-3" />
+                                        </div>
+                                        <Select value={jailFilter} onValueChange={(v) => {
+                                            setJailFilter(v);
+                                            const query: Record<string, string> = { search: searchQuery };
+                                            if (statusFilter !== 'all') query.status = statusFilter;
+                                            if (v !== 'all') query.jail_id = v;
+                                            router.get('/jail-officer/annexes', query, { preserveState: true, preserveScroll: true });
+                                        }}>
                                             <SelectTrigger className="w-[180px] h-9"><SelectValue placeholder="All Jails" /></SelectTrigger>
                                             <SelectContent><SelectItem value="all">All Jails</SelectItem>{jails.map(j => <SelectItem key={j.id} value={String(j.id)}>{j.name}</SelectItem>)}</SelectContent>
                                         </Select>
-                                        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setTimeout(() => router.get('/jail-officer/annexes', { jail_id: jailFilter !== 'all' ? jailFilter : '', status: v !== 'all' ? v : '' }, { preserveState: true, preserveScroll: true }), 0); }}>
+                                        <Select value={statusFilter} onValueChange={(v) => {
+                                            setStatusFilter(v);
+                                            const query: Record<string, string> = { search: searchQuery };
+                                            if (v !== 'all') query.status = v;
+                                            if (jailFilter !== 'all') query.jail_id = jailFilter;
+                                            router.get('/jail-officer/annexes', query, { preserveState: true, preserveScroll: true });
+                                        }}>
                                             <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Status" /></SelectTrigger>
                                             <SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent>
                                         </Select>
@@ -168,8 +183,54 @@ export default function AnnexManagement({ annexes, jails, stats, chartData, filt
                                                 <TableRow key={a.id} className="hover:bg-muted/50 transition-colors group">
                                                     <TableCell className="pl-6"><span className="font-semibold text-foreground text-sm">{a.name}</span></TableCell>
                                                     <TableCell className="text-sm text-muted-foreground">{a.jail?.name ?? '—'}</TableCell>
-                                                    <TableCell className="text-right text-sm font-medium text-foreground">{a.dormitories_count ?? 0}</TableCell>
-                                                    <TableCell className="text-right text-sm font-medium text-foreground">{a.cells_count ?? 0}</TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Link href={`/jail-officer/dormitories?annex_id=${a.id}`} className="hover:underline hover:text-primary cursor-pointer transition-colors">
+                                                                        {a.dormitories_count ?? 0}
+                                                                    </Link>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent className="max-w-[200px] text-xs">
+                                                                    {a.dormitories && a.dormitories.length > 0 ? (
+                                                                        <div className="flex flex-col gap-1">
+                                                                            <span className="font-semibold text-muted-foreground mb-1">Dormitories</span>
+                                                                            {a.dormitories.slice(0, 5).map(d => (
+                                                                                <span key={d.id}>• {d.name}</span>
+                                                                            ))}
+                                                                            {a.dormitories.length > 5 && (
+                                                                                <span className="text-muted-foreground italic">and {a.dormitories.length - 5} more...</span>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : "No dormitories"}
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    </TableCell>
+                                                    <TableCell className="text-right text-sm font-medium text-foreground">
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Link href={`/jail-officer/cells-hierarchical?annex_id=${a.id}`} className="hover:underline hover:text-primary cursor-pointer transition-colors">
+                                                                        {a.cells_count ?? 0}
+                                                                    </Link>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent className="max-w-[200px] text-xs">
+                                                                    {a.cells && a.cells.length > 0 ? (
+                                                                        <div className="flex flex-col gap-1">
+                                                                            <span className="font-semibold text-muted-foreground mb-1">Cells</span>
+                                                                            {a.cells.slice(0, 5).map(c => (
+                                                                                <span key={c.id}>• Cell {c.cell_number}</span>
+                                                                            ))}
+                                                                            {a.cells.length > 5 && (
+                                                                                <span className="text-muted-foreground italic">and {a.cells.length - 5} more...</span>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : "No cells"}
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    </TableCell>
                                                     <TableCell>{statusBadge(a.status)}</TableCell>
                                                     <TableCell className="pr-6">
                                                         <div className="flex items-center justify-end">
@@ -203,8 +264,16 @@ export default function AnnexManagement({ annexes, jails, stats, chartData, filt
                                     <div className="px-6 pb-4 flex items-center justify-between pt-4 border-t border-border">
                                         <p className="text-sm text-muted-foreground">Page {annexes.current_page} of {annexes.last_page} ({annexes.total} total)</p>
                                         <div className="flex gap-1">
-                                            {annexes.current_page > 1 && <Button variant="outline" size="sm" onClick={() => router.get(`/jail-officer/annexes?page=${annexes.current_page - 1}`)}>Previous</Button>}
-                                            {annexes.current_page < annexes.last_page && <Button variant="outline" size="sm" onClick={() => router.get(`/jail-officer/annexes?page=${annexes.current_page + 1}`)}>Next</Button>}
+                                            {annexes.current_page > 1 && <Button variant="outline" size="sm" onClick={() => {
+                                                const url = new URL(window.location.href);
+                                                url.searchParams.set('page', String(annexes.current_page - 1));
+                                                router.get(url.toString());
+                                            }}>Previous</Button>}
+                                            {annexes.current_page < annexes.last_page && <Button variant="outline" size="sm" onClick={() => {
+                                                const url = new URL(window.location.href);
+                                                url.searchParams.set('page', String(annexes.current_page + 1));
+                                                router.get(url.toString());
+                                            }}>Next</Button>}
                                         </div>
                                     </div>
                                 )}
@@ -225,7 +294,7 @@ export default function AnnexManagement({ annexes, jails, stats, chartData, filt
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                                 <XAxis dataKey="name" angle={-40} textAnchor="end" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} interval={0} />
                                                 <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', fontSize: 12 }} />
+                                                <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', fontSize: 12 }} />
                                                 <Bar dataKey="annexes" fill="#ea580c" radius={[4, 4, 0, 0]} />
                                             </BarChart>
                                         </ResponsiveContainer>
@@ -242,7 +311,7 @@ export default function AnnexManagement({ annexes, jails, stats, chartData, filt
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                                 <XAxis dataKey="name" angle={-40} textAnchor="end" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} interval={0} />
                                                 <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', fontSize: 12 }} />
+                                                <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', fontSize: 12 }} />
                                                 <Bar dataKey="capacity" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Capacity" />
                                                 <Bar dataKey="occupied" fill="#10b981" radius={[4, 4, 0, 0]} name="Occupied" />
                                             </BarChart>

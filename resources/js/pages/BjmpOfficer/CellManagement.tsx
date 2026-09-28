@@ -21,6 +21,7 @@ type Cell = {
 interface Props {
     cells: { data: Cell[]; current_page: number; last_page: number; per_page: number; total: number };
     dormitories: { id: number; name: string }[];
+    annexes?: { id: number; name: string }[];
     stats: { total_cells: number; active_cells: number; total_capacity: number; occupied_beds: number; occupancy_rate: number };
     chartData: { cells_by_status: { status: string; count: number }[]; occupancy_by_dormitory: { name: string; capacity: number; occupied: number }[] };
     filters: { search: string; annex_id: number | null; dormitory_id: number | null; jail_id: number | null; status: string };
@@ -63,10 +64,12 @@ const statusBadge = (status: string) => {
     return <span className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize ${map[status] ?? 'bg-muted text-muted-foreground'}`}>{status}</span>;
 };
 
-export default function CellManagement({ cells, dormitories, stats, chartData, filters }: Props) {
+export default function CellManagement({ cells, dormitories, annexes, stats, chartData, filters }: Props) {
     const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
     const [searchQuery, setSearchQuery] = useState(filters.search ?? '');
     const [statusFilter, setStatusFilter] = useState(filters.status ?? 'all');
+    const [annexFilter, setAnnexFilter] = useState(filters.annex_id ? String(filters.annex_id) : 'all');
+    const [dormitoryFilter, setDormitoryFilter] = useState(filters.dormitory_id ? String(filters.dormitory_id) : 'all');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -76,7 +79,13 @@ export default function CellManagement({ cells, dormitories, stats, chartData, f
     const editForm = useForm({ dormitory_id: '', cell_number: '', capacity: '4', status: 'active' });
     const deleteForm = useForm({});
 
-    const handleSearch = () => router.get('/bjmp-officer/cells', { search: searchQuery, status: statusFilter !== 'all' ? statusFilter : '' }, { preserveState: true, preserveScroll: true });
+    const handleSearch = () => {
+        const query: Record<string, string> = { search: searchQuery };
+        if (statusFilter !== 'all') query.status = statusFilter;
+        if (annexFilter !== 'all') query.annex_id = annexFilter;
+        if (dormitoryFilter !== 'all') query.dormitory_id = dormitoryFilter;
+        router.get(window.location.pathname, query, { preserveState: true, preserveScroll: true });
+    };
     const openCreate = () => { setSelected(null); createForm.reset(); setIsCreateOpen(true); };
     const openEdit = (c: Cell) => { setSelected(c); editForm.setData({ dormitory_id: String(c.dormitory_id), cell_number: c.cell_number, capacity: String(c.capacity), status: c.status }); setIsEditOpen(true); };
     const openDelete = (c: Cell) => { setSelected(c); setIsDeleteOpen(true); };
@@ -101,8 +110,8 @@ export default function CellManagement({ cells, dormitories, stats, chartData, f
                 </div>
 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
-                    {flash?.success && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg text-sm">{flash.success}</div>}
-                    {flash?.error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{flash.error}</div>}
+                    
+                    
 
                     <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <StatCard icon={<Grid3X3 className="w-5 h-5" />} value={stats.total_cells} label="Total Cells" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
@@ -132,7 +141,44 @@ export default function CellManagement({ cells, dormitories, stats, chartData, f
                                         <div className="relative">
                                             <Input placeholder="Search cells..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} className="w-[200px] h-9 pl-3" />
                                         </div>
-                                        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); router.get('/bjmp-officer/cells', { search: searchQuery, status: v !== 'all' ? v : '' }, { preserveState: true, preserveScroll: true }); }}>
+                                        {annexes && (
+                                            <Select value={annexFilter} onValueChange={(v) => {
+                                                setAnnexFilter(v);
+                                                const query: Record<string, string> = { search: searchQuery };
+                                                if (statusFilter !== 'all') query.status = statusFilter;
+                                                if (v !== 'all') query.annex_id = v;
+                                                if (dormitoryFilter !== 'all') query.dormitory_id = dormitoryFilter;
+                                                router.get(window.location.pathname, query, { preserveState: true, preserveScroll: true });
+                                            }}>
+                                                <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="All Annexes" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">All Annexes</SelectItem>
+                                                    {annexes.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                        <Select value={dormitoryFilter} onValueChange={(v) => {
+                                            setDormitoryFilter(v);
+                                            const query: Record<string, string> = { search: searchQuery };
+                                            if (statusFilter !== 'all') query.status = statusFilter;
+                                            if (annexFilter !== 'all') query.annex_id = annexFilter;
+                                            if (v !== 'all') query.dormitory_id = v;
+                                            router.get(window.location.pathname, query, { preserveState: true, preserveScroll: true });
+                                        }}>
+                                            <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="All Dorms" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Dorms</SelectItem>
+                                                {dormitories.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                        <Select value={statusFilter} onValueChange={(v) => {
+                                            setStatusFilter(v);
+                                            const query: Record<string, string> = { search: searchQuery };
+                                            if (v !== 'all') query.status = v;
+                                            if (annexFilter !== 'all') query.annex_id = annexFilter;
+                                            if (dormitoryFilter !== 'all') query.dormitory_id = dormitoryFilter;
+                                            router.get(window.location.pathname, query, { preserveState: true, preserveScroll: true });
+                                        }}>
                                             <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Status" /></SelectTrigger>
                                             <SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent>
                                         </Select>
@@ -178,8 +224,16 @@ export default function CellManagement({ cells, dormitories, stats, chartData, f
                                     <div className="px-6 pb-4 flex items-center justify-between pt-4 border-t border-border">
                                         <p className="text-sm text-muted-foreground">Page {cells.current_page} of {cells.last_page} ({cells.total} total)</p>
                                         <div className="flex gap-1">
-                                            {cells.current_page > 1 && <Button variant="outline" size="sm" onClick={() => router.get(`/bjmp-officer/cells?page=${cells.current_page - 1}`)}>Previous</Button>}
-                                            {cells.current_page < cells.last_page && <Button variant="outline" size="sm" onClick={() => router.get(`/bjmp-officer/cells?page=${cells.current_page + 1}`)}>Next</Button>}
+                                            {cells.current_page > 1 && <Button variant="outline" size="sm" onClick={() => {
+                                                const url = new URL(window.location.href);
+                                                url.searchParams.set('page', String(cells.current_page - 1));
+                                                router.get(url.toString());
+                                            }}>Previous</Button>}
+                                            {cells.current_page < cells.last_page && <Button variant="outline" size="sm" onClick={() => {
+                                                const url = new URL(window.location.href);
+                                                url.searchParams.set('page', String(cells.current_page + 1));
+                                                router.get(url.toString());
+                                            }}>Next</Button>}
                                         </div>
                                     </div>
                                 )}

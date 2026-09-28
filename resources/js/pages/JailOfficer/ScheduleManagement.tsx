@@ -178,7 +178,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
     useToast();
     const page = usePage();
     const flash = (page.props as { flash?: { success?: string; warning?: string; error?: string } }).flash;
-    const flashShownRef = useRef<{ w?: string; e?: string; s?: string }>({});
+    
     
     // Listen for video room close events (from localStorage)
     useEffect(() => {
@@ -203,20 +203,7 @@ export default function ScheduleManagement({ visits, stats, monitoringOfficers }
         };
     }, []);
     
-    useEffect(() => {
-        if (flash?.warning && flashShownRef.current.w !== flash.warning) {
-            flashShownRef.current.w = flash.warning;
-            toast.warning(flash.warning);
-        }
-        if (flash?.error && flashShownRef.current.e !== flash.error) {
-            flashShownRef.current.e = flash.error;
-            toast.error(flash.error);
-        }
-        if (flash?.success && flashShownRef.current.s !== flash.success) {
-            flashShownRef.current.s = flash.success;
-            toast.success(flash.success);
-        }
-    }, [flash?.warning, flash?.error, flash?.success]);
+    
 
     const rejectForm = useForm({
         rejection_reason: '',

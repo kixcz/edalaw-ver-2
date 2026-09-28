@@ -924,8 +924,16 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                 onClick={() => {
                                     if (!session) return;
                                     
-                                    // Check if session has started
-                                    const now = Date.now();
+                                    if (session.can_join_video) {
+                                        // Server explicitly says we can join, ignore local clock
+                                        setSelectedSessionForVideo({ sessionId: session.id, visit });
+                                        setVideoTermsAccepted(false);
+                                        setVideoTermsModalOpen(true);
+                                        return;
+                                    }
+                                    
+                                    // Check if session has started (with 5-minute buffer for slow client clocks)
+                                    const now = Date.now() + (5 * 60 * 1000); 
                                     const scheduledStart = session.scheduled_start ? new Date(session.scheduled_start).getTime() : now;
                                     
                                     if (scheduledStart > now) {
@@ -958,7 +966,8 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                     onClick={() => {
                                         if (!session) return;
                                         
-                                        const now = Date.now();
+                                        // Check if session has started (with 5-minute buffer for slow client clocks)
+                                        const now = Date.now() + (5 * 60 * 1000); 
                                         const scheduledStart = session.scheduled_start ? new Date(session.scheduled_start).getTime() : now;
                                         
                                         if (scheduledStart > now) {

@@ -172,21 +172,8 @@ export default function ScheduleManagement({ visits, visitors, monitoringOfficer
     useToast();
     const page = usePage();
     const flash = (page.props as { flash?: { success?: string; warning?: string; error?: string } }).flash;
-    const flashShownRef = useRef<{ w?: string; e?: string; s?: string }>({});
-    useEffect(() => {
-        if (flash?.warning && flashShownRef.current.w !== flash.warning) {
-            flashShownRef.current.w = flash.warning;
-            toast.warning(flash.warning);
-        }
-        if (flash?.error && flashShownRef.current.e !== flash.error) {
-            flashShownRef.current.e = flash.error;
-            toast.error(flash.error);
-        }
-        if (flash?.success && flashShownRef.current.s !== flash.success) {
-            flashShownRef.current.s = flash.success;
-            toast.success(flash.success);
-        }
-    }, [flash?.warning, flash?.error, flash?.success]);
+    
+    
 
     const rejectForm = useForm({
         rejection_reason: '',

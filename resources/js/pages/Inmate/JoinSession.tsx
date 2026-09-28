@@ -44,7 +44,7 @@ export default function JoinSession({ tunnel_token, session }: Props) {
     const handleJoin = async () => {
         // Check if session has started
         if (session.scheduled_start) {
-            const now = Date.now();
+            const now = Date.now() + (5 * 60 * 1000); // 5-minute buffer for slow clocks
             const scheduledStart = new Date(session.scheduled_start).getTime();
             
             if (scheduledStart > now) {

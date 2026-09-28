@@ -155,4 +155,131 @@ class JailOfficerManagementController extends Controller
 
         return redirect()->back()->with('success', 'Jail Officer account created successfully.');
     }
+    /**
+     * Display the specified jail officer details.
+     */
+    public function show(Request $request, User $officer)
+    {
+        $user = $request->user();
+        
+        if (!$user->branch) {
+            abort(403, 'Jail Warden must be assigned to a branch.');
+        }
+
+        // Verify the officer belongs to the warden's branch and is a jail officer
+        if ($officer->branch_id !== $user->branch_id || $officer->role->slug !== 'jail_officer') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $officer->load(['assignedScopes.annex', 'assignedScopes.dormitory', 'assignedScopes.cell']);
+
+        // Get facilities for dropdown
+        $facilities = [
+            'annexes' => Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $user->branch_id)
+                ->where('annexes.status', 'active')
+                ->orderBy('annexes.name')
+                ->select('annexes.id', 'annexes.name')
+                ->get(),
+
+            'dormitories' => Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $user->branch_id)
+                ->where('dormitories.status', 'active')
+                ->orderBy('dormitories.name')
+                ->select('dormitories.id', 'dormitories.name')
+                ->get(),
+
+            'cells' => Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+                ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+                ->where('jails.branch_id', $user->branch_id)
+                ->where('cells.status', 'active')
+                ->orderBy('cells.cell_number')
+                ->select(
+                    'cells.id',
+                    'cells.cell_number',
+                    'annexes.name as annex_name',
+                    'dormitories.name as dormitory_name'
+                )
+                ->get(),
+        ];
+
+        return Inertia::render('JailWarden/JailOfficerManagement/Show', [
+            'officer' => [
+                'id' => $officer->id,
+                'name' => $officer->full_name,
+                'email' => $officer->email,
+                'scopes' => $officer->assignedScopes->map(function ($scope) {
+                    $description = match($scope->scope_type) {
+                        'annex' => $scope->annex?->name ?? 'Unknown',
+                        'dormitory' => $scope->dormitory?->name ?? 'Unknown',
+                        'cell' => $scope->cell?->cell_number ?? 'Unknown',
+                        default => 'Unknown',
+                    };
+                    
+                    return [
+                        'id' => $scope->id,
+                        'scope_type' => $scope->scope_type,
+                        'building_id' => $scope->building_id,
+                        'dormitory_id' => $scope->dormitory_id,
+                        'cell_id' => $scope->cell_id,
+                        'description' => $description,
+                        'is_active' => $scope->is_active,
+                    ];
+                }),
+            ],
+            'facilities' => $facilities,
+        ]);
+    }
+
+    /**
+     * Update the assigned scopes for a jail officer.
+     */
+    public function updateScopes(Request $request, User $officer)
+    {
+        $user = $request->user();
+        
+        if (!$user->branch) {
+            abort(403, 'Jail Warden must be assigned to a branch.');
+        }
+
+        // Verify the officer belongs to the warden's branch and is a jail officer
+        if ($officer->branch_id !== $user->branch_id || $officer->role->slug !== 'jail_officer') {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'scopes' => 'array',
+            'scopes.*.scope_type' => 'required|in:annex,dormitory,cell',
+            'scopes.*.building_id' => 'nullable|exists:annexes,id',
+            'scopes.*.dormitory_id' => 'nullable|exists:dormitories,id',
+            'scopes.*.cell_id' => 'nullable|exists:cells,id',
+            'scopes.*.is_active' => 'boolean',
+        ]);
+
+        // Clear existing scopes
+        $officer->assignedScopes()->delete();
+
+        // Create new scopes
+        if (!empty($validated['scopes'])) {
+            foreach ($validated['scopes'] as $scope) {
+                // Ensure the required ID is present for the selected scope_type
+                if ($scope['scope_type'] === 'annex' && empty($scope['building_id'])) continue;
+                if ($scope['scope_type'] === 'dormitory' && empty($scope['dormitory_id'])) continue;
+                if ($scope['scope_type'] === 'cell' && empty($scope['cell_id'])) continue;
+                
+                $officer->assignedScopes()->create([
+                    'assigned_by' => $user->id,
+                    'scope_type' => $scope['scope_type'],
+                    'building_id' => $scope['building_id'] ?? null,
+                    'dormitory_id' => $scope['dormitory_id'] ?? null,
+                    'cell_id' => $scope['cell_id'] ?? null,
+                    'is_active' => $scope['is_active'] ?? true,
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Assigned scopes updated successfully.');
+    }
 }

@@ -42,7 +42,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
     {
         title: 'Jail Management',
-        href: '/jail-officer/jails',
+        href: '/jail-warden/jails',
     },
 ];
 
@@ -113,7 +113,7 @@ export default function JailManagement({ jails, filters }: Props) {
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        createForm.post('/jail-officer/jails', {
+        createForm.post('/jail-warden/jails', {
             onSuccess: () => {
                 setIsCreateModalOpen(false);
                 createForm.reset();
@@ -125,7 +125,7 @@ export default function JailManagement({ jails, filters }: Props) {
         e.preventDefault();
         if (!selectedJail) return;
         
-        editForm.put(`/jail-officer/jails/${selectedJail.id}`, {
+        editForm.put(`/jail-warden/jails/${selectedJail.id}`, {
             onSuccess: () => {
                 setIsEditModalOpen(false);
                 setSelectedJail(null);
@@ -137,7 +137,7 @@ export default function JailManagement({ jails, filters }: Props) {
         e.preventDefault();
         if (!selectedJail) return;
         
-        deleteForm.delete(`/jail-officer/jails/${selectedJail.id}`, {
+        deleteForm.delete(`/jail-warden/jails/${selectedJail.id}`, {
             onSuccess: () => {
                 setIsDeleteModalOpen(false);
                 setSelectedJail(null);
@@ -226,9 +226,6 @@ export default function JailManagement({ jails, filters }: Props) {
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => router.visit(`/jail-officer/jails/${jail.id}`)}>
-                                    View Details
-                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => openEditModal(jail)}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
@@ -267,16 +264,8 @@ export default function JailManagement({ jails, filters }: Props) {
                     </Button>
                 </div>
 
-                {flash?.success && (
-                    <div className="rounded-md bg-green-500/10 p-4 text-green-600">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded-md bg-destructive/10 p-4 text-destructive">
-                        {flash.error}
-                    </div>
-                )}
+                
+                
 
                 <Card>
                     <CardHeader>
@@ -323,7 +312,7 @@ export default function JailManagement({ jails, filters }: Props) {
                                     params.set('page', page.toString());
                                     if (searchQuery) params.set('search', searchQuery);
                                     if (statusFilter !== 'all') params.set('status', statusFilter);
-                                    router.get('/jail-officer/jails?' + params.toString(), {
+                                    router.get('/jail-warden/jails?' + params.toString(), {
                                         preserveState: true,
                                         preserveScroll: true,
                                     });

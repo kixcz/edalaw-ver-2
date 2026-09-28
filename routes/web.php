@@ -333,6 +333,18 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::post('dashboard/jail-warden/officer-scopes/{scope}/revoke', [\App\Http\Controllers\JailOfficerScopeController::class, 'revoke'])
             ->name('jail-warden.officer-scopes.revoke');
 
+        // Jail Management
+        Route::get('jail-warden/jails', [\App\Http\Controllers\JailWarden\JailManagementController::class, 'index'])
+            ->name('jail-warden.jails.index');
+        Route::post('jail-warden/jails', [\App\Http\Controllers\JailWarden\JailManagementController::class, 'store'])
+            ->name('jail-warden.jails.store');
+        Route::put('jail-warden/jails/{jail}', [\App\Http\Controllers\JailWarden\JailManagementController::class, 'update'])
+            ->name('jail-warden.jails.update');
+        Route::delete('jail-warden/jails/{jail}', [\App\Http\Controllers\JailWarden\JailManagementController::class, 'destroy'])
+            ->name('jail-warden.jails.destroy');
+        Route::get('jail-warden/jails/{jail}', [\App\Http\Controllers\JailWarden\JailManagementController::class, 'show'])
+            ->name('jail-warden.jails.show');
+
         // Annex Management
         Route::get('jail-warden/annexes', [\App\Http\Controllers\JailWarden\AnnexManagementController::class, 'index'])
             ->name('jail-warden.annexes.index');
@@ -368,6 +380,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('jail-warden.officers.index');
         Route::post('jail-warden/officers', [\App\Http\Controllers\JailWarden\JailOfficerManagementController::class, 'store'])
             ->name('jail-warden.officers.store');
+        Route::get('jail-warden/officers/{officer}', [\App\Http\Controllers\JailWarden\JailOfficerManagementController::class, 'show'])
+            ->name('jail-warden.officers.show');
+        Route::post('jail-warden/officers/{officer}/scopes', [\App\Http\Controllers\JailWarden\JailOfficerManagementController::class, 'updateScopes'])
+            ->name('jail-warden.officers.scopes.update');
 
         // PDL Management
         Route::get('jail-warden/pdls', [\App\Http\Controllers\JailWarden\PdlManagementController::class, 'index'])
@@ -646,17 +662,6 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     // Hierarchical Jail Management (Jail Officer only)
     Route::middleware(['role:jail_officer', 'resolve_jo_scope'])->prefix('jail-officer')->name('jail-officer.')->group(function () {
-        // Jail Management
-        Route::get('jails', [\App\Http\Controllers\JailOfficer\JailManagementController::class, 'index'])
-            ->name('jails.index');
-        Route::post('jails', [\App\Http\Controllers\JailOfficer\JailManagementController::class, 'store'])
-            ->name('jails.store');
-        Route::put('jails/{jail}', [\App\Http\Controllers\JailOfficer\JailManagementController::class, 'update'])
-            ->name('jails.update');
-        Route::delete('jails/{jail}', [\App\Http\Controllers\JailOfficer\JailManagementController::class, 'destroy'])
-            ->name('jails.destroy');
-        Route::get('jails/{jail}', [\App\Http\Controllers\JailOfficer\JailManagementController::class, 'show'])
-            ->name('jails.show');
 
         // Dormitory Management
         Route::get('dormitories', [\App\Http\Controllers\JailOfficer\DormitoryManagementController::class, 'index'])
