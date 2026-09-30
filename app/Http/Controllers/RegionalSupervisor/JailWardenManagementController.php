@@ -34,7 +34,7 @@ class JailWardenManagementController extends Controller
             ->select(['id', 'first_name', 'middle_name', 'last_name', 'email', 'contact_number', 'role_id', 'branch_id', 'region_id', 'approval_status', 'email_verified_at', 'status', 'last_seen_at', 'created_at'])
             ->whereHas('role', fn ($query) => $query->where('slug', 'jail_warden'))
             ->whereHas('branch', fn ($query) => $query->where('region_id', $regionId))
-            ->with(['role:id,name,slug', 'branch:id,region_id,name,code', 'branch.region:id,name,code', 'jailWardenScopes'])
+            ->with(['role:id,name,slug', 'branch:id,region_id,name,code', 'branch.region:id,name,code', 'jailWardenScopes.jail', 'jailWardenScopes.building', 'jailWardenScopes.dormitory', 'jailWardenScopes.cell'])
             ->when($request->input('search'), function ($query, $term) {
                 $query->where(function ($q) use ($term) {
                     $q->where('first_name', 'like', "%{$term}%")
@@ -60,6 +60,19 @@ class JailWardenManagementController extends Controller
                     
                 $scope = $warden->jailWardenScopes->first();
 
+                $scopeName = 'None';
+                if ($scope) {
+                    if ($scope->scope_type === 'jail' && $scope->jail) {
+                        $scopeName = 'Jail: ' . $scope->jail->name;
+                    } elseif ($scope->scope_type === 'annex' && $scope->building) {
+                        $scopeName = 'Annex: ' . $scope->building->name;
+                    } elseif ($scope->scope_type === 'dormitory' && $scope->dormitory) {
+                        $scopeName = 'Dorm: ' . $scope->dormitory->name;
+                    } elseif ($scope->scope_type === 'cell' && $scope->cell) {
+                        $scopeName = 'Cell: ' . $scope->cell->name;
+                    }
+                }
+
                 return [
                     'id' => $warden->id,
                     'first_name' => $warden->first_name,
@@ -77,6 +90,7 @@ class JailWardenManagementController extends Controller
                     'active_status' => $activeStatus,
                     'scope_type' => $scope ? $scope->scope_type : 'none',
                     'scope_id' => $scope ? ($scope->jail_id ?? $scope->building_id ?? $scope->dormitory_id ?? $scope->cell_id) : null,
+                    'scope_name' => $scopeName,
                     'email_verified_at' => $warden->email_verified_at?->format('Y-m-d H:i'),
                     'created_at' => $warden->created_at?->format('Y-m-d'),
                 ];

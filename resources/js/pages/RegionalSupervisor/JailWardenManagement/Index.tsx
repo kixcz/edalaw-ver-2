@@ -100,6 +100,11 @@ export default function JailWardenIndex(props: any) {
             cell: ({ row }: any) => <div>{row.original.branch?.name}</div>
         },
         {
+            accessorKey: 'scope_name',
+            header: 'Scope',
+            cell: ({ row }: any) => <div>{row.original.scope_name || 'Branch-wide (No Scope)'}</div>
+        },
+        {
             accessorKey: 'active_status',
             header: 'Status',
             cell: ({ row }: any) => <ActiveStatusBadge value={row.original.active_status} />
