@@ -1844,11 +1844,26 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col gap-4">
+                                        <div className="flex flex-col gap-6">
+                                            <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+                                                <div className="flex items-start gap-3">
+                                                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                                                    <div>
+                                                        <h4 className="text-sm font-semibold text-amber-900">Important Notice</h4>
+                                                        <p className="text-xs text-amber-700 mt-1">
+                                                            To ensure the security and legitimacy of your visit, you must provide valid proofs of your relationship and identity. Failure to provide clear and valid documents may result in your visit request being rejected or delayed.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <div className="flex flex-col gap-2">
                                                 <Label htmlFor="relationship_proof">
                                                     Proof of Relationship <span className="text-destructive">*</span>
                                                 </Label>
+                                                <p className="text-xs text-muted-foreground mb-1">
+                                                    Examples: <strong>PSA Birth Certificate</strong>, <strong>Marriage Certificate</strong>, or other valid proofs showing your direct relationship to the PDL.
+                                                </p>
                                                 <div className="relative border-2 border-dashed rounded-lg p-4 transition-colors hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                                                     <Input
                                                         id="relationship_proof"
@@ -1907,8 +1922,11 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                             </div>
                                             <div className="flex flex-col gap-2">
                                                 <Label htmlFor="additional_proof">
-                                                    Additional/Supporting Proof of Relationship <span className="text-destructive">*</span>
+                                                    Additional/Supporting Document <span className="text-destructive">*</span>
                                                 </Label>
+                                                <p className="text-xs text-muted-foreground mb-1">
+                                                    Examples: <strong>Valid ID</strong> (National ID, Passport, Driver's License, UMID), Barangay Clearance, or any other government-issued ID to prove your identity.
+                                                </p>
                                                 <div className="relative border-2 border-dashed rounded-lg p-4 transition-colors hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                                                     <Input
                                                         id="additional_proof"

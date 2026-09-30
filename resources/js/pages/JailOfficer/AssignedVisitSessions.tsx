@@ -169,6 +169,7 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
     const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
     const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
 
     const form = useForm({
         rejection_reason: '',
@@ -303,7 +304,7 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                                 </>
                             )}
                             
-                            <DropdownMenuItem onClick={() => setSelectedVisit(visit)} className="gap-2 cursor-pointer">
+                            <DropdownMenuItem onClick={() => { setSelectedVisit(visit); setIsViewDetailsModalOpen(true); }} className="gap-2 cursor-pointer">
                                 <FileText className="mr-2 h-4 w-4" />
                                 View Details
                             </DropdownMenuItem>
@@ -614,6 +615,106 @@ export default function AssignedVisitSessions({ visits, stats, chartData, pagina
                         <Button variant="destructive" onClick={handleReject} disabled={!form.data.rejection_reason}>
                             <XCircle className="mr-2 h-4 w-4" />
                             Reject Visit
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* View Details Modal */}
+            <Dialog open={isViewDetailsModalOpen} onOpenChange={setIsViewDetailsModalOpen}>
+                <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-blue-600" />
+                            Visit Details
+                        </DialogTitle>
+                        <DialogDescription>
+                            Review the details and attached documents for this visit.
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    {selectedVisit && (
+                        <div className="py-4 space-y-6">
+                            <div className="bg-muted rounded-lg p-4 space-y-4">
+                                <h3 className="font-semibold text-sm text-foreground uppercase tracking-wide">Visit Information</h3>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-muted-foreground text-xs block mb-1">Visitor</span>
+                                        <div className="font-medium">{selectedVisit.visitor_name}</div>
+                                        <div className="text-xs text-muted-foreground">{selectedVisit.visitor_email}</div>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground text-xs block mb-1">PDL</span>
+                                        <div className="font-medium">{selectedVisit.inmate_name}</div>
+                                        {selectedVisit.cell_info && (
+                                            <div className="text-xs text-muted-foreground">
+                                                {selectedVisit.cell_info.cell_number}
+                                                {selectedVisit.cell_info.floor && `, Floor ${selectedVisit.cell_info.floor}`}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground text-xs block mb-1">Date</span>
+                                        <div className="font-medium">
+                                            {new Date(selectedVisit.scheduled_date).toLocaleDateString('en-US', { 
+                                                month: 'long', 
+                                                day: 'numeric', 
+                                                year: 'numeric' 
+                                            })}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground text-xs block mb-1">Time</span>
+                                        <div className="font-medium">{selectedVisit.scheduled_time}</div>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground text-xs block mb-1">Visit Type</span>
+                                        <div className="font-medium capitalize">{selectedVisit.visit_type}</div>
+                                    </div>
+                                    {selectedVisit.cell_info?.annex_name && (
+                                        <div>
+                                            <span className="text-muted-foreground text-xs block mb-1">Building</span>
+                                            <div className="font-medium">{selectedVisit.cell_info.annex_name}</div>
+                                        </div>
+                                    )}
+                                </div>
+                                {selectedVisit.notes && (
+                                    <div>
+                                        <span className="text-muted-foreground text-xs block mb-1">Visitor Notes</span>
+                                        <div className="text-sm bg-card border border-border rounded p-3 mt-1">
+                                            {selectedVisit.notes}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {(selectedVisit.relationship_proof_path || selectedVisit.additional_proof_path) && (
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-sm text-foreground uppercase tracking-wide">Attached Documents</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {selectedVisit.relationship_proof_path && (
+                                            <DocumentCard
+                                                title="Relationship Proof"
+                                                path={selectedVisit.relationship_proof_path}
+                                                icon={<Image className="h-4 w-4" />}
+                                            />
+                                        )}
+                                        {selectedVisit.additional_proof_path && (
+                                            <DocumentCard
+                                                title="Additional Proof"
+                                                path={selectedVisit.additional_proof_path}
+                                                icon={<FileText className="h-4 w-4" />}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <DialogFooter className="sticky bottom-0 bg-card pt-4 pb-2 border-t border-border">
+                        <Button variant="outline" onClick={() => setIsViewDetailsModalOpen(false)}>
+                            Close
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -119,6 +119,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the scope assignments where this user is the assigned warden.
+     */
+    public function jailWardenScopes(): HasMany
+    {
+        return $this->hasMany(JailWardenScope::class, 'jail_warden_id');
+    }
+
+    /**
      * Alias for assignedScopes - get jail officer scope assignments.
      */
     public function jailOfficerScopes(): HasMany
@@ -193,6 +201,14 @@ class User extends Authenticatable
     public function scopeResolver(): JailOfficerScopeResolver
     {
         return new JailOfficerScopeResolver;
+    }
+
+    /**
+     * Get active warden scope resolver instance.
+     */
+    public function wardenScopeResolver(): \App\Services\JailWardenScopeResolver
+    {
+        return new \App\Services\JailWardenScopeResolver;
     }
 
     /**

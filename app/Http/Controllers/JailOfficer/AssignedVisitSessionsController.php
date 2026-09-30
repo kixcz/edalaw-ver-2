@@ -85,6 +85,27 @@ class AssignedVisitSessionsController extends Controller
 
         // Transform visits for frontend
         $visitsData = $visits->map(function ($visit) {
+            $relationshipProofPath = $visit->relationship_proof_path;
+            $additionalProofPath = $visit->additional_proof_path;
+
+            if (!$relationshipProofPath || !$additionalProofPath) {
+                // Find previous proof for this visitor and inmate
+                $previousVisit = Visit::where('user_id', $visit->user_id)
+                    ->where('inmate_id', $visit->inmate_id)
+                    ->where('id', '<', $visit->id)
+                    ->where(function ($q) {
+                        $q->whereNotNull('relationship_proof_path')
+                          ->orWhereNotNull('additional_proof_path');
+                    })
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($previousVisit) {
+                    $relationshipProofPath = $relationshipProofPath ?: $previousVisit->relationship_proof_path;
+                    $additionalProofPath = $additionalProofPath ?: $previousVisit->additional_proof_path;
+                }
+            }
+
             $data = [
                 'id' => $visit->id,
                 'visitor_name' => trim("{$visit->user->first_name} {$visit->user->middle_name} {$visit->user->last_name}"),
@@ -104,8 +125,8 @@ class AssignedVisitSessionsController extends Controller
                 'rejection_reason' => $visit->rejection_reason,
                 'created_at' => $visit->created_at?->toIso8601String(),
                 'has_session' => $visit->visitSessions()->exists(),
-                'relationship_proof_path' => $visit->relationship_proof_path,
-                'additional_proof_path' => $visit->additional_proof_path,
+                'relationship_proof_path' => $relationshipProofPath,
+                'additional_proof_path' => $additionalProofPath,
                 'notes' => $visit->notes,
             ];
             

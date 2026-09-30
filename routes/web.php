@@ -297,6 +297,38 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::delete('regional-supervisor/branches/{branch}', [\App\Http\Controllers\RegionalSupervisor\BranchManagementController::class, 'destroy'])
             ->name('regional-supervisor.branches.destroy');
 
+        // Jail Management Module (region-scoped CRUD)
+        Route::get('regional-supervisor/jails', [\App\Http\Controllers\RegionalSupervisor\JailManagementController::class, 'index'])
+            ->name('regional-supervisor.jails.index');
+        Route::post('regional-supervisor/jails', [\App\Http\Controllers\RegionalSupervisor\JailManagementController::class, 'store'])
+            ->name('regional-supervisor.jails.store');
+        Route::put('regional-supervisor/jails/{jail}', [\App\Http\Controllers\RegionalSupervisor\JailManagementController::class, 'update'])
+            ->name('regional-supervisor.jails.update');
+        Route::delete('regional-supervisor/jails/{jail}', [\App\Http\Controllers\RegionalSupervisor\JailManagementController::class, 'destroy'])
+            ->name('regional-supervisor.jails.destroy');
+        Route::get('regional-supervisor/jails/{jail}', [\App\Http\Controllers\RegionalSupervisor\JailManagementController::class, 'show'])
+            ->name('regional-supervisor.jails.show');
+
+        // Annex Management Module (region-scoped CRUD)
+        Route::get('regional-supervisor/annexes', [\App\Http\Controllers\RegionalSupervisor\AnnexManagementController::class, 'index'])
+            ->name('regional-supervisor.annexes.index');
+        Route::post('regional-supervisor/annexes', [\App\Http\Controllers\RegionalSupervisor\AnnexManagementController::class, 'store'])
+            ->name('regional-supervisor.annexes.store');
+        Route::put('regional-supervisor/annexes/{annex}', [\App\Http\Controllers\RegionalSupervisor\AnnexManagementController::class, 'update'])
+            ->name('regional-supervisor.annexes.update');
+        Route::delete('regional-supervisor/annexes/{annex}', [\App\Http\Controllers\RegionalSupervisor\AnnexManagementController::class, 'destroy'])
+            ->name('regional-supervisor.annexes.destroy');
+
+        // Dormitory Management Module (region-scoped CRUD)
+        Route::get('regional-supervisor/dormitories', [\App\Http\Controllers\RegionalSupervisor\DormitoryManagementController::class, 'index'])
+            ->name('regional-supervisor.dormitories.index');
+        Route::post('regional-supervisor/dormitories', [\App\Http\Controllers\RegionalSupervisor\DormitoryManagementController::class, 'store'])
+            ->name('regional-supervisor.dormitories.store');
+        Route::put('regional-supervisor/dormitories/{dormitory}', [\App\Http\Controllers\RegionalSupervisor\DormitoryManagementController::class, 'update'])
+            ->name('regional-supervisor.dormitories.update');
+        Route::delete('regional-supervisor/dormitories/{dormitory}', [\App\Http\Controllers\RegionalSupervisor\DormitoryManagementController::class, 'destroy'])
+            ->name('regional-supervisor.dormitories.destroy');
+
         // Jail Warden Management (scoped to regional supervisor's region)
         Route::get('regional-supervisor/wardens', [\App\Http\Controllers\RegionalSupervisor\JailWardenManagementController::class, 'index'])
             ->name('regional-supervisor.wardens.index');
@@ -333,17 +365,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::post('dashboard/jail-warden/officer-scopes/{scope}/revoke', [\App\Http\Controllers\JailOfficerScopeController::class, 'revoke'])
             ->name('jail-warden.officer-scopes.revoke');
 
-        // Jail Management
-        Route::get('jail-warden/jails', [\App\Http\Controllers\JailWarden\JailManagementController::class, 'index'])
-            ->name('jail-warden.jails.index');
-        Route::post('jail-warden/jails', [\App\Http\Controllers\JailWarden\JailManagementController::class, 'store'])
-            ->name('jail-warden.jails.store');
-        Route::put('jail-warden/jails/{jail}', [\App\Http\Controllers\JailWarden\JailManagementController::class, 'update'])
-            ->name('jail-warden.jails.update');
-        Route::delete('jail-warden/jails/{jail}', [\App\Http\Controllers\JailWarden\JailManagementController::class, 'destroy'])
-            ->name('jail-warden.jails.destroy');
-        Route::get('jail-warden/jails/{jail}', [\App\Http\Controllers\JailWarden\JailManagementController::class, 'show'])
-            ->name('jail-warden.jails.show');
+
 
         // Annex Management
         Route::get('jail-warden/annexes', [\App\Http\Controllers\JailWarden\AnnexManagementController::class, 'index'])

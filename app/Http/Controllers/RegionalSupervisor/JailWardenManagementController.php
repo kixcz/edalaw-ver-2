@@ -34,7 +34,7 @@ class JailWardenManagementController extends Controller
             ->select(['id', 'first_name', 'middle_name', 'last_name', 'email', 'contact_number', 'role_id', 'branch_id', 'region_id', 'approval_status', 'email_verified_at', 'status', 'last_seen_at', 'created_at'])
             ->whereHas('role', fn ($query) => $query->where('slug', 'jail_warden'))
             ->whereHas('branch', fn ($query) => $query->where('region_id', $regionId))
-            ->with(['role:id,name,slug', 'branch:id,region_id,name,code', 'branch.region:id,name,code'])
+            ->with(['role:id,name,slug', 'branch:id,region_id,name,code', 'branch.region:id,name,code', 'jailWardenScopes'])
             ->when($request->input('search'), function ($query, $term) {
                 $query->where(function ($q) use ($term) {
                     $q->where('first_name', 'like', "%{$term}%")
@@ -57,6 +57,8 @@ class JailWardenManagementController extends Controller
                 $activeStatus = $isInactive
                     ? 'Inactive'
                     : ($isOnline ? 'Online' : 'Active');
+                    
+                $scope = $warden->jailWardenScopes->first();
 
                 return [
                     'id' => $warden->id,
@@ -73,6 +75,8 @@ class JailWardenManagementController extends Controller
                     'approval_status' => $warden->approval_status?->value ?? $warden->approval_status,
                     'status' => $warden->status,
                     'active_status' => $activeStatus,
+                    'scope_type' => $scope ? $scope->scope_type : 'none',
+                    'scope_id' => $scope ? ($scope->jail_id ?? $scope->building_id ?? $scope->dormitory_id ?? $scope->cell_id) : null,
                     'email_verified_at' => $warden->email_verified_at?->format('Y-m-d H:i'),
                     'created_at' => $warden->created_at?->format('Y-m-d'),
                 ];
@@ -87,9 +91,21 @@ class JailWardenManagementController extends Controller
         $analytics = app(PersonnelReportService::class)
             ->build($regionId, 'jail_warden', 'Jail Warden');
 
+        $jails = \App\Models\Jail::whereHas('branch', fn ($q) => $q->where('region_id', $regionId))
+            ->active()->orderBy('name')->get(['id', 'branch_id', 'name']);
+            
+        $annexes = \App\Models\Annex::whereHas('jail.branch', fn ($q) => $q->where('region_id', $regionId))
+            ->where('status', 'active')->orderBy('name')->get(['id', 'jail_id', 'name']);
+            
+        $dormitories = \App\Models\Dormitory::whereHas('annex.jail.branch', fn ($q) => $q->where('region_id', $regionId))
+            ->where('status', 'active')->orderBy('name')->get(['id', 'annex_id', 'name']);
+
         return Inertia::render('RegionalSupervisor/JailWardenManagement/Index', [
             'records' => $wardens,
             'branches' => $branches,
+            'jails' => $jails,
+            'annexes' => $annexes,
+            'dormitories' => $dormitories,
             'analytics' => $analytics,
             'filters' => ['search' => (string) $request->input('search', '')],
         ]);
@@ -105,7 +121,9 @@ class JailWardenManagementController extends Controller
         $branch = Branch::findOrFail($validated['branch_id']);
         $validated['region_id'] = $branch->region_id;
 
-        User::create($validated);
+        $warden = User::create($validated);
+        
+        $this->syncScope($request, $warden, $user->id);
 
         return back()->with('success', 'Jail Warden account created successfully.');
     }
@@ -127,8 +145,30 @@ class JailWardenManagementController extends Controller
         $validated['region_id'] = $branch->region_id;
 
         $warden->update($validated);
+        
+        $this->syncScope($request, $warden, $user->id);
 
         return back()->with('success', 'Jail Warden account updated successfully.');
+    }
+
+    private function syncScope(Request $request, User $warden, int $assignedBy): void
+    {
+        \App\Models\JailWardenScope::where('jail_warden_id', $warden->id)->delete();
+        
+        $scopeType = $request->input('scope_type');
+        $scopeId = $request->input('scope_id');
+        
+        if ($scopeType && $scopeType !== 'none' && $scopeId) {
+            \App\Models\JailWardenScope::create([
+                'jail_warden_id' => $warden->id,
+                'assigned_by' => $assignedBy,
+                'scope_type' => $scopeType,
+                'jail_id' => $scopeType === 'jail' ? $scopeId : null,
+                'building_id' => $scopeType === 'annex' ? $scopeId : null,
+                'dormitory_id' => $scopeType === 'dormitory' ? $scopeId : null,
+                'cell_id' => $scopeType === 'cell' ? $scopeId : null,
+            ]);
+        }
     }
 
     public function destroy(Request $request, User $warden): RedirectResponse

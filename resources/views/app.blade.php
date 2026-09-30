@@ -39,7 +39,7 @@
         <link href="https://fonts.bunny.net/css?family=poppins:400,500,600,700" rel="stylesheet" />
 
         @viteReactRefresh
-        @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+        @vite('resources/js/app.tsx')
         @inertiaHead
     </head>
     <body class="font-sans antialiased">

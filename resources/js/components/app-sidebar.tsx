@@ -603,11 +603,6 @@ export function AppSidebar() {
                         icon: Video,
                     },
                     {
-                        title: 'Chat Logs',
-                        href: '/jail-officer/chat-logs',
-                        icon: MessageCircle,
-                    },
-                    {
                         title: 'Chat Archive',
                         href: '/jail-officer/chat-recordings',
                         icon: Archive,
@@ -733,11 +728,6 @@ export function AppSidebar() {
                 label: 'Facility Management',
                 items: [
                     {
-                        title: 'Jail',
-                        href: '/jail-warden/jails',
-                        icon: Building2,
-                    },
-                    {
                         title: 'Annex',
                         href: '/jail-warden/annexes',
                         icon: Warehouse,
@@ -810,6 +800,26 @@ export function AppSidebar() {
                         title: 'Branches',
                         href: '/regional-supervisor/branches',
                         icon: Building2,
+                    },
+                ],
+            },
+            {
+                label: 'Facility Management',
+                items: [
+                    {
+                        title: 'Jails',
+                        href: '/regional-supervisor/jails',
+                        icon: Building2,
+                    },
+                    {
+                        title: 'Annexes',
+                        href: '/regional-supervisor/annexes',
+                        icon: Warehouse,
+                    },
+                    {
+                        title: 'Dormitories',
+                        href: '/regional-supervisor/dormitories',
+                        icon: Building,
                     },
                 ],
             },
