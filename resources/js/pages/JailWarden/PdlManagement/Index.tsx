@@ -1,6 +1,6 @@
 import { Head, useForm, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Users, MoreVertical, Plus, List, BarChart2, CheckCircle, XCircle, Hash, MapPin } from 'lucide-react';
+import { Users, MoreVertical, Plus, List, BarChart2, CheckCircle, XCircle, Hash, MapPin, Eye } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell as RechartsCell } from 'recharts';
 
@@ -44,9 +44,12 @@ type Props = {
 
 export default function PdlManagement({ auth, inmates, cells, stats, chartData }: Props) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [selectedPdl, setSelectedPdl] = useState<any>(null);
     const form = useForm({ inmate_number: '', first_name: '', middle_name: '', last_name: '', date_of_birth: '', cell_id: '' });
 
     const openCreateModal = () => { form.setData({ inmate_number: '', first_name: '', middle_name: '', last_name: '', date_of_birth: '', cell_id: '' }); setIsCreateModalOpen(true); };
+    const openViewModal = (pdl: any) => { setSelectedPdl(pdl); setIsViewModalOpen(true); };
     const submitCreate = (e: React.FormEvent) => { e.preventDefault(); router.post('/jail-warden/pdls', form.data, { onSuccess: () => { form.reset(); setIsCreateModalOpen(false); } }); };
 
     const columns: ColumnDef<any>[] = useMemo(() => [
@@ -55,7 +58,7 @@ export default function PdlManagement({ auth, inmates, cells, stats, chartData }
         { accessorKey: 'status', header: 'Status', cell: ({ row }) => <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${row.original.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-muted text-muted-foreground border-border'}`}>{row.original.status}</span> },
         { accessorKey: 'cell.cell_number', header: 'Cell', cell: ({ row }) => row.original.cell?.cell_number || '-' },
         { accessorKey: 'cell.annex.name', header: 'Annex', cell: ({ row }) => row.original.cell?.annex?.name || '-' },
-        { id: 'actions', cell: ({ row }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => router.get(`/jail-warden/pdls/${row.original.id}`)}><span className="mr-2 h-4 w-4">👁</span>View</DropdownMenuItem></DropdownMenuContent></DropdownMenu>), },
+        { id: 'actions', cell: ({ row }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => openViewModal(row.original)}><Eye className="mr-2 h-4 w-4" />View</DropdownMenuItem></DropdownMenuContent></DropdownMenu>), },
     ], []);
 
     return (
@@ -125,6 +128,65 @@ export default function PdlManagement({ auth, inmates, cells, stats, chartData }
                         <div className="space-y-2"><Label htmlFor="date_of_birth">Date of Birth</Label><Input id="date_of_birth" type="date" value={form.data.date_of_birth} onChange={(e) => form.setData('date_of_birth', e.target.value)} />{form.errors.date_of_birth && <p className="text-sm text-destructive">{form.errors.date_of_birth}</p>}</div>
                         <div className="space-y-2"><Label htmlFor="cell_id">Cell Assignment</Label><Select value={form.data.cell_id} onValueChange={(value) => form.setData('cell_id', value)}><SelectTrigger><SelectValue placeholder="Select cell" /></SelectTrigger><SelectContent>{cells?.map((cell: any) => (<SelectItem key={cell.value} value={cell.value}>{cell.label}</SelectItem>))}</SelectContent></Select>{form.errors.cell_id && <p className="text-sm text-destructive">{form.errors.cell_id}</p>}</div>
                     </div><DialogFooter><Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button><Button type="submit" disabled={form.processing} className="bg-primary hover:bg-primary/90 text-white">Add PDL</Button></DialogFooter></form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>PDL Details</DialogTitle>
+                        <DialogDescription>Information for Person Deprived of Liberty</DialogDescription>
+                    </DialogHeader>
+                    {selectedPdl && (
+                        <div className="space-y-4 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-muted-foreground">PDL Number</p>
+                                    <p className="text-sm font-semibold">{selectedPdl.inmate_number}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-muted-foreground">Status</p>
+                                    <div>
+                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full border inline-flex ${selectedPdl.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-muted text-muted-foreground border-border'}`}>
+                                            {selectedPdl.status}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-1 col-span-2">
+                                    <p className="text-sm font-medium text-muted-foreground">Full Name</p>
+                                    <p className="text-sm">{selectedPdl.full_name}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-muted-foreground">Date of Birth</p>
+                                    <p className="text-sm">{selectedPdl.date_of_birth || 'Not specified'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-muted-foreground">Registered</p>
+                                    <p className="text-sm">{new Date(selectedPdl.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <div className="space-y-1 col-span-2 pt-2 border-t">
+                                    <p className="text-sm font-medium text-muted-foreground mb-2">Cell Assignment</p>
+                                    <div className="bg-muted p-3 rounded-md space-y-1">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Cell Number:</span>
+                                            <span className="font-medium">{selectedPdl.cell?.cell_number || '-'}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Dormitory:</span>
+                                            <span className="font-medium">{selectedPdl.cell?.annex?.dormitory?.name || '-'}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Annex/Building:</span>
+                                            <span className="font-medium">{selectedPdl.cell?.annex?.name || '-'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button type="button" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </AppLayout>

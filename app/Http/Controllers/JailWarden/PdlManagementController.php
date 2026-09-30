@@ -21,13 +21,22 @@ class PdlManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
+        $scopeResolver = app(\App\Services\JailWardenScopeResolver::class);
+        $hasScope = $scopeResolver->hasActiveScope($user);
+
         // Get all inmates in the branch through cell → dormitory → annex → jail → branch hierarchy
-        $inmates = Inmate::join('cells', 'inmates.cell_id', '=', 'cells.id')
+        $query = Inmate::join('cells', 'inmates.cell_id', '=', 'cells.id')
             ->join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
             ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
             ->join('jails', 'annexes.jail_id', '=', 'jails.id')
-            ->where('jails.branch_id', $user->branch_id)
-            ->select('inmates.*')
+            ->where('jails.branch_id', $user->branch_id);
+
+        if ($hasScope) {
+            $authorizedInmateIds = $scopeResolver->getAuthorizedInmateIds($user);
+            $query->whereIn('inmates.id', $authorizedInmateIds);
+        }
+
+        $inmates = $query->select('inmates.*')
             ->with(['cell' => function ($query) {
                 $query->with(['dormitory' => function ($q) {
                     $q->with(['annex' => function ($qr) {

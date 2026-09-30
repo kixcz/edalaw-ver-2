@@ -21,11 +21,20 @@ class DormitoryManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
-        $dormitories = Dormitory::query()
+        $scopeResolver = app(\App\Services\JailWardenScopeResolver::class);
+        $hasScope = $scopeResolver->hasActiveScope($user);
+
+        $query = Dormitory::query()
             ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
             ->join('jails', 'annexes.jail_id', '=', 'jails.id')
-            ->where('jails.branch_id', $user->branch_id)
-            ->with(['annex', 'annex.jail'])
+            ->where('jails.branch_id', $user->branch_id);
+
+        if ($hasScope) {
+            $authorizedDormIds = $scopeResolver->getAuthorizedDormitoryIds($user);
+            $query->whereIn('dormitories.id', $authorizedDormIds);
+        }
+
+        $dormitories = $query->with(['annex', 'annex.jail'])
             ->withCount(['cells'])
             ->select('dormitories.*')
             ->orderBy('dormitories.name')

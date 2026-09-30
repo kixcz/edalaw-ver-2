@@ -33,14 +33,18 @@ interface Props {
         dormitories: { id: number; name: string }[];
         cells: { id: number; cell_number: string; annex_name: string; dormitory_name: string }[];
     };
+    max_scope_level?: string;
 }
 
-export default function JailOfficerShow({ auth, officer, facilities }: Props) {
+export default function JailOfficerShow({ auth, officer, facilities, max_scope_level = 'annex' }: Props) {
     const [scopes, setScopes] = useState<Scope[]>(officer.scopes || []);
     const form = useForm({ scopes: officer.scopes || [] });
 
     const addScope = () => {
-        const newScopes = [...scopes, { scope_type: 'annex', is_active: true, building_id: null, dormitory_id: null, cell_id: null }];
+        const defaultScopeType = max_scope_level === 'cell' ? 'cell' 
+            : max_scope_level === 'dormitory' ? 'dormitory' 
+            : 'annex';
+        const newScopes = [...scopes, { scope_type: defaultScopeType, is_active: true, building_id: null, dormitory_id: null, cell_id: null }];
         setScopes(newScopes);
         form.setData('scopes', newScopes as any);
     };
@@ -163,8 +167,12 @@ export default function JailOfficerShow({ auth, officer, facilities }: Props) {
                                                                 <SelectValue />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                <SelectItem value="annex">Annex (Building)</SelectItem>
-                                                                <SelectItem value="dormitory">Dormitory</SelectItem>
+                                                                {['jail', 'annex'].includes(max_scope_level) && (
+                                                                    <SelectItem value="annex">Annex (Building)</SelectItem>
+                                                                )}
+                                                                {['jail', 'annex', 'dormitory'].includes(max_scope_level) && (
+                                                                    <SelectItem value="dormitory">Dormitory</SelectItem>
+                                                                )}
                                                                 <SelectItem value="cell">Cell</SelectItem>
                                                             </SelectContent>
                                                         </Select>

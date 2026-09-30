@@ -103,9 +103,6 @@ export default function AnnexManagement({ annexes, jails, stats, chartData, filt
                                 <p className="text-xs text-muted-foreground mt-0.5">Manage facility buildings and annexes</p>
                             </div>
                         </div>
-                        <Button onClick={openCreate} className="bg-primary hover:bg-primary/90 text-white shadow-sm gap-1.5 text-sm">
-                            <Plus className="w-4 h-4" />Add Building
-                        </Button>
                     </div>
                 </div>
 
@@ -175,7 +172,6 @@ export default function AnnexManagement({ annexes, jails, stats, chartData, filt
                                                 <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Dorms</TableHead>
                                                 <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Cells</TableHead>
                                                 <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</TableHead>
-                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pr-6 text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -232,26 +228,6 @@ export default function AnnexManagement({ annexes, jails, stats, chartData, filt
                                                         </TooltipProvider>
                                                     </TableCell>
                                                     <TableCell>{statusBadge(a.status)}</TableCell>
-                                                    <TableCell className="pr-6">
-                                                        <div className="flex items-center justify-end">
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                                                                        <MoreVertical className="h-4 w-4" />
-                                                                    </Button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end" className="w-40">
-                                                                    <DropdownMenuItem onClick={() => openEdit(a)} className="gap-2 cursor-pointer text-green-700 focus:text-white focus:bg-green-600 [&_svg]:!text-green-600 focus:[&_svg]:!text-white">
-                                                                        <Pencil className="h-4 w-4" /><span>Edit</span>
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuSeparator />
-                                                                    <DropdownMenuItem onClick={() => openDelete(a)} className="gap-2 cursor-pointer text-red-600 focus:text-white focus:bg-red-600 [&_svg]:!text-red-600 focus:[&_svg]:!text-white">
-                                                                        <Trash2 className="h-4 w-4" /><span>Delete</span>
-                                                                    </DropdownMenuItem>
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
-                                                        </div>
-                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                             {annexes.data.length === 0 && (

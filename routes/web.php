@@ -985,3 +985,19 @@ Route::middleware(['auth', 'role:jail_officer'])->get('api/chat-recordings/sessi
     ->name('jail-officer.chat-recordings.api');
 
 require __DIR__.'/settings.php';
+
+// Storage fallback route for environments without symlinks (e.g. Hostinger shared hosting or local testing)
+Route::get('/storage/{path}', function ($path) {
+    $publicStoragePath = public_path('storage/' . $path);
+    $appStoragePath = storage_path('app/public/' . $path);
+
+    if (file_exists($publicStoragePath)) {
+        return response()->file($publicStoragePath);
+    }
+
+    if (file_exists($appStoragePath)) {
+        return response()->file($appStoragePath);
+    }
+
+    abort(404);
+})->where('path', '.*');

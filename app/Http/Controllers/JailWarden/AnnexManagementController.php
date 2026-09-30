@@ -21,11 +21,20 @@ class AnnexManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
+        $scopeResolver = app(\App\Services\JailWardenScopeResolver::class);
+        $hasScope = $scopeResolver->hasActiveScope($user);
+
         // Get annexes through the branch's jails
-        $annexes = Annex::query()
+        $query = Annex::query()
             ->join('jails', 'annexes.jail_id', '=', 'jails.id')
-            ->where('jails.branch_id', $user->branch_id)
-            ->with(['jail'])
+            ->where('jails.branch_id', $user->branch_id);
+
+        if ($hasScope) {
+            $authorizedAnnexIds = $scopeResolver->getAuthorizedBuildingIds($user);
+            $query->whereIn('annexes.id', $authorizedAnnexIds);
+        }
+
+        $annexes = $query->with(['jail'])
             ->withCount(['dormitories', 'cells'])
             ->select('annexes.*')
             ->orderBy('annexes.name')

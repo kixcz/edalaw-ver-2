@@ -23,8 +23,11 @@ class JailOfficerManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
+        $scopeResolver = app(\App\Services\JailWardenScopeResolver::class);
+        $hasScope = $scopeResolver->hasActiveScope($user);
+
         // Get all jail officers in the branch
-        $officers = User::whereHas('role', function ($query) {
+        $officersQuery = User::whereHas('role', function ($query) {
                 $query->where('slug', 'jail_officer');
             })
             ->whereHas('branch', function ($query) use ($user) {
@@ -33,61 +36,72 @@ class JailOfficerManagementController extends Controller
             ->with(['assignedScopes' => function ($query) {
                 $query->with(['annex', 'dormitory', 'cell']);
             }])
-            ->orderBy('first_name')
-            ->get()
-            ->map(function ($officer) {
-                return [
-                    'id' => $officer->id,
-                    'name' => $officer->full_name,
-                    'email' => $officer->email,
-                    'scopes' => $officer->assignedScopes->map(function ($scope) {
-                        $description = match($scope->scope_type) {
-                            'annex' => $scope->annex?->name ?? 'Unknown',
-                            'dormitory' => $scope->dormitory?->name ?? 'Unknown',
-                            'cell' => $scope->cell?->cell_number ?? 'Unknown',
-                            default => 'Unknown',
-                        };
-                        
-                        return [
-                            'id' => $scope->id,
-                            'scope_type' => $scope->scope_type,
-                            'description' => $description,
-                            'is_active' => $scope->is_active,
-                        ];
-                    }),
-                ];
-            });
+            ->orderBy('first_name');
+            
+        $officers = $officersQuery->get();
+
+        if ($hasScope) {
+            $wardenCellIds = $scopeResolver->getAuthorizedCellIds($user);
+            $joResolver = app(\App\Services\JailOfficerScopeResolver::class);
+            
+            $officers = $officers->filter(function($officer) use ($wardenCellIds, $joResolver) {
+                if ($officer->assignedScopes->isEmpty()) {
+                    return false;
+                }
+                $joCellIds = $joResolver->getAuthorizedCellIds($officer);
+                return count(array_intersect($wardenCellIds, $joCellIds)) > 0;
+            })->values();
+        }
+
+        $officers = $officers->map(function ($officer) {
+            return [
+                'id' => $officer->id,
+                'name' => $officer->full_name,
+                'email' => $officer->email,
+                'scopes' => $officer->assignedScopes->map(function ($scope) {
+                    $description = match($scope->scope_type) {
+                        'annex' => $scope->annex?->name ?? 'Unknown',
+                        'dormitory' => $scope->dormitory?->name ?? 'Unknown',
+                        'cell' => $scope->cell?->cell_number ?? 'Unknown',
+                        default => 'Unknown',
+                    };
+                    
+                    return [
+                        'id' => $scope->id,
+                        'scope_type' => $scope->scope_type,
+                        'description' => $description,
+                        'is_active' => $scope->is_active,
+                    ];
+                }),
+            ];
+        });
 
         // Get facilities for dropdown
+        $annexQuery = Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
+            ->where('annexes.status', 'active');
+            
+        $dormitoryQuery = Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
+            ->where('dormitories.status', 'active');
+            
+        $cellQuery = Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
+            ->where('cells.status', 'active');
+
+        if ($hasScope) {
+            $annexQuery->whereIn('annexes.id', $scopeResolver->getAuthorizedBuildingIds($user));
+            $dormitoryQuery->whereIn('dormitories.id', $scopeResolver->getAuthorizedDormitoryIds($user));
+            $cellQuery->whereIn('cells.id', $scopeResolver->getAuthorizedCellIds($user));
+        }
+        
         $facilities = [
-            'annexes' => Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
-                ->where('jails.branch_id', $user->branch_id)
-                ->where('annexes.status', 'active')
-                ->orderBy('annexes.name')
-                ->select('annexes.id', 'annexes.name')
-                ->get(),
-
-            'dormitories' => Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
-                ->where('jails.branch_id', $user->branch_id)
-                ->where('dormitories.status', 'active')
-                ->orderBy('dormitories.name')
-                ->select('dormitories.id', 'dormitories.name')
-                ->get(),
-
-            'cells' => Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
-                ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
-                ->where('jails.branch_id', $user->branch_id)
-                ->where('cells.status', 'active')
-                ->orderBy('cells.cell_number')
-                ->select(
-                    'cells.id',
-                    'cells.cell_number',
-                    'annexes.name as annex_name',
-                    'dormitories.name as dormitory_name'
-                )
-                ->get(),
+            'annexes' => $annexQuery->orderBy('annexes.name')->select('annexes.id', 'annexes.name')->get(),
+            'dormitories' => $dormitoryQuery->orderBy('dormitories.name')->select('dormitories.id', 'dormitories.name')->get(),
+            'cells' => $cellQuery->orderBy('cells.cell_number')->select('cells.id', 'cells.cell_number', 'annexes.name as annex_name', 'dormitories.name as dormitory_name')->get(),
         ];
 
         // Calculate stats
@@ -173,37 +187,48 @@ class JailOfficerManagementController extends Controller
 
         $officer->load(['assignedScopes.annex', 'assignedScopes.dormitory', 'assignedScopes.cell']);
 
+        $scopeResolver = app(\App\Services\JailWardenScopeResolver::class);
+        $hasScope = $scopeResolver->hasActiveScope($user);
+
         // Get facilities for dropdown
+        $annexQuery = Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
+            ->where('annexes.status', 'active');
+            
+        $dormitoryQuery = Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
+            ->where('dormitories.status', 'active');
+            
+        $cellQuery = Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
+            ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
+            ->join('jails', 'annexes.jail_id', '=', 'jails.id')
+            ->where('jails.branch_id', $user->branch_id)
+            ->where('cells.status', 'active');
+
+        if ($hasScope) {
+            $annexQuery->whereIn('annexes.id', $scopeResolver->getAuthorizedBuildingIds($user));
+            $dormitoryQuery->whereIn('dormitories.id', $scopeResolver->getAuthorizedDormitoryIds($user));
+            $cellQuery->whereIn('cells.id', $scopeResolver->getAuthorizedCellIds($user));
+        }
+
         $facilities = [
-            'annexes' => Annex::join('jails', 'annexes.jail_id', '=', 'jails.id')
-                ->where('jails.branch_id', $user->branch_id)
-                ->where('annexes.status', 'active')
-                ->orderBy('annexes.name')
-                ->select('annexes.id', 'annexes.name')
-                ->get(),
-
-            'dormitories' => Dormitory::join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
-                ->where('jails.branch_id', $user->branch_id)
-                ->where('dormitories.status', 'active')
-                ->orderBy('dormitories.name')
-                ->select('dormitories.id', 'dormitories.name')
-                ->get(),
-
-            'cells' => Cell::join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
-                ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
-                ->join('jails', 'annexes.jail_id', '=', 'jails.id')
-                ->where('jails.branch_id', $user->branch_id)
-                ->where('cells.status', 'active')
-                ->orderBy('cells.cell_number')
-                ->select(
-                    'cells.id',
-                    'cells.cell_number',
-                    'annexes.name as annex_name',
-                    'dormitories.name as dormitory_name'
-                )
-                ->get(),
+            'annexes' => $annexQuery->orderBy('annexes.name')->select('annexes.id', 'annexes.name')->get(),
+            'dormitories' => $dormitoryQuery->orderBy('dormitories.name')->select('dormitories.id', 'dormitories.name')->get(),
+            'cells' => $cellQuery->orderBy('cells.cell_number')->select('cells.id', 'cells.cell_number', 'annexes.name as annex_name', 'dormitories.name as dormitory_name')->get(),
         ];
+
+        $maxScopeLevel = 'annex';
+        if ($hasScope) {
+            $wardenScopes = \App\Models\JailWardenScope::where('jail_warden_id', $user->id)->active()->get();
+            if ($wardenScopes->where('scope_type', 'jail')->isNotEmpty() || $wardenScopes->where('scope_type', 'annex')->isNotEmpty()) {
+                $maxScopeLevel = 'annex';
+            } elseif ($wardenScopes->where('scope_type', 'dormitory')->isNotEmpty()) {
+                $maxScopeLevel = 'dormitory';
+            } elseif ($wardenScopes->where('scope_type', 'cell')->isNotEmpty()) {
+                $maxScopeLevel = 'cell';
+            }
+        }
 
         return Inertia::render('JailWarden/JailOfficerManagement/Show', [
             'officer' => [
@@ -230,6 +255,7 @@ class JailOfficerManagementController extends Controller
                 }),
             ],
             'facilities' => $facilities,
+            'max_scope_level' => $maxScopeLevel,
         ]);
     }
 

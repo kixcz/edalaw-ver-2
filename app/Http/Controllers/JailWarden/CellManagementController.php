@@ -21,12 +21,21 @@ class CellManagementController extends Controller
             abort(403, 'Jail Warden must be assigned to a branch.');
         }
 
-        $cells = Cell::query()
+        $scopeResolver = app(\App\Services\JailWardenScopeResolver::class);
+        $hasScope = $scopeResolver->hasActiveScope($user);
+
+        $query = Cell::query()
             ->join('dormitories', 'cells.dormitory_id', '=', 'dormitories.id')
             ->join('annexes', 'dormitories.annex_id', '=', 'annexes.id')
             ->join('jails', 'annexes.jail_id', '=', 'jails.id')
-            ->where('jails.branch_id', $user->branch_id)
-            ->with(['dormitory', 'dormitory.annex', 'dormitory.annex.jail'])
+            ->where('jails.branch_id', $user->branch_id);
+
+        if ($hasScope) {
+            $authorizedCellIds = $scopeResolver->getAuthorizedCellIds($user);
+            $query->whereIn('cells.id', $authorizedCellIds);
+        }
+
+        $cells = $query->with(['dormitory', 'dormitory.annex', 'dormitory.annex.jail'])
             ->select('cells.*')
             ->orderBy('cells.cell_number')
             ->get()
