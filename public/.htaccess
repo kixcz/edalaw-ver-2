@@ -1,25 +1,26 @@
+# dssclearn/.htaccess (project root -> send traffic into /public)
+Options -Indexes -MultiViews +SymLinksIfOwnerMatch
+DirectoryIndex public/index.php
+
 <IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
+  RewriteEngine On
+  RewriteBase /
 
-    RewriteEngine On
+  # Let’s Encrypt challenges (avoid 403 on dotfiles)
+  RewriteRule ^\.well-known/ - [L]
+RewriteRule ^storage/(.*)$ /uploads/$1 [L,R=301]
+  # Serve existing files/dirs normally
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
 
-    # Handle Authorization Header
-    RewriteCond %{HTTP:Authorization} .
-    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+  # Otherwise, send everything to /public/index.php
+  RewriteRule ^ public/index.php [L]
+</IfModule>
 
-    # Handle X-XSRF-Token Header
-    RewriteCond %{HTTP:x-xsrf-token} .
-    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
-
-    # Redirect Trailing Slashes If Not A Folder...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
-
-    # Send Requests To Front Controller...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+# Block hidden dotfiles EXCEPT the .well-known we allowed above
+<IfModule mod_authz_core.c>
+  <FilesMatch "^\.">
+    Require all denied
+  </FilesMatch>
 </IfModule>

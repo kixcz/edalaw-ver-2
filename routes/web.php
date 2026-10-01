@@ -986,18 +986,91 @@ Route::middleware(['auth', 'role:jail_officer'])->get('api/chat-recordings/sessi
 
 require __DIR__.'/settings.php';
 
-// Storage fallback route for environments without symlinks (e.g. Hostinger shared hosting or local testing)
+// Storage fallback route for environments where frontend hardcodes /storage/
 Route::get('/storage/{path}', function ($path) {
-    $publicStoragePath = public_path('storage/' . $path);
-    $appStoragePath = storage_path('app/public/' . $path);
+    return redirect('/uploads/' . $path);
+})->where('path', '.*');
 
-    if (file_exists($publicStoragePath)) {
-        return response()->file($publicStoragePath);
+// Serve uploads directly from Laravel to bypass Hostinger DocumentRoot configuration issues
+Route::get('/uploads/{path}', function ($path) {
+    $filePath = public_path('uploads/' . $path);
+    if (file_exists($filePath)) {
+        return response()->file($filePath);
     }
-
-    if (file_exists($appStoragePath)) {
-        return response()->file($appStoragePath);
-    }
-
     abort(404);
 })->where('path', '.*');
+
+// Route to manually copy storage/app/public to public/uploads (bypasses Hostinger restrictions on 'storage' keyword)
+Route::get('/setup-storage', function () {
+    $target = public_path('uploads');
+    $source = storage_path('app/public');
+    $oldStorage = public_path('storage');
+    
+    // Delete the old public/storage folder entirely so Apache stops intercepting the URL
+    if (file_exists($oldStorage)) {
+        if (is_link($oldStorage)) {
+            unlink($oldStorage);
+        } else {
+            \Illuminate\Support\Facades\File::deleteDirectory($oldStorage);
+        }
+    }
+    if (!file_exists($target)) {
+        mkdir($target, 0755, true);
+    }
+
+    // 1. Fix permissions BEFORE copying (in case existing files are read-only and block overwriting)
+    if (file_exists($target)) {
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($target, \FilesystemIterator::SKIP_DOTS));
+        foreach ($iterator as $item) {
+            @chmod($item->getPathname(), $item->isDir() ? 0755 : 0644);
+        }
+    }
+
+    // 2. Copy files recursively from source to target
+    $success = true;
+    try {
+        \Illuminate\Support\Facades\File::copyDirectory($source, $target);
+    } catch (\Exception $e) {
+        $success = false;
+        // Proceed anyway so we can fix permissions on whatever is there
+    }
+
+    // 3. Fix permissions AFTER copying
+    if (file_exists($target)) {
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($target, \FilesystemIterator::SKIP_DOTS));
+        foreach ($iterator as $item) {
+            @chmod($item->getPathname(), $item->isDir() ? 0755 : 0644);
+        }
+    }
+
+    return response()->json([
+        'message' => 'Storage files processed and moved to uploads directory successfully.',
+        'success' => $success,
+        'source' => $source,
+        'target' => $target,
+    ]);
+});
+
+// Route to clear all caches (run this after changing config files on shared hosting)
+Route::get('/clear-cache', function() {
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    
+    return 'All caches have been cleared! Your new configuration is now active.';
+});
+
+Route::get('/debug-storage', function () {
+    $testFile = request('file'); // Optional: they can pass ?file=visits/...
+    
+    return response()->json([
+        'config_root' => config('filesystems.disks.public.root'),
+        'is_cached' => app()->configurationIsCached(),
+        'public_uploads_exists' => is_dir(public_path('uploads')),
+        'storage_app_public_exists' => is_dir(storage_path('app/public')),
+        'test_file_path' => $testFile,
+        'in_uploads' => $testFile ? file_exists(public_path('uploads/' . $testFile)) : null,
+        'in_storage' => $testFile ? file_exists(storage_path('app/public/' . $testFile)) : null,
+    ]);
+});

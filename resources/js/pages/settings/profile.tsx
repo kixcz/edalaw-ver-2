@@ -303,7 +303,7 @@ function DocumentCard({ label, path }: { label: string; path: string | null }) {
                 {path ? (
                     <Button variant="outline" size="sm" asChild>
                         <a
-                            href={`/storage/${path}`}
+                            href={`/uploads/${path}`}
                             target="_blank"
                             rel="noopener noreferrer"
                         >

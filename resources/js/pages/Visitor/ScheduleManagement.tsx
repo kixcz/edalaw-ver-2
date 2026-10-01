@@ -203,7 +203,7 @@ function getVisitTypeBadge(type: string) {
 }
 
 function DocumentCard({ title, path, icon }: { title: string; path: string; icon: React.ReactNode }) {
-    const fileUrl = `/storage/${path}`;
+    const fileUrl = `/uploads/${path}`;
     const fileName = path.split('/').pop() || 'Document';
     const fileExtension = fileName.split('.').pop()?.toLowerCase();
     const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension || '');
