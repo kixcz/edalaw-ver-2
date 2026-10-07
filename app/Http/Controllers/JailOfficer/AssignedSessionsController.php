@@ -53,15 +53,59 @@ class AssignedSessionsController extends Controller
             $query->whereNotNull('eburol_id');
         }
 
-        $sessions = $query->orderBy('scheduled_start', 'desc')
-            ->get()
-            ->map(function (VisitSession $session) {
+        $startDateFilter = $request->input('start_date');
+        $endDateFilter = $request->input('end_date');
+        $monthFilter = $request->input('month');
+        $yearFilter = $request->input('year');
+
+        if ($startDateFilter) {
+            $query->whereDate('scheduled_start', '>=', $startDateFilter);
+        }
+        if ($endDateFilter) {
+            $query->whereDate('scheduled_start', '<=', $endDateFilter);
+        }
+        if ($monthFilter) {
+            $query->whereMonth('scheduled_start', $monthFilter);
+        }
+        if ($yearFilter) {
+            $query->whereYear('scheduled_start', $yearFilter);
+        }
+
+        $visitSessions = $query->orderBy('scheduled_start', 'desc')->get();
+
+        $visitedInmateIds = $visitSessions->map(function ($session) {
+            return $session->visit?->inmate_id ?? $session->eburol?->inmate_id;
+        })->filter()->unique()->toArray();
+
+        $visitedPdlCount = count($visitedInmateIds);
+
+        if (! $isSuperAdmin) {
+            $allPdls = \App\Models\Inmate::whereIn('cell_id', $authorizedCellIds)->get();
+            $totalPdlCount = $allPdls->count();
+        } else {
+            $allPdls = \App\Models\Inmate::all();
+            $totalPdlCount = $allPdls->count();
+        }
+        $unvisitedPdlCount = max(0, $totalPdlCount - $visitedPdlCount);
+
+        $pdlList = $allPdls->map(function($inmate) use ($visitedInmateIds) {
+            return [
+                'id' => $inmate->id,
+                'inmate_number' => $inmate->inmate_number,
+                'name' => trim("{$inmate->last_name}, {$inmate->first_name} {$inmate->middle_name}"),
+                'status' => in_array($inmate->id, $visitedInmateIds) ? 'visited' : 'unvisited',
+            ];
+        });
+
+        $sessions = $visitSessions->map(function (VisitSession $session) {
                 $visitor = $session->visit?->user ?? $session->eburol?->user;
                 $inmateName = $session->visit
                     ? trim("{$session->visit->inmate_first_name} {$session->visit->inmate_middle_name} {$session->visit->inmate_last_name}")
                     : ($session->eburol
                         ? trim("{$session->eburol->inmate_first_name} {$session->eburol->inmate_middle_name} {$session->eburol->inmate_last_name}")
                         : '—');
+
+                $cellNumber = $session->visit?->inmate?->cell?->cell_number ?? $session->eburol?->inmate?->cell?->cell_number ?? '—';
 
                 $scheduledDate = null;
                 $scheduledTime = null;
@@ -93,6 +137,7 @@ class AssignedSessionsController extends Controller
                     'visitor_name' => $visitor ? trim("{$visitor->first_name} {$visitor->middle_name} {$visitor->last_name}") : null,
                     'inmate_name' => $inmateName,
                     'type' => $session->session_type,
+                    'cell_number' => $cellNumber,
                     'scheduled_start' => $session->scheduled_start->toIso8601String(),
                     'scheduled_end' => $session->scheduled_end->toIso8601String(),
                     'scheduled_date' => $scheduledDate,
@@ -131,14 +176,23 @@ class AssignedSessionsController extends Controller
                 ['type' => 'Visits', 'count' => $stats['visit_sessions']],
                 ['type' => 'E-Burols', 'count' => $stats['eburol_sessions']],
             ],
+            'pdl_visitation' => [
+                ['status' => 'Visited PDL', 'count' => $visitedPdlCount],
+                ['status' => 'Unvisited PDL', 'count' => $unvisitedPdlCount],
+            ],
         ];
 
         return Inertia::render('JailOfficer/AssignedSessions', [
             'sessions' => $sessions,
+            'pdlList' => $pdlList,
             'stats' => $stats,
             'chartData' => $chartData,
             'filters' => [
                 'type' => $typeFilter ?? 'all',
+                'start_date' => $startDateFilter ?? '',
+                'end_date' => $endDateFilter ?? '',
+                'month' => $monthFilter ?? '',
+                'year' => $yearFilter ?? '',
             ],
             'userRole' => 'jail_officer',
         ]);

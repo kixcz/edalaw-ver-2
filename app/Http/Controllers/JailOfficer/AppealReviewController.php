@@ -114,7 +114,7 @@ class AppealReviewController extends Controller
             'rejected' => Appeal::where('status', AppealStatus::Rejected)->count(),
         ];
 
-        return Inertia::render('BjmpOfficer/AppealReview', [
+        return Inertia::render('JailOfficer/AppealReview', [
             'appeals' => $appeals,
             'stats' => $stats,
         ]);

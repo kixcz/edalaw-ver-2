@@ -88,7 +88,7 @@ class InmateManagementController extends Controller
             'first_name' => 'required|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'last_name' => 'required|string|max:100',
-            'inmate_number' => 'required|string|max:50|unique:inmates',
+            'inmate_number' => 'nullable|string|max:50|unique:inmates',
             'date_of_birth' => 'nullable|date',
             'status' => 'required|in:active,inactive,released',
         ]);
@@ -114,7 +114,7 @@ class InmateManagementController extends Controller
             'first_name' => 'required|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'last_name' => 'required|string|max:100',
-            'inmate_number' => 'required|string|max:50|unique:inmates,inmate_number,' . $inmate->id,
+            'inmate_number' => 'nullable|string|max:50|unique:inmates,inmate_number,' . $inmate->id,
             'date_of_birth' => 'nullable|date',
             'status' => 'required|in:active,inactive,released',
         ]);
@@ -165,5 +165,38 @@ class InmateManagementController extends Controller
         $inmate->update(['cell_id' => $validated['cell_id']]);
 
         return redirect()->back()->with('success', 'Inmate transferred successfully to ' . $cell->cell_number);
+    }
+
+    /**
+     * Store multiple inmates from a CSV file.
+     */
+    public function bulkStore(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt,xls,xlsx|max:2048',
+        ]);
+
+        $import = new \App\Imports\PdlImport();
+        \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+        $successCount = $import->successCount;
+        $errors = $import->errors;
+
+        if (count($errors) > 0) {
+            $errorSummary = implode(' ', array_slice($errors, 0, 3)) . (count($errors) > 3 ? '...' : '');
+            return redirect()->back()->with('error', "Imported $successCount records. " . count($errors) . " errors occurred: $errorSummary");
+        }
+
+        return redirect()->back()->with('success', "Successfully imported $successCount PDLs.");
+    }
+
+    /**
+     * Download Excel template for bulk importing inmates.
+     */
+    public function downloadTemplate()
+    {
+        $cells = \App\Models\Cell::active()->orderBy('cell_number')->pluck('cell_number')->toArray();
+        $filename = 'pdl_bulk_import_template_' . time() . '.xlsx';
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\PdlTemplateExport($cells), $filename);
     }
 }

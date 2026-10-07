@@ -24,6 +24,8 @@ class CellScheduleTemplateController extends Controller
                 $schedules[$template->day_of_week] = [
                     'virtual_available' => $template->virtual_available,
                     'physical_available' => $template->physical_available,
+                    'start_time' => $template->start_time,
+                    'end_time' => $template->end_time,
                 ];
             }
 
@@ -61,6 +63,8 @@ class CellScheduleTemplateController extends Controller
             'schedules.*.day_of_week' => 'required|integer|between:0,6',
             'schedules.*.virtual_available' => 'required|boolean',
             'schedules.*.physical_available' => 'required|boolean',
+            'schedules.*.start_time' => 'nullable|date_format:H:i',
+            'schedules.*.end_time' => 'nullable|date_format:H:i|after:schedules.*.start_time',
         ]);
 
         foreach ($validated['schedules'] as $schedule) {
@@ -72,6 +76,8 @@ class CellScheduleTemplateController extends Controller
                 [
                     'virtual_available' => $schedule['virtual_available'],
                     'physical_available' => $schedule['physical_available'],
+                    'start_time' => $schedule['start_time'] ?? null,
+                    'end_time' => $schedule['end_time'] ?? null,
                 ]
             );
         }
@@ -107,6 +113,8 @@ class CellScheduleTemplateController extends Controller
             'cell_schedules.*.schedules.*.day_of_week' => 'required|integer|between:0,6',
             'cell_schedules.*.schedules.*.virtual_available' => 'required|boolean',
             'cell_schedules.*.schedules.*.physical_available' => 'required|boolean',
+            'cell_schedules.*.schedules.*.start_time' => 'nullable|date_format:H:i',
+            'cell_schedules.*.schedules.*.end_time' => 'nullable|date_format:H:i|after:cell_schedules.*.schedules.*.start_time',
         ]);
 
         foreach ($validated['cell_schedules'] as $cellSchedule) {
@@ -119,6 +127,8 @@ class CellScheduleTemplateController extends Controller
                     [
                         'virtual_available' => $schedule['virtual_available'],
                         'physical_available' => $schedule['physical_available'],
+                        'start_time' => $schedule['start_time'] ?? null,
+                        'end_time' => $schedule['end_time'] ?? null,
                     ]
                 );
             }

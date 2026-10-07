@@ -187,8 +187,8 @@ export function TimeSlotPicker({
             
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'AM' | 'PM')} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="AM">AM (7:00 AM - 12:00 PM)</TabsTrigger>
-                    <TabsTrigger value="PM">PM (12:00 PM - 6:00 PM)</TabsTrigger>
+                    <TabsTrigger value="AM">AM Slots</TabsTrigger>
+                    <TabsTrigger value="PM">PM Slots</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="AM" className="mt-4">

@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell as RechartsCell } from 'recharts';
-import { Users, Plus, Pencil, Trash2, MoreVertical, List, BarChart2, CheckCircle2, AlertCircle, ArrowRightLeft } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, MoreVertical, List, BarChart2, CheckCircle2, AlertCircle, ArrowRightLeft, Upload, Download } from 'lucide-react';
+import { useRef } from 'react';
 
 type Cell = { id: number; cell_number: string; capacity: number };
 type Inmate = {
@@ -62,6 +63,7 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isTransferOpen, setIsTransferOpen] = useState(false);
     const [selected, setSelected] = useState<Inmate | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const createForm = useForm({ cell_id: '', first_name: '', middle_name: '', last_name: '', inmate_number: '', date_of_birth: '', status: 'active' });
     const editForm = useForm({ cell_id: '', first_name: '', middle_name: '', last_name: '', inmate_number: '', date_of_birth: '', status: 'active' });
@@ -78,6 +80,22 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
     const openDelete = (i: Inmate) => { setSelected(i); setIsDeleteOpen(true); };
     const openTransfer = (i: Inmate) => { setSelected(i); transferForm.setData({ cell_id: '' }); setIsTransferOpen(true); };
 
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        router.post('/jail-officer/inmates/bulk', formData as any, {
+            forceFormData: true,
+            preserveScroll: true,
+            onFinish: () => {
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            }
+        });
+    };
+
     return (
         <AppLayout user={{ first_name: '', last_name: '', middle_name: '', role: { name: 'Jail Officer' } }}>
             <Head title="PDL Management" />
@@ -91,9 +109,26 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                                 <p className="text-xs text-muted-foreground mt-0.5">Manage persons deprived of liberty</p>
                             </div>
                         </div>
-                        <Button onClick={openCreate} className="bg-red-600 hover:bg-red-700 text-white shadow-sm gap-1.5 text-sm">
-                            <Plus className="w-4 h-4" />Add PDL
-                        </Button>
+                        <div className="flex gap-2">
+                            <input 
+                                type="file" 
+                                accept=".csv, .xlsx, .xls" 
+                                className="hidden" 
+                                ref={fileInputRef} 
+                                onChange={handleFileUpload} 
+                            />
+                            <a href={`/jail-officer/inmates/bulk/template?t=${Date.now()}`} download>
+                                <Button variant="outline" className="bg-white hover:bg-muted text-foreground shadow-sm gap-1.5 text-sm h-9">
+                                    <Download className="w-4 h-4" />Template
+                                </Button>
+                            </a>
+                            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="bg-white hover:bg-muted text-foreground shadow-sm gap-1.5 text-sm h-9">
+                                <Upload className="w-4 h-4" />Bulk Import
+                            </Button>
+                            <Button onClick={openCreate} className="bg-red-600 hover:bg-red-700 text-white shadow-sm gap-1.5 text-sm h-9">
+                                <Plus className="w-4 h-4" />Add PDL
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -143,8 +178,7 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="bg-muted/80 hover:bg-muted/80">
-                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pl-6">Inmate Number</TableHead>
-                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name</TableHead>
+                                                <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pl-6">Name</TableHead>
                                                 <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cell</TableHead>
                                                 <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</TableHead>
                                                 <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pr-6 text-right">Actions</TableHead>
@@ -153,8 +187,7 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                                         <TableBody>
                                             {inmates.data.map((i) => (
                                                 <TableRow key={i.id} className="hover:bg-muted transition-colors group">
-                                                    <TableCell className="pl-6"><span className="font-mono text-xs bg-muted text-foreground/80 px-2 py-1 rounded">{i.inmate_number}</span></TableCell>
-                                                    <TableCell>
+                                                    <TableCell className="pl-6">
                                                         <div>
                                                             <span className="font-semibold text-foreground text-sm">{i.last_name}, {i.first_name}</span>
                                                             {i.middle_name && <span className="text-muted-foreground text-xs ml-1">{i.middle_name}</span>}
@@ -249,7 +282,7 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                                     <div className="space-y-2"><Label>Last Name</Label><Input value={createForm.data.last_name} onChange={(e) => createForm.setData('last_name', e.target.value)} required /></div>
                                 </div>
                                 <div className="space-y-2"><Label>Middle Name</Label><Input value={createForm.data.middle_name} onChange={(e) => createForm.setData('middle_name', e.target.value)} /></div>
-                                <div className="space-y-2"><Label>Inmate Number</Label><Input value={createForm.data.inmate_number} onChange={(e) => createForm.setData('inmate_number', e.target.value)} required /></div>
+                                <div className="space-y-2"><Label>Inmate Number</Label><Input value={createForm.data.inmate_number} onChange={(e) => createForm.setData('inmate_number', e.target.value)} /></div>
                                 <div className="space-y-2"><Label>Cell</Label>
                                     <Select value={createForm.data.cell_id} onValueChange={(v) => createForm.setData('cell_id', v)}>
                                         <SelectTrigger><SelectValue placeholder="Select cell" /></SelectTrigger>
@@ -282,7 +315,7 @@ export default function InmateManagement({ inmates, cells, stats, chartData, fil
                                     <div className="space-y-2"><Label>Last Name</Label><Input value={editForm.data.last_name} onChange={(e) => editForm.setData('last_name', e.target.value)} required /></div>
                                 </div>
                                 <div className="space-y-2"><Label>Middle Name</Label><Input value={editForm.data.middle_name} onChange={(e) => editForm.setData('middle_name', e.target.value)} /></div>
-                                <div className="space-y-2"><Label>Inmate Number</Label><Input value={editForm.data.inmate_number} onChange={(e) => editForm.setData('inmate_number', e.target.value)} required /></div>
+                                <div className="space-y-2"><Label>Inmate Number</Label><Input value={editForm.data.inmate_number} onChange={(e) => editForm.setData('inmate_number', e.target.value)} /></div>
                                 <div className="space-y-2"><Label>Cell</Label>
                                     <Select value={editForm.data.cell_id} onValueChange={(v) => editForm.setData('cell_id', v)}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>

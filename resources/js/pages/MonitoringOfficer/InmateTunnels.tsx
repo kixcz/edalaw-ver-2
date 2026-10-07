@@ -61,12 +61,15 @@ export default function MonitoringOfficerInmateTunnels({ tunnels, filters: initi
 
     const columns: ColumnDef<TunnelRow>[] = useMemo(
         () => [
-            { accessorKey: 'created_at', header: 'Created', cell: ({ row }) => row.original.created_at.slice(0, 19).replace('T', ' ') },
+            { accessorKey: 'created_at', header: 'Created', cell: ({ row }) => {
+                const d = new Date(row.original.created_at);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+            } },
             { accessorKey: 'visit_session_id', header: 'Session ID', cell: ({ row }) => <span className="font-mono text-sm">{row.original.visit_session_id}</span> },
             { accessorKey: 'session_type', header: 'Type', cell: ({ row }) => <span className="capitalize">{row.original.session_type}</span> },
             {
                 accessorKey: 'short_code',
-                header: 'Inmate tunnel code',
+                header: 'PDL tunnel code',
                 cell: ({ row }) => {
                     const code = row.original.short_code;
                     const link = row.original.tunnel_link ?? '';
@@ -94,7 +97,11 @@ export default function MonitoringOfficerInmateTunnels({ tunnels, filters: initi
             },
             { accessorKey: 'visitor_name', header: 'Visitor', cell: ({ row }) => row.original.visitor_name ?? '—' },
             { accessorKey: 'inmate_name', header: 'Inmate', cell: ({ row }) => row.original.inmate_name ?? '—' },
-            { accessorKey: 'expires_at', header: 'Expires', cell: ({ row }) => <div><div className="text-sm">{row.original.expires_at.slice(0, 16).replace('T', ' ')}</div><div className="text-xs text-muted-foreground">{row.original.expires_at_human}</div></div> },
+            { accessorKey: 'expires_at', header: 'Expires', cell: ({ row }) => {
+                const d = new Date(row.original.expires_at);
+                const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                return <div><div className="text-sm">{formatted}</div><div className="text-xs text-muted-foreground">{row.original.expires_at_human}</div></div>;
+            } },
             { accessorKey: 'status', header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> },
         ],
         [copy]

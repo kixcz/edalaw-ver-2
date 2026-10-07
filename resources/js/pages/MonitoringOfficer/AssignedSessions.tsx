@@ -319,10 +319,10 @@ export default function AssignedSessions({ sessions, filters: initialFilters, us
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Assigned Sessions" />
+            <Head title="Virtual Sessions" />
             <div className="flex flex-col gap-4 p-4">
                 <div>
-                    <h1 className="text-2xl font-semibold">Assigned Sessions</h1>
+                    <h1 className="text-2xl font-semibold">Virtual Sessions</h1>
                     <p className="text-muted-foreground">Manage your assigned visit and e-burol video sessions.</p>
                 </div>
                 <Card>

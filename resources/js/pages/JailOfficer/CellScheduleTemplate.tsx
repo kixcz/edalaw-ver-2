@@ -42,6 +42,8 @@ import { cn } from '@/lib/utils';
 type ScheduleDay = {
     virtual_available: boolean;
     physical_available: boolean;
+    start_time: string | null;
+    end_time: string | null;
 };
 
 type Cell = {
@@ -82,7 +84,7 @@ type ApplyTarget = 'all' | 'selected' | 'single';
 
 function emptyWeek(): Record<number, ScheduleDay> {
     const week: Record<number, ScheduleDay> = {};
-    DAYS.forEach((d) => (week[d] = { virtual_available: false, physical_available: false }));
+    DAYS.forEach((d) => (week[d] = { virtual_available: false, physical_available: false, start_time: '09:00', end_time: '16:00' }));
     return week;
 }
 
@@ -94,6 +96,8 @@ function buildScheduleMap(cells: Cell[]): Record<number, Record<number, Schedule
             week[day] = {
                 virtual_available: cell.schedules[day]?.virtual_available ?? false,
                 physical_available: cell.schedules[day]?.physical_available ?? false,
+                start_time: cell.schedules[day]?.start_time ? cell.schedules[day].start_time.substring(0, 5) : '09:00',
+                end_time: cell.schedules[day]?.end_time ? cell.schedules[day].end_time.substring(0, 5) : '16:00',
             };
         });
         map[cell.id] = week;
@@ -105,7 +109,9 @@ function weekEquals(a: Record<number, ScheduleDay>, b: Record<number, ScheduleDa
     return DAYS.every(
         (d) =>
             a[d].virtual_available === b[d].virtual_available &&
-            a[d].physical_available === b[d].physical_available
+            a[d].physical_available === b[d].physical_available &&
+            a[d].start_time === b[d].start_time &&
+            a[d].end_time === b[d].end_time
     );
 }
 
@@ -181,6 +187,13 @@ export default function CellScheduleTemplate({ cells, dayNames, settings }: Prop
         setBuilderWeek((prev) => ({
             ...prev,
             [day]: { ...prev[day], [`${type}_available`]: !prev[day][`${type}_available`] },
+        }));
+    };
+
+    const handleTimeChange = (day: number, field: 'start_time' | 'end_time', value: string) => {
+        setBuilderWeek((prev) => ({
+            ...prev,
+            [day]: { ...prev[day], [field]: value },
         }));
     };
 
@@ -260,6 +273,8 @@ export default function CellScheduleTemplate({ cells, dayNames, settings }: Prop
                 day_of_week: day,
                 virtual_available: schedules[cellId][day].virtual_available,
                 physical_available: schedules[cellId][day].physical_available,
+                start_time: schedules[cellId][day].start_time,
+                end_time: schedules[cellId][day].end_time,
             })),
         }));
 
@@ -613,7 +628,7 @@ export default function CellScheduleTemplate({ cells, dayNames, settings }: Prop
                     </DialogHeader>
 
                     <div className="space-y-5 py-2 overflow-y-auto flex-1 min-h-0 pr-1">
-                        <DayGrid week={builderWeek} onToggle={toggleBuilderDay} onBulk={bulkBuilder} />
+                        <DayGrid week={builderWeek} onToggle={toggleBuilderDay} onTimeChange={handleTimeChange} onBulk={bulkBuilder} />
 
                         {builderHasAny && (
                             <div className="flex justify-end">
@@ -716,10 +731,12 @@ export default function CellScheduleTemplate({ cells, dayNames, settings }: Prop
 function DayGrid({
     week,
     onToggle,
+    onTimeChange,
     onBulk,
 }: {
     week: Record<number, ScheduleDay>;
     onToggle: (day: number, type: VisitType) => void;
+    onTimeChange: (day: number, field: 'start_time' | 'end_time', value: string) => void;
     onBulk: (days: number[], type: VisitType) => void;
 }) {
     const rows: { type: VisitType; label: string; icon: React.ReactNode }[] = [
@@ -797,6 +814,42 @@ function DayGrid({
                         </td>
                     </tr>
                 ))}
+                <tr className="border-t bg-muted/10">
+                    <td className="py-2.5 pr-2">
+                        <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                            Start Time
+                        </span>
+                    </td>
+                    {DAYS.map((day) => (
+                        <td key={day} className="py-1.5 text-center">
+                            <input
+                                type="time"
+                                value={week[day].start_time || ''}
+                                onChange={(e) => onTimeChange(day, 'start_time', e.target.value)}
+                                className="h-8 w-[4.5rem] rounded-md border border-input bg-background px-1 text-[11px]"
+                            />
+                        </td>
+                    ))}
+                    <td></td>
+                </tr>
+                <tr className="border-t bg-muted/10">
+                    <td className="py-2.5 pr-2">
+                        <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                            End Time
+                        </span>
+                    </td>
+                    {DAYS.map((day) => (
+                        <td key={day} className="py-1.5 text-center">
+                            <input
+                                type="time"
+                                value={week[day].end_time || ''}
+                                onChange={(e) => onTimeChange(day, 'end_time', e.target.value)}
+                                className="h-8 w-[4.5rem] rounded-md border border-input bg-background px-1 text-[11px]"
+                            />
+                        </td>
+                    ))}
+                    <td></td>
+                </tr>
             </tbody>
         </table>
     );

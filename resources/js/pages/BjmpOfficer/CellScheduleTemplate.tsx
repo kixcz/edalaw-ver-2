@@ -25,6 +25,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 type ScheduleDay = {
     virtual_available: boolean;
     physical_available: boolean;
+    start_time: string | null;
+    end_time: string | null;
 };
 
 type Cell = {
@@ -53,6 +55,8 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
             initialSchedules[cell.id][day] = {
                 virtual_available: cell.schedules[day]?.virtual_available ?? false,
                 physical_available: cell.schedules[day]?.physical_available ?? false,
+                start_time: cell.schedules[day]?.start_time ? cell.schedules[day].start_time.substring(0, 5) : '09:00',
+                end_time: cell.schedules[day]?.end_time ? cell.schedules[day].end_time.substring(0, 5) : '16:00',
             };
         });
     });
@@ -77,6 +81,24 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
         }));
     };
 
+    const handleTimeChange = (
+        cellId: number,
+        day: number,
+        type: 'start_time' | 'end_time',
+        value: string
+    ) => {
+        setSchedules((prev) => ({
+            ...prev,
+            [cellId]: {
+                ...prev[cellId],
+                [day]: {
+                    ...prev[cellId][day],
+                    [type]: value,
+                },
+            },
+        }));
+    };
+
     const handleSaveCell = (cellId: number) => {
         setSavingCellId(cellId);
         const cellSchedules = schedules[cellId];
@@ -84,6 +106,8 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
             day_of_week: day,
             virtual_available: cellSchedules[day].virtual_available,
             physical_available: cellSchedules[day].physical_available,
+            start_time: cellSchedules[day].start_time,
+            end_time: cellSchedules[day].end_time,
         }));
 
         router.put(
@@ -218,7 +242,7 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
                                             ))}
                                         </div>
                                         {/* Physical visits row */}
-                                        <div className="grid grid-cols-8 gap-2 items-center">
+                                        <div className="grid grid-cols-8 gap-2 items-center mt-2">
                                             <div className="flex items-center gap-2 text-sm">
                                                 <UserCheck className="h-4 w-4 text-green-500" />
                                                 <span>Physical</span>
@@ -242,6 +266,30 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
                                                 </div>
                                             ))}
                                         </div>
+
+                                        {/* Time settings row */}
+                                        <div className="grid grid-cols-8 gap-2 items-center mt-4">
+                                            <div className="flex flex-col gap-2 text-[11px] font-medium text-muted-foreground mt-4">
+                                                <div>Start Time</div>
+                                                <div className="mt-5">End Time</div>
+                                            </div>
+                                            {DAYS.map((day) => (
+                                                <div key={day} className="flex flex-col gap-2 items-center">
+                                                    <input
+                                                        type="time"
+                                                        value={schedules[cell.id]?.[day]?.start_time || ''}
+                                                        onChange={(e) => handleTimeChange(cell.id, day, 'start_time', e.target.value)}
+                                                        className="h-8 w-[4.5rem] rounded-md border border-input bg-background px-1 text-[11px]"
+                                                    />
+                                                    <input
+                                                        type="time"
+                                                        value={schedules[cell.id]?.[day]?.end_time || ''}
+                                                        onChange={(e) => handleTimeChange(cell.id, day, 'end_time', e.target.value)}
+                                                        className="h-8 w-[4.5rem] rounded-md border border-input bg-background px-1 text-[11px]"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
 
                                     {/* Summary */}
@@ -259,7 +307,7 @@ export default function CellScheduleTemplate({ cells, dayNames }: Props) {
                                                     className="flex items-center gap-1 text-xs"
                                                 >
                                                     <span className="font-medium">
-                                                        {dayNames[day]}:
+                                                        {dayNames[day]} ({schedule?.start_time} - {schedule?.end_time}):
                                                     </span>
                                                     {hasVirtual && (
                                                         <Badge

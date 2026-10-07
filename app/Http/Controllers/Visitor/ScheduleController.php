@@ -226,6 +226,23 @@ class ScheduleController extends Controller
         $startTime = $settings?->start_time?->format('H:i') ?? '07:00';
         $endTime = $settings?->end_time?->format('H:i') ?? ($isPhysical ? '18:00' : '22:00');
         
+        // Override with Cell Schedule Template times if available
+        if ($request->inmate_id) {
+            $inmate = \App\Models\Inmate::with('cell.scheduleTemplates')->find($request->inmate_id);
+            if ($inmate && $inmate->cell) {
+                $dayOfWeek = $dateCarbon->dayOfWeek; // 0 (Sunday) to 6 (Saturday)
+                $template = $inmate->cell->scheduleTemplates->where('day_of_week', $dayOfWeek)->first();
+                if ($template) {
+                    if ($template->start_time) {
+                        $startTime = \Carbon\Carbon::parse($template->start_time)->format('H:i');
+                    }
+                    if ($template->end_time) {
+                        $endTime = \Carbon\Carbon::parse($template->end_time)->format('H:i');
+                    }
+                }
+            }
+        }
+        
         \Log::info('Time config from time_slot_capacities (branch-scoped): ' . json_encode([
             'branch_id' => $userBranchId,
             'visit_type' => $visitType,

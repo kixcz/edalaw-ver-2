@@ -29,8 +29,8 @@ export function NavMain({ items = [], groups = [] }: NavMainProps) {
             <>
                 {groups.map((group, groupIndex) => (
                     <SidebarGroup key={groupIndex} className="px-2 py-0">
-                        <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-                        <SidebarMenu>
+                        <SidebarGroupLabel className="font-bold text-foreground">{group.label}</SidebarGroupLabel>
+                        <SidebarMenu className="w-auto border-l border-border ml-3 pl-2 group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:pl-0">
                             {group.items.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton
@@ -60,8 +60,8 @@ export function NavMain({ items = [], groups = [] }: NavMainProps) {
     // Default: render flat items with "Platform" label
     return (
         <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
-            <SidebarMenu>
+            <SidebarGroupLabel className="font-bold text-foreground">Platform</SidebarGroupLabel>
+            <SidebarMenu className="w-auto border-l border-border ml-3 pl-2 group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:pl-0">
                 {items.map((item) => (
                     <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton

@@ -96,7 +96,7 @@ class CellManagementController extends Controller
             ])->filter(fn($d) => $d['capacity'] > 0),
         ];
 
-        return Inertia::render('BjmpOfficer/CellManagement', [
+        return Inertia::render('JailOfficer/CellManagement', [
             'cells' => $cells,
             'jails' => $jails,
             'dormitories' => $dormitories,

@@ -45,6 +45,8 @@ class CellScheduleTemplate extends Model
         'virtual_available',
         'physical_available',
         'time_slots',
+        'start_time',
+        'end_time',
     ];
 
     /**

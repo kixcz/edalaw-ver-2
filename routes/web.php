@@ -664,6 +664,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         // Inmate Management
         Route::get('inmates', [\App\Http\Controllers\BjmpOfficer\InmateManagementController::class, 'index'])
             ->name('inmates.index');
+        Route::get('inmates/bulk/template', [\App\Http\Controllers\BjmpOfficer\InmateManagementController::class, 'downloadTemplate'])
+            ->name('inmates.bulk-template');
+        Route::post('inmates/bulk', [\App\Http\Controllers\BjmpOfficer\InmateManagementController::class, 'bulkStore'])
+            ->name('inmates.bulk');
         Route::post('inmates', [\App\Http\Controllers\BjmpOfficer\InmateManagementController::class, 'store'])
             ->name('inmates.store');
         Route::put('inmates/{inmate}', [\App\Http\Controllers\BjmpOfficer\InmateManagementController::class, 'update'])
@@ -718,6 +722,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         // Enhanced Inmate Management with hierarchical filtering
         Route::get('inmates-hierarchical', [\App\Http\Controllers\JailOfficer\InmateManagementController::class, 'index'])
             ->name('inmates.hierarchical');
+        Route::get('inmates-hierarchical/bulk/template', [\App\Http\Controllers\JailOfficer\InmateManagementController::class, 'downloadTemplate'])
+            ->name('inmates.hierarchical-bulk-template');
+        Route::post('inmates-hierarchical/bulk', [\App\Http\Controllers\JailOfficer\InmateManagementController::class, 'bulkStore'])
+            ->name('inmates.hierarchical-bulk');
         Route::post('inmates-hierarchical', [\App\Http\Controllers\JailOfficer\InmateManagementController::class, 'store'])
             ->name('inmates.hierarchical-store');
         Route::put('inmates-hierarchical/{inmate}', [\App\Http\Controllers\JailOfficer\InmateManagementController::class, 'update'])

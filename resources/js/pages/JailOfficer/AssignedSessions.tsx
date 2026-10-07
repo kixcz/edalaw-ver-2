@@ -1,6 +1,6 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Camera, Eye, Lock, Mic, MicOff, MoreVertical, Power, Video, VideoOff, List, BarChart2, Calendar, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Camera, Eye, Lock, Mic, MicOff, MoreVertical, Power, Video, VideoOff, List, BarChart2, Calendar as CalendarIcon, CheckCircle2, Clock, AlertCircle, Printer } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell as RechartsCell } from 'recharts';
 
@@ -9,6 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import {
     Dialog,
     DialogContent,
@@ -65,6 +70,7 @@ type Session = {
     visitor_name: string | null;
     inmate_name: string;
     type: string;
+    cell_number: string;
     scheduled_start: string;
     scheduled_end: string;
     scheduled_date: string | null;
@@ -115,14 +121,43 @@ function getStatusBadge(status: string) {
 type Props = {
     sessions: Session[];
     stats: { total_sessions: number; active_sessions: number; scheduled_sessions: number; completed_sessions: number; visit_sessions: number; eburol_sessions: number };
-    chartData: { sessions_by_status: { status: string; count: number }[]; sessions_by_type: { type: string; count: number }[] };
-    filters?: { type: string };
+    chartData: { 
+        sessions_by_status: { status: string; count: number }[]; 
+        sessions_by_type: { type: string; count: number }[];
+        pdl_visitation: { status: string; count: number }[];
+    };
+    pdlList: { id: number; inmate_number: string; name: string; status: 'visited' | 'unvisited' }[];
+    filters?: { type: string; start_date: string; end_date: string; month: string; year: string };
 };
 
-export default function AssignedSessions({ sessions, stats, chartData, filters: initialFilters }: Props) {
+export default function AssignedSessions({ sessions, stats, chartData, pdlList = [], filters: initialFilters }: Props) {
     useToast();
+    const { auth } = usePage().props as any;
+    const userFullName = auth?.user ? `${auth.user.first_name || ''} ${auth.user.last_name || ''}`.trim() : 'System User';
+    
     const [typeFilter, setTypeFilter] = useState(initialFilters?.type ?? 'all');
+    const [startDateFilter, setStartDateFilter] = useState(initialFilters?.start_date ?? '');
+    const [endDateFilter, setEndDateFilter] = useState(initialFilters?.end_date ?? '');
+    const [monthFilter, setMonthFilter] = useState(initialFilters?.month ?? '');
+    const [yearFilter, setYearFilter] = useState(initialFilters?.year ?? '');
     const [beforeScheduleSession, setBeforeScheduleSession] = useState<Session | null>(null);
+
+    const [pdlStatusFilter, setPdlStatusFilter] = useState<'all' | 'visited' | 'unvisited'>('all');
+
+    const handleApplyFilters = () => {
+        router.get('/jail-officer/assigned-sessions', {
+            type: typeFilter !== 'all' ? typeFilter : undefined,
+            start_date: startDateFilter || undefined,
+            end_date: endDateFilter || undefined,
+            month: monthFilter || undefined,
+            year: yearFilter || undefined,
+        }, { preserveState: true, preserveScroll: true });
+    };
+
+    const filteredPdls = useMemo(() => {
+        if (pdlStatusFilter === 'all') return pdlList;
+        return pdlList.filter(p => p.status === pdlStatusFilter);
+    }, [pdlList, pdlStatusFilter]);
 
     const columns: ColumnDef<Session>[] = useMemo(() => [
         {
@@ -313,17 +348,71 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
 
     return (
         <AppLayout>
-            <Head title="Assigned Sessions" />
+            <Head title="Virtual Sessions" />
             <div className="min-h-screen bg-background">
                 {/* Header */}
                 <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
                     <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-primary rounded-xl"><Calendar className="w-5 h-5 text-white" /></div>
+                            <div className="p-2 bg-primary rounded-xl"><CalendarIcon className="w-5 h-5 text-white" /></div>
                             <div>
-                                <h1 className="text-lg font-bold text-foreground leading-none">Assigned Sessions</h1>
+                                <h1 className="text-lg font-bold text-foreground leading-none">Virtual Sessions</h1>
                                 <p className="text-xs text-muted-foreground mt-0.5">Monitor virtual visits and e-burol sessions in your assigned areas</p>
                             </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground mr-1 hidden sm:inline-block">From:</span>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant={"outline"} className={cn("w-[140px] h-9 justify-start text-left font-normal bg-white", !startDateFilter && "text-muted-foreground")}>
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {startDateFilter ? format(new Date(startDateFilter + 'T12:00:00'), "PPP") : <span>Select date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar mode="single" selected={startDateFilter ? new Date(startDateFilter + 'T12:00:00') : undefined} onSelect={(date) => setStartDateFilter(date ? format(date, "yyyy-MM-dd") : '')} initialFocus />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground mr-1 hidden sm:inline-block">To:</span>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant={"outline"} className={cn("w-[140px] h-9 justify-start text-left font-normal bg-white", !endDateFilter && "text-muted-foreground")}>
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {endDateFilter ? format(new Date(endDateFilter + 'T12:00:00'), "PPP") : <span>Select date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar mode="single" selected={endDateFilter ? new Date(endDateFilter + 'T12:00:00') : undefined} onSelect={(date) => setEndDateFilter(date ? format(date, "yyyy-MM-dd") : '')} initialFocus />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <div className="w-px h-6 bg-border mx-1 hidden sm:block"></div>
+                            <Select value={monthFilter} onValueChange={setMonthFilter}>
+                                <SelectTrigger className="w-[120px] h-9"><SelectValue placeholder="Month" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">Any Month</SelectItem>
+                                    {Array.from({ length: 12 }, (_, i) => (
+                                        <SelectItem key={i + 1} value={String(i + 1)}>{new Date(0, i).toLocaleString('default', { month: 'short' })}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={yearFilter} onValueChange={setYearFilter}>
+                                <SelectTrigger className="w-[100px] h-9"><SelectValue placeholder="Year" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">Any Year</SelectItem>
+                                    {Array.from({ length: 5 }, (_, i) => (
+                                        <SelectItem key={i} value={String(new Date().getFullYear() - i)}>{new Date().getFullYear() - i}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button onClick={() => {
+                                if (monthFilter === 'none') setMonthFilter('');
+                                if (yearFilter === 'none') setYearFilter('');
+                                handleApplyFilters();
+                            }} className="h-9 bg-primary text-white">Filter</Button>
                         </div>
                     </div>
                 </div>
@@ -331,7 +420,7 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
                 <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
                     {/* KPI Cards */}
                     <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatCard icon={<Calendar className="w-5 h-5" />} value={stats.total_sessions} label="Total Sessions" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
+                        <StatCard icon={<CalendarIcon className="w-5 h-5" />} value={stats.total_sessions} label="Total Sessions" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
                         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} value={stats.active_sessions} label="Active" accent="bg-emerald-600" iconBg="bg-emerald-50" iconColor="text-emerald-600" />
                         <StatCard icon={<Clock className="w-5 h-5" />} value={stats.scheduled_sessions} label="Scheduled" accent="bg-amber-600" iconBg="bg-amber-50" iconColor="text-amber-600" />
                         <StatCard icon={<CheckCircle2 className="w-5 h-5" />} value={stats.completed_sessions} label="Completed" accent="bg-blue-600" iconBg="bg-blue-50" iconColor="text-blue-600" />
@@ -355,16 +444,31 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
                                         <h3 className="font-semibold text-foreground">Session Records</h3>
                                         <p className="text-xs text-muted-foreground mt-0.5">{filteredSessions.length} of {sessions.length} sessions</p>
                                     </div>
-                                    <Select value={typeFilter} onValueChange={setTypeFilter}>
-                                        <SelectTrigger className="w-[180px] h-9">
-                                            <SelectValue placeholder="Session type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All sessions</SelectItem>
-                                            <SelectItem value="visit">Virtual visit</SelectItem>
-                                            <SelectItem value="eburol">E-Burol</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => window.print()} className="h-9 hidden sm:flex">
+                                            <Printer className="w-4 h-4 mr-2" />
+                                            Print Visits
+                                        </Button>
+                                        <Select value={typeFilter} onValueChange={(val) => {
+                                            setTypeFilter(val);
+                                            router.get('/jail-officer/assigned-sessions', {
+                                                type: val !== 'all' ? val : undefined,
+                                                start_date: startDateFilter || undefined,
+                                                end_date: endDateFilter || undefined,
+                                                month: monthFilter || undefined,
+                                                year: yearFilter || undefined,
+                                            }, { preserveState: true, preserveScroll: true });
+                                        }}>
+                                            <SelectTrigger className="w-[180px] h-9">
+                                                <SelectValue placeholder="Session type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All sessions</SelectItem>
+                                                <SelectItem value="visit">Virtual visit</SelectItem>
+                                                <SelectItem value="eburol">E-Burol</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                                 <div className="p-6">
                                     <DataTable
@@ -379,7 +483,32 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
                         </TabsContent>
 
                         <TabsContent value="analytics">
-                            <div className="grid gap-4 md:grid-cols-2">
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                <Card className="border-0 shadow-sm">
+                                    <div className="px-6 pt-5 pb-2 border-b border-border">
+                                        <h4 className="font-semibold text-foreground text-sm">PDL Visitation</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Visited vs Unvisited PDLs in scope</p>
+                                    </div>
+                                    <CardContent className="p-4 pt-5">
+                                        <ResponsiveContainer width="100%" height={280}>
+                                            <PieChart>
+                                                <Pie 
+                                                    data={chartData.pdl_visitation} 
+                                                    dataKey="count" 
+                                                    nameKey="status" 
+                                                    cx="50%" 
+                                                    cy="50%" 
+                                                    outerRadius={90}
+                                                    label={({ value, percent }) => value > 0 ? `${value} (${(percent * 100).toFixed(0)}%)` : ''}
+                                                >
+                                                    <RechartsCell key="0" fill="#10b981" />
+                                                    <RechartsCell key="1" fill="#3b82f6" />
+                                                </Pie>
+                                                <RechartsTooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
                                 <Card className="border-0 shadow-sm">
                                     <div className="px-6 pt-5 pb-2 border-b border-border">
                                         <h4 className="font-semibold text-foreground text-sm">Sessions by Status</h4>
@@ -414,6 +543,52 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
                                     </CardContent>
                                 </Card>
                             </div>
+
+                            <Card className="border-0 shadow-sm mt-4">
+                                <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+                                    <div>
+                                        <h4 className="font-semibold text-foreground text-sm">PDL Visitation List</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">List of PDLs and their visitation status</p>
+                                    </div>
+                                    <Select value={pdlStatusFilter} onValueChange={(val: any) => setPdlStatusFilter(val)}>
+                                        <SelectTrigger className="w-[150px] h-9"><SelectValue placeholder="Status" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All PDLs</SelectItem>
+                                            <SelectItem value="visited">Visited</SelectItem>
+                                            <SelectItem value="unvisited">Unvisited</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="p-0 overflow-auto max-h-[400px]">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-muted/50 sticky top-0">
+                                            <tr>
+                                                <th className="text-left font-medium p-3 pl-6 text-muted-foreground">PDL Name</th>
+                                                <th className="text-left font-medium p-3 text-muted-foreground">Inmate Number</th>
+                                                <th className="text-right font-medium p-3 pr-6 text-muted-foreground">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredPdls.map(pdl => (
+                                                <tr key={pdl.id} className="border-b border-border hover:bg-muted/30">
+                                                    <td className="p-3 pl-6 font-medium">{pdl.name}</td>
+                                                    <td className="p-3 font-mono text-xs text-muted-foreground">{pdl.inmate_number || '—'}</td>
+                                                    <td className="p-3 pr-6 text-right">
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${pdl.status === 'visited' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-muted text-muted-foreground border-border'}`}>
+                                                            {pdl.status === 'visited' ? 'Visited' : 'Unvisited'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {filteredPdls.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={3} className="p-6 text-center text-muted-foreground">No PDLs found for this filter.</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Card>
                         </TabsContent>
                     </Tabs>
                 </div>
@@ -439,6 +614,121 @@ export default function AssignedSessions({ sessions, stats, chartData, filters: 
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Print View */}
+            <style type="text/css">
+                {`
+                    @media print {
+                        /* Hide the main UI wrapper completely */
+                        .min-h-screen {
+                            display: none !important;
+                        }
+                        
+                        /* Hide common layout wrappers from AppLayout */
+                        nav, aside, header, footer, .sidebar {
+                            display: none !important;
+                        }
+
+                        /* Ensure layout containers shrink to fit only the print section */
+                        html, body, #app, main {
+                            display: block !important;
+                            height: auto !important;
+                            min-height: 0 !important;
+                            padding: 0 !important;
+                            margin: 0 !important;
+                            background: white !important;
+                        }
+
+                        /* Print section dictates the page flow */
+                        #print-section {
+                            display: block !important;
+                            position: static !important;
+                            width: 100%;
+                            padding: 20px;
+                        }
+                        
+                        @page { 
+                            margin: 10mm; 
+                        }
+                    }
+                `}
+            </style>
+            <div id="print-section" className="hidden print:block bg-white text-black">
+                <div
+                    style={{ padding: '0 0 20px 0', borderBottom: '2px solid #111827', marginBottom: '20px' }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <img
+                                src="/edalaw_logo.png"
+                                alt="EDALaw"
+                                style={{ height: '36px', width: 'auto' }}
+                            />
+                            <div style={{ width: '1px', height: '32px', background: '#D1D5DB' }} />
+                            <img
+                                src="/bjmp_logo.png"
+                                alt="BJMP"
+                                style={{ height: '36px', width: 'auto' }}
+                            />
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '9px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280', marginBottom: '3px' }}>
+                                Print Date
+                            </div>
+                            <div style={{ fontFamily: 'monospace', fontSize: '14px', fontWeight: 700, color: '#111827', letterSpacing: '0.06em' }}>
+                                {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' }).toUpperCase()}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '16px' }}>
+                        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '20px', fontWeight: 700, color: '#111827', letterSpacing: '0.02em' }}>
+                            Assigned Visits Report
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '3px' }}>
+                            List of all {typeFilter === 'all' ? '' : typeFilter} sessions assigned to you.
+                        </div>
+                    </div>
+                </div>
+
+                <table className="w-full text-sm border-collapse mt-4">
+                    <thead>
+                        <tr>
+                            <th className="border p-2 text-left font-bold bg-muted/50">Cell number</th>
+                            <th className="border p-2 text-left font-bold bg-muted/50">PDL name</th>
+                            <th className="border p-2 text-left font-bold bg-muted/50">Date</th>
+                            <th className="border p-2 text-left font-bold bg-muted/50">Start time</th>
+                            <th className="border p-2 text-left font-bold bg-muted/50">End time</th>
+                            <th className="border p-2 text-left font-bold bg-muted/50">Visitor name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredSessions.map((session) => (
+                            <tr key={session.id}>
+                                <td className="border p-2">{session.cell_number}</td>
+                                <td className="border p-2">{session.inmate_name}</td>
+                                <td className="border p-2">{session.scheduled_date || '—'}</td>
+                                <td className="border p-2">{session.scheduled_start ? new Date(session.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+                                <td className="border p-2">{session.scheduled_end ? new Date(session.scheduled_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+                                <td className="border p-2">{session.visitor_name || '—'}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                {/* Prepared By Footer */}
+                <div style={{ marginTop: '40px', paddingTop: '20px', display: 'flex', justifyContent: 'flex-start' }}>
+                    <div style={{ textAlign: 'center', width: '250px' }}>
+                        <div style={{ fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                            Prepared By
+                        </div>
+                        <div style={{ borderBottom: '1px solid #111827', margin: '0 auto 4px', width: '100%', height: '24px' }}></div>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
+                            {userFullName}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </AppLayout>
     );
 }

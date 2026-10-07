@@ -423,7 +423,7 @@ export function AppSidebar() {
                         icon: LayoutGrid,
                     },
                     {
-                        title: 'Assigned Sessions',
+                        title: 'Virtual Sessions',
                         href: '/monitoring-officer/assigned-sessions',
                         icon: Video,
                     },
@@ -580,10 +580,10 @@ export function AppSidebar() {
                 ],
             },
             {
-                label: 'Visit Management',
+                label: 'Schedule Management',
                 items: [
                     {
-                        title: 'Assigned Visit Sessions',
+                        title: 'Visit Approvals',
                         href: '/jail-officer/assigned-visit-sessions',
                         icon: Calendar,
                     },
@@ -598,7 +598,7 @@ export function AppSidebar() {
                 label: 'Session Monitoring',
                 items: [
                     {
-                        title: 'Assigned Sessions',
+                        title: 'Virtual Sessions',
                         href: '/jail-officer/assigned-sessions',
                         icon: Video,
                     },
@@ -608,7 +608,7 @@ export function AppSidebar() {
                         icon: Archive,
                     },
                     {
-                        title: 'Inmate Tunnels',
+                        title: 'PDL Tunnels',
                         href: '/jail-officer/inmate-tunnels',
                         icon: Key,
                     },

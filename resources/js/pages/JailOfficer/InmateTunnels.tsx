@@ -79,12 +79,15 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
 
     const columns: ColumnDef<TunnelRow>[] = useMemo(
         () => [
-            { accessorKey: 'created_at', header: 'Created', cell: ({ row }) => row.original.created_at.slice(0, 19).replace('T', ' ') },
+            { accessorKey: 'created_at', header: 'Created', cell: ({ row }) => {
+                const d = new Date(row.original.created_at);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+            } },
             { accessorKey: 'visit_session_id', header: 'Session ID', cell: ({ row }) => <span className="font-mono text-sm">{row.original.visit_session_id}</span> },
             { accessorKey: 'session_type', header: 'Type', cell: ({ row }) => <span className="capitalize">{row.original.session_type}</span> },
             {
                 accessorKey: 'short_code',
-                header: 'Inmate tunnel code',
+                header: 'PDL tunnel code',
                 cell: ({ row }) => {
                     const code = row.original.short_code;
                     const link = row.original.tunnel_link ?? '';
@@ -111,8 +114,12 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
                 },
             },
             { accessorKey: 'visitor_name', header: 'Visitor', cell: ({ row }) => row.original.visitor_name ?? '—' },
-            { accessorKey: 'inmate_name', header: 'Inmate', cell: ({ row }) => row.original.inmate_name ?? '—' },
-            { accessorKey: 'expires_at', header: 'Expires', cell: ({ row }) => <div><div className="text-sm">{row.original.expires_at.slice(0, 16).replace('T', ' ')}</div><div className="text-xs text-muted-foreground">{row.original.expires_at_human}</div></div> },
+            { accessorKey: 'inmate_name', header: 'PDL', cell: ({ row }) => row.original.inmate_name ?? '—' },
+            { accessorKey: 'expires_at', header: 'Expires', cell: ({ row }) => {
+                const d = new Date(row.original.expires_at);
+                const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                return <div><div className="text-sm">{formatted}</div><div className="text-xs text-muted-foreground">{row.original.expires_at_human}</div></div>;
+            } },
             { accessorKey: 'status', header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> },
             { 
                 accessorKey: 'actions', 
@@ -157,7 +164,7 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
 
     return (
         <AppLayout>
-            <Head title="Inmate Tunnels" />
+            <Head title="PDL Tunnels" />
             <div className="min-h-screen bg-background">
                 {/* Header */}
                 <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
@@ -165,8 +172,8 @@ export default function InmateTunnels({ tunnels, stats, chartData, filters: init
                         <div className="flex items-center gap-4">
                             <div className="p-2 bg-primary rounded-xl"><Key className="w-5 h-5 text-white" /></div>
                             <div>
-                                <h1 className="text-lg font-bold text-foreground leading-none">Inmate Tunnels</h1>
-                                <p className="text-xs text-muted-foreground mt-0.5">Inmate join links you have generated for your assigned sessions</p>
+                                <h1 className="text-lg font-bold text-foreground leading-none">PDL Tunnels</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">PDL join links you have generated for your assigned sessions</p>
                             </div>
                         </div>
                     </div>
