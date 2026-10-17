@@ -1,5 +1,5 @@
 import { Head, useForm, router, Link } from '@inertiajs/react';
-import { ArrowLeft, Plus, Shield, User, X, Check, Trash2, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Plus, Shield, User, X, Check, Trash2, ShieldAlert, Phone, Mail } from 'lucide-react';
 import { useState } from 'react';
 
 import AppLayout from '@/layouts/app-layout';
@@ -22,6 +22,7 @@ interface Officer {
     id: number;
     name: string;
     email: string;
+    contact_number?: string | null;
     scopes: Scope[];
 }
 
@@ -98,7 +99,12 @@ export default function JailOfficerShow({ auth, officer, facilities, max_scope_l
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-foreground leading-none">{officer.name}</h1>
-                            <p className="text-sm text-muted-foreground mt-1">{officer.email}</p>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
+                                <span className="inline-flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" />{officer.email}</span>
+                                {officer.contact_number && (
+                                    <span className="inline-flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" />{officer.contact_number}</span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -114,6 +120,10 @@ export default function JailOfficerShow({ auth, officer, facilities, max_scope_l
                                 <CardDescription>Basic information and assignment stats</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contact Number</p>
+                                    <p className="text-sm font-semibold mt-0.5">{officer.contact_number || 'None provided'}</p>
+                                </div>
                                 <div>
                                     <p className="text-sm font-medium text-muted-foreground">Total Assignments</p>
                                     <p className="text-2xl font-bold">{scopes.length}</p>

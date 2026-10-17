@@ -141,41 +141,25 @@
     display: none;
 }
 
-/* Custom scrollbar styling for sidebar */
-.sidebar-scroll-custom {
-    scrollbar-width: thin;
-    scrollbar-color: #d1d5db transparent;
+/* Hide scrollbar styling for sidebar while retaining scrollability */
+.sidebar-scroll-custom,
+.sidebar-scroll-custom [data-slot="sidebar-content"],
+.sidebar-scroll-custom [data-sidebar="sidebar"],
+[data-slot="sidebar"] [data-slot="sidebar-content"],
+[data-sidebar="content"] {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
 }
 
-.sidebar-scroll-custom::-webkit-scrollbar {
-    width: 6px;
-}
-
-.sidebar-scroll-custom::-webkit-scrollbar-track {
+.sidebar-scroll-custom::-webkit-scrollbar,
+.sidebar-scroll-custom [data-slot="sidebar-content"]::-webkit-scrollbar,
+.sidebar-scroll-custom [data-sidebar="sidebar"]::-webkit-scrollbar,
+[data-slot="sidebar"] [data-slot="sidebar-content"]::-webkit-scrollbar,
+[data-sidebar="content"]::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+    width: 0px;
+    height: 0px;
     background: transparent;
-}
-
-.sidebar-scroll-custom::-webkit-scrollbar-thumb {
-    background-color: #e5e7eb;
-    border-radius: 10px;
-    transition: background-color 0.2s ease;
-}
-
-.sidebar-scroll-custom::-webkit-scrollbar-thumb:hover {
-    background-color: #9ca3af;
-}
-
-/* Dark mode scrollbar */
-.dark .sidebar-scroll-custom {
-    scrollbar-color: #4b5563 transparent;
-}
-
-.dark .sidebar-scroll-custom::-webkit-scrollbar-thumb {
-    background-color: #4b5563;
-}
-
-.dark .sidebar-scroll-custom::-webkit-scrollbar-thumb:hover {
-    background-color: #6b7280;
 }
 
 @layer base {

@@ -32,17 +32,35 @@ class AssignedSessionsController extends Controller
 
         $query = VisitSession::with(['visit.user', 'eburol.user', 'visit.inmate.cell', 'eburol', 'visit']);
         
+        // Only approved virtual visits should be visible in Virtual Sessions
+        $query->where(function ($q) {
+            $q->whereHas('visit', function ($visitQuery) {
+                $visitQuery->where('status', 'approved')
+                    ->where('visit_type', 'virtual');
+            })->orWhere(function ($eburolQuery) {
+                $eburolQuery->whereNotNull('eburol_id')
+                    ->whereHas('eburol', function ($eq) {
+                        $eq->where('status', 'approved');
+                    });
+            });
+        });
+
         if (! $isSuperAdmin) {
             // Filter sessions based on jail officer's assigned scope - use scope resolver
             $authorizedCellIds = $user->getAuthorizedCellIds();
             
-            $query->whereHas('visit', function ($q) use ($user, $authorizedCellIds) {
-                // Match visits where the inmate's cell falls within the JO's scope
-                $q->whereHas('inmate', function ($inmateQuery) use ($authorizedCellIds) {
-                    $inmateQuery->whereIn('cell_id', $authorizedCellIds);
-                })
-                // Fallback: Also include visits explicitly assigned to this JO
-                ->orWhere('jail_officer_id', $user->id);
+            $query->where(function ($scopedQuery) use ($user, $authorizedCellIds) {
+                $scopedQuery->whereHas('visit', function ($q) use ($user, $authorizedCellIds) {
+                    $q->where(function ($inmateScope) use ($authorizedCellIds, $user) {
+                        $inmateScope->whereHas('inmate', function ($inmateQuery) use ($authorizedCellIds) {
+                            $inmateQuery->whereIn('cell_id', $authorizedCellIds);
+                        })
+                        ->orWhere('jail_officer_id', $user->id);
+                    });
+                })->orWhereHas('eburol', function ($q) use ($user) {
+                    $q->where('jail_officer_id', $user->id)
+                        ->orWhereNull('jail_officer_id');
+                });
             });
         }
 

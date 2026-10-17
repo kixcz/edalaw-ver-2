@@ -1,38 +1,45 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
 import { useRealTimeNotifications } from '@/hooks/use-real-time-notifications';
 import AppLayout from '@/layouts/app-layout';
 import type { SharedData } from '@/types';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import {
-    Activity,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
     AlertTriangle,
+    ArrowRight,
     Building2,
     Calendar,
-    CheckCircle2,
+    ChevronDown,
     ChevronRight,
     Clock,
-    Columns3,
-    Download,
-    Filter,
-    Flag,
     Heart,
-    LayoutDashboard,
-    PersonStanding,
+    Maximize2,
+    MessageSquare,
+    Monitor,
+    Radio,
     ShieldAlert,
     TrendingUp,
-    UserCheck,
     Users,
-    UserX,
     Video,
     Warehouse,
-    XCircle,
 } from 'lucide-react';
-import type { ElementType } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+    CartesianGrid,
+    Line,
+    LineChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
 import { toast } from 'sonner';
 
 interface DashboardProps {
@@ -51,6 +58,53 @@ interface DashboardProps {
         active_sessions: number;
         today_visits: number;
     };
+    todayActivities?: Array<{
+        id: number;
+        title: string;
+        subtitle: string;
+        time: string;
+        type: 'physical' | 'virtual' | 'eburol';
+        status: string;
+    }>;
+    activeSessionsList?: Array<{
+        id: number;
+        pdl_name: string;
+        visitor_name: string;
+        cell: string;
+        started_at: string;
+        visit_type: string;
+    }>;
+    completedSessionsList?: Array<{
+        id: number;
+        pdl_name: string;
+        visitor_name: string;
+        cell: string;
+        ended_at: string;
+        visit_type: string;
+    }>;
+    currentPeriod?: 'today' | 'week' | 'month';
+    volumeTrend?: Array<{
+        date: string;
+        physical: number;
+        virtual: number;
+        eburol: number;
+        total: number;
+    }>;
+    weekStatusCounts?: {
+        completed: number;
+        in_progress: number;
+        approved: number;
+        cancelled: number;
+        missed: number;
+    };
+    totalWeekVisits?: number;
+    attentionCounts?: {
+        pending_visits: number;
+        pending_eburols: number;
+        flagged_communications: number;
+        unresolved_incidents: number;
+        scheduling_conflicts: number;
+    };
     visitVolume: Array<{ date: string; count: number }>;
     pdlDistribution: Array<{ name: string; count: number; capacity: number }>;
     cellOccupancy: Array<{
@@ -104,109 +158,64 @@ interface DashboardProps {
     }>;
 }
 
-const StatCard: React.FC<{
-    icon: React.ReactNode;
-    value: number | string;
-    label: string;
-    accent: string;
-    iconBg: string;
-    iconColor: string;
-}> = ({
-    icon, value, label, accent, iconBg, iconColor,
-}) => (
-    <Card className="border-0 shadow-sm overflow-hidden">
-        <CardContent className="p-0">
-            <div className="flex items-stretch">
-                <div className={`w-1.5 shrink-0 ${accent}`} />
-                <div className="flex items-center gap-4 px-5 py-4 flex-1">
-                    <div className={`p-2.5 rounded-xl ${iconBg} ${iconColor}`}>
-                        {icon}
-                    </div>
-                    <div>
-                        <div className="text-2xl font-bold text-foreground leading-none">{value}</div>
-                        <div className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</div>
-                    </div>
-                </div>
-            </div>
-        </CardContent>
-    </Card>
-);
-
-function EmptyState({ message }: { message: string }) {
-    return (
-        <div className="flex min-h-32 flex-col items-center justify-center rounded-xl border border-dashed text-center text-sm text-muted-foreground">
-            {message}
-        </div>
-    );
-}
-
-function StatusBadge({ status }: { status: string }) {
-    const map: Record<string, string> = {
-        pending: 'border-amber-200 bg-amber-50 text-amber-700',
-        approved: 'border-green-200 bg-green-50 text-green-700',
-        rejected: 'border-red-200 bg-red-50 text-red-700',
-        completed: 'border-blue-200 bg-blue-50 text-blue-700',
-        high: 'border-red-200 bg-red-50 text-red-700',
-        medium: 'border-amber-200 bg-amber-50 text-amber-700',
-        low: 'border-blue-200 bg-blue-50 text-blue-700',
-    };
-
-    return (
-        <Badge
-            variant="outline"
-            className={`capitalize ${map[status] ?? 'border-border bg-muted text-muted-foreground'}`}
-        >
-            {status}
-        </Badge>
-    );
-}
-
-function ActivityList({
-    title,
-    icon: Icon,
-    children,
-}: {
-    title: string;
-    icon: ElementType;
-    children: React.ReactNode;
-}) {
-    return (
-        <Card className="shadow-none">
-            <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                    <Icon className="h-4 w-4" />
-                    {title}
-                </CardTitle>
-            </CardHeader>
-            <CardContent>{children}</CardContent>
-        </Card>
-    );
-}
-
 export default function Dashboard({
     scopeSummary,
     kpis,
-    visitVolume,
-    pdlDistribution,
-    cellOccupancy,
-    sessionStats,
-    recentActivities,
-    upcomingVisits,
-    upcomingEburols,
-    pendingApprovals,
-    flaggedItems,
-    facilityAlerts,
+    currentPeriod = 'week',
+    todayActivities = [],
+    activeSessionsList = [],
+    completedSessionsList = [],
+    upcomingVisits = [],
+    upcomingEburols = [],
+    volumeTrend = [],
+    weekStatusCounts = {
+        completed: 0,
+        in_progress: 0,
+        approved: 0,
+        cancelled: 0,
+        missed: 0,
+    },
+    totalWeekVisits = 0,
+    attentionCounts,
+    cellOccupancy = [],
+    facilityAlerts = [],
+    flaggedItems = [],
 }: DashboardProps) {
     const page = usePage<SharedData>();
     const user = page.props.auth?.user;
-    const userName =
-        (user?.name as string | undefined) ||
-        [user?.first_name, user?.last_name].filter(Boolean).join(' ') ||
-        'Officer';
-    const [visitTypeFilter, setVisitTypeFilter] = useState('all');
-    const [activityStatusFilter, setActivityStatusFilter] = useState('all');
-    const [severityFilter, setSeverityFilter] = useState('all');
 
+    // Filters for today's operations tabs
+    const [operationFilter, setOperationFilter] = useState<'all' | 'physical' | 'virtual' | 'eburol'>('all');
+    const [liveSessionTab, setLiveSessionTab] = useState<'active' | 'upcoming' | 'completed'>('active');
+
+    // Live clock ticker
+    const [currentTime, setCurrentTime] = useState<string>('');
+    const [currentDateFormatted, setCurrentDateFormatted] = useState<string>('');
+
+    useEffect(() => {
+        const updateClock = () => {
+            const now = new Date();
+            setCurrentDateFormatted(
+                now.toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                })
+            );
+            setCurrentTime(
+                `${now.toLocaleDateString('en-US', { weekday: 'long' })} · ${now.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                })}`
+            );
+        };
+        updateClock();
+        const interval = setInterval(updateClock, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Real-time notifications
     const {
         notifications: realTimeNotifications,
         requestNotificationPermission,
@@ -214,10 +223,9 @@ export default function Dashboard({
 
     useEffect(() => {
         if (realTimeNotifications.length > 0) {
-            const latestNotification = realTimeNotifications[0];
-
-            toast.info(latestNotification.title, {
-                description: latestNotification.message,
+            const latest = realTimeNotifications[0];
+            toast.info(latest.title, {
+                description: latest.message,
                 duration: 8000,
                 action: {
                     label: 'View',
@@ -233,1591 +241,1319 @@ export default function Dashboard({
         requestNotificationPermission();
     }, [requestNotificationPermission]);
 
-    const today = new Date().toLocaleDateString('en-PH', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-    const urgentAlertCount =
-        facilityAlerts.filter((alert) => alert.severity === 'high').length +
-        flaggedItems.filter((flag) => flag.severity === 'high').length;
-    const maxVisit = Math.max(...visitVolume.map((item) => item.count), 1);
-    const filteredVisits = useMemo(
-        () =>
-            upcomingVisits.filter(
-                (visit) =>
-                    visitTypeFilter === 'all' ||
-                    visit.visit_type === visitTypeFilter,
-            ),
-        [upcomingVisits, visitTypeFilter],
-    );
-    const filteredActivities = useMemo(
-        () =>
-            recentActivities.filter(
-                (activity) =>
-                    activityStatusFilter === 'all' ||
-                    activity.status === activityStatusFilter,
-            ),
-        [recentActivities, activityStatusFilter],
-    );
-    const filteredFlags = useMemo(
-        () =>
-            flaggedItems.filter(
-                (item) =>
-                    severityFilter === 'all' ||
-                    item.severity === severityFilter,
-            ),
-        [flaggedItems, severityFilter],
-    );
-    const filteredAlerts = useMemo(
-        () =>
-            facilityAlerts.filter(
-                (alert) =>
-                    severityFilter === 'all' ||
-                    alert.severity === severityFilter,
-            ),
-        [facilityAlerts, severityFilter],
-    );
+    // Compute Requires Attention counts
+    const attention = attentionCounts ?? {
+        pending_visits: kpis.pending_visits,
+        pending_eburols: kpis.pending_eburols,
+        flagged_communications: flaggedItems.length,
+        unresolved_incidents: facilityAlerts.length,
+        scheduling_conflicts: 0,
+    };
 
+    // Filter today's operations
+    const filteredTodayActivities = useMemo(() => {
+        if (operationFilter === 'all') return todayActivities;
+        return todayActivities.filter((act) => act.type === operationFilter);
+    }, [todayActivities, operationFilter]);
 
+    // Counts for pill buttons
+    const todayCounts = useMemo(() => {
+        return {
+            all: todayActivities.length,
+            physical: todayActivities.filter((a) => a.type === 'physical').length,
+            virtual: todayActivities.filter((a) => a.type === 'virtual').length,
+            eburol: todayActivities.filter((a) => a.type === 'eburol').length,
+        };
+    }, [todayActivities]);
+
+    // Safe occupancy metrics
+    const totalCells = Math.max(scopeSummary.total_cells, 1);
+    const occupiedCells = kpis.occupied_cells;
+    const occupancyPercentage = Math.round((occupiedCells / totalCells) * 100);
+
+    // Live session tab counts
+    const liveSessionCounts = useMemo(() => {
+        return {
+            active: activeSessionsList.length,
+            upcoming: upcomingVisits.length + upcomingEburols.length,
+            completed: completedSessionsList.length,
+        };
+    }, [activeSessionsList, upcomingVisits, upcomingEburols, completedSessionsList]);
+
+    // Handle Period Change for Volume Trend, Visitation Status, and Header
+    const handlePeriodChange = (newPeriod: 'today' | 'week' | 'month') => {
+        router.get(
+            '/dashboard/jail-officer',
+            { period: newPeriod },
+            { preserveState: true, preserveScroll: true }
+        );
+    };
+
+    const periodLabels: Record<string, string> = {
+        today: 'Today',
+        week: 'This Week',
+        month: 'This Month',
+    };
+
+    // Chart data fallback
+    const chartData = useMemo(() => {
+        if (volumeTrend && volumeTrend.length > 0) return volumeTrend;
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        return days.map((day) => ({
+            date: day,
+            physical: 0,
+            virtual: 0,
+            eburol: 0,
+            total: 0,
+        }));
+    }, [volumeTrend]);
+
+    // Visitation Status percentages for donut breakdown
+    const statusItems = useMemo(() => {
+        const total = totalWeekVisits > 0 ? totalWeekVisits : 0;
+        const calcPct = (val: number) => (total > 0 ? Math.round((val / total) * 100) : 0);
+        return [
+            {
+                label: 'Completed',
+                count: weekStatusCounts.completed,
+                pct: calcPct(weekStatusCounts.completed),
+                color: 'bg-emerald-500',
+                textColor: 'text-emerald-700 dark:text-emerald-400',
+            },
+            {
+                label: 'In Progress',
+                count: weekStatusCounts.in_progress,
+                pct: calcPct(weekStatusCounts.in_progress),
+                color: 'bg-blue-500',
+                textColor: 'text-blue-700 dark:text-blue-400',
+            },
+            {
+                label: 'Approved',
+                count: weekStatusCounts.approved,
+                pct: calcPct(weekStatusCounts.approved),
+                color: 'bg-amber-400',
+                textColor: 'text-amber-700 dark:text-amber-400',
+            },
+            {
+                label: 'Cancelled',
+                count: weekStatusCounts.cancelled,
+                pct: calcPct(weekStatusCounts.cancelled),
+                color: 'bg-red-500',
+                textColor: 'text-red-700 dark:text-red-400',
+            },
+            {
+                label: 'Missed',
+                count: weekStatusCounts.missed,
+                pct: calcPct(weekStatusCounts.missed),
+                color: 'bg-slate-400',
+                textColor: 'text-slate-600 dark:text-slate-400',
+            },
+        ];
+    }, [weekStatusCounts, totalWeekVisits]);
+
+    // Donut stroke-dasharray values for SVG ring
+    const donutSegments = useMemo(() => {
+        const circumference = 2 * Math.PI * 38; // r = 38 => ~238.76
+        let accumulatedPct = 0;
+
+        return statusItems.map((item) => {
+            const strokeDasharray = `${(item.pct / 100) * circumference} ${circumference}`;
+            const strokeDashoffset = -((accumulatedPct / 100) * circumference);
+            accumulatedPct += item.pct;
+
+            const strokeColor =
+                item.label === 'Completed'
+                    ? '#10b981'
+                    : item.label === 'In Progress'
+                      ? '#3b82f6'
+                      : item.label === 'Approved'
+                        ? '#f59e0b'
+                        : item.label === 'Cancelled'
+                          ? '#ef4444'
+                          : '#94a3b8';
+
+            return {
+                ...item,
+                strokeDasharray,
+                strokeDashoffset,
+                strokeColor,
+            };
+        });
+    }, [statusItems]);
 
     return (
         <AppLayout>
-            <Head title="Jail Officer Dashboard" />
+            <Head title="Operations Overview · Jail Officer Workspace" />
 
-            <div className="min-h-screen bg-background">
-                {/* Page Header */}
-                <div className="bg-card border-b border-border px-6 py-5 sticky top-0 z-30 shadow-sm">
-                    <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-2 bg-primary rounded-xl">
-                                <LayoutDashboard className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-lg font-bold text-foreground leading-none">Jail Officer</h1>
-                                <p className="text-xs text-muted-foreground mt-0.5">Facility Operations & Monitoring</p>
-                            </div>
+            <div className="min-h-screen bg-[#f8f9fa] dark:bg-background text-foreground pb-12">
+                <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 space-y-5">
+                    {/* ──────────────────────────────────────────────────────────
+                        TOP HEADER ROW: Title + Info Chips + Week Dropdown + Bell
+                       ────────────────────────────────────────────────────────── */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-foreground leading-tight">
+                                Operations Overview
+                            </h1>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                                Visitation, monitoring and facility operations
+                            </p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            {urgentAlertCount > 0 && (
-                                <span className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
-                                    <ShieldAlert className="h-3.5 w-3.5" />
-                                    {urgentAlertCount}
-                                </span>
-                            )}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 gap-1.5 border-border text-xs hover:bg-muted"
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            {/* Today Date & Time Card */}
+                            <div className="flex items-center gap-3 bg-white dark:bg-card border border-border/70 rounded-2xl px-4 py-2 shadow-xs">
+                                <div className="w-8 h-8 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-500 flex items-center justify-center shrink-0">
+                                    <Calendar className="w-4 h-4" />
+                                </div>
+                                <div className="text-left leading-tight">
+                                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                        Today
+                                    </div>
+                                    <div className="text-xs font-bold text-foreground">
+                                        {currentDateFormatted || 'Today'}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground">
+                                        {currentTime || 'Philippine Standard Time'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Assigned Scope Pill */}
+                            <div className="flex items-center gap-3 bg-white dark:bg-card border border-border/70 rounded-2xl px-4 py-2 shadow-xs">
+                                <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center shrink-0">
+                                    <Radio className="w-4 h-4" />
+                                </div>
+                                <div className="text-left leading-tight">
+                                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                        Assigned Scope
+                                    </div>
+                                    <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                        <span className="text-orange-600 dark:text-orange-400 font-semibold">
+                                            {scopeSummary.total_dormitories} Dormitory
+                                        </span>
+                                        <span className="text-muted-foreground">·</span>
+                                        <span className="text-orange-600 dark:text-orange-400 font-semibold">
+                                            {scopeSummary.total_buildings} Building
+                                        </span>
+                                        <span className="text-muted-foreground">·</span>
+                                        <span className="text-orange-600 dark:text-orange-400 font-semibold">
+                                            {scopeSummary.total_cells} Cell
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Week Selector Dropdown Button */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="flex items-center gap-2.5 bg-white dark:bg-card border border-border/70 rounded-2xl px-4 py-2 shadow-xs hover:border-border cursor-pointer transition text-left"
+                                    >
+                                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                                        <div className="leading-tight">
+                                            <div className="text-xs font-bold text-foreground flex items-center gap-1">
+                                                {periodLabels[currentPeriod] || 'This Week'}
+                                                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                                            </div>
+                                            <div className="text-[10px] text-muted-foreground">
+                                                Current Cycle
+                                            </div>
+                                        </div>
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="rounded-xl w-36">
+                                    <DropdownMenuItem
+                                        onClick={() => handlePeriodChange('today')}
+                                        className={currentPeriod === 'today' ? 'font-bold text-orange-600' : ''}
+                                    >
+                                        Today
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => handlePeriodChange('week')}
+                                        className={currentPeriod === 'week' ? 'font-bold text-orange-600' : ''}
+                                    >
+                                        This Week
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => handlePeriodChange('month')}
+                                        className={currentPeriod === 'month' ? 'font-bold text-orange-600' : ''}
+                                    >
+                                        This Month
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            {/* Launch TV Queue Display Shortcut Button */}
+                            <Link
+                                href="/jail-officer/visit-queue-tv"
+                                className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold text-xs rounded-2xl px-4 py-2.5 shadow-sm transition active:scale-95"
                             >
-                                <Filter className="h-3.5 w-3.5" />
-                                Filter
-                            </Button>
+                                <Monitor className="w-4 h-4" />
+                                <span className="hidden sm:inline">TV Queue</span>
+                            </Link>
                         </div>
                     </div>
-                </div>
 
-                <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
-
-                    <Tabs defaultValue="overview" className="space-y-6">
-                        <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border bg-card p-1 sm:w-fit">
-                            <TabsTrigger
-                                value="overview"
-                                className="rounded-xl"
-                            >
-                                Overview
-                            </TabsTrigger>
-                            <TabsTrigger value="reports" className="rounded-xl">
-                                Reports
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="activities"
-                                className="rounded-xl"
-                            >
-                                Activities
-                            </TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="overview" className="space-y-6">
-                            {/* Stats Grid */}
-                            <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                <StatCard icon={<Users className="w-5 h-5" />} value={kpis.total_pdls} label="Total PDLs" accent="bg-primary" iconBg="bg-primary/10" iconColor="text-primary" />
-                                <StatCard icon={<UserCheck className="w-5 h-5" />} value={kpis.occupied_cells} label="Occupied Cells" accent="bg-emerald-500" iconBg="bg-emerald-50 dark:bg-emerald-950/30" iconColor="text-emerald-600 dark:text-emerald-400" />
-                                <StatCard icon={<Calendar className="w-5 h-5" />} value={kpis.pending_visits} label="Pending Visits" accent="bg-amber-500" iconBg="bg-amber-50 dark:bg-amber-950/30" iconColor="text-amber-600 dark:text-amber-400" />
-                                <StatCard icon={<Video className="w-5 h-5" />} value={kpis.active_sessions} label="Active Sessions" accent="bg-sky-500" iconBg="bg-sky-50 dark:bg-sky-950/30" iconColor="text-sky-600 dark:text-sky-400" />
+                    {/* ──────────────────────────────────────────────────────────
+                        ROW 1: 6 KPI CARDS WITH PASTEL BACKGROUNDS & ACTION LINKS
+                       ────────────────────────────────────────────────────────── */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+                        {/* 1. Pending Visit Approvals (Peach) */}
+                        <div className="bg-[#fff9f6] dark:bg-orange-950/15 border border-orange-100/90 dark:border-orange-900/30 rounded-2xl p-4 flex flex-col justify-between shadow-2xs transition hover:shadow-sm">
+                            <div className="flex items-start justify-between">
+                                <div className="w-10 h-10 rounded-xl bg-orange-100/80 dark:bg-orange-900/40 text-orange-600 flex items-center justify-center">
+                                    <Calendar className="w-5 h-5" />
+                                </div>
+                                <div className="text-3xl font-extrabold text-foreground tracking-tight">
+                                    {kpis.pending_visits}
+                                </div>
                             </div>
-
-                            <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-                                <Card className="shadow-none">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-base">
-                                            <TrendingUp className="h-4 w-4" />
-                                            Visit volume trend
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        {visitVolume.length > 0 ? (
-                                            <ResponsiveContainer width="100%" height={280}>
-                                                <LineChart data={visitVolume} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                                                    <XAxis
-                                                        dataKey="date"
-                                                        tick={{ fontSize: 11, fill: '#64748b' }}
-                                                        axisLine={false}
-                                                        tickLine={false}
-                                                        tickFormatter={(value) =>
-                                                            new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                                                        }
-                                                    />
-                                                    <YAxis
-                                                        tick={{ fontSize: 11, fill: '#64748b' }}
-                                                        axisLine={false}
-                                                        tickLine={false}
-                                                        allowDecimals={false}
-                                                    />
-                                                    <Tooltip
-                                                        labelFormatter={(value) =>
-                                                            new Date(value).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                                                        }
-                                                        contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
-                                                    />
-                                                    <Line
-                                                        type="monotone"
-                                                        dataKey="count"
-                                                        stroke="var(--primary)"
-                                                        strokeWidth={2}
-                                                        dot={{ fill: 'var(--primary)', r: 4 }}
-                                                        activeDot={{ r: 6, fill: 'var(--primary)' }}
-                                                        name="Visits"
-                                                    />
-                                                </LineChart>
-                                            </ResponsiveContainer>
-                                        ) : (
-                                            <EmptyState message="No visit data for this period" />
-                                        )}
-                                    </CardContent>
-                                </Card>
-
-                                <Card className="shadow-none">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-base">
-                                            <Building2 className="h-4 w-4" />
-                                            Assigned jurisdiction
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="grid w-full gap-3 sm:grid-cols-2">
-                                        {[
-                                            {
-                                                icon: Building2,
-                                                label: 'Dormitories',
-                                                value: scopeSummary.total_dormitories,
-                                            },
-                                            {
-                                                icon: Warehouse,
-                                                label: 'Buildings',
-                                                value: scopeSummary.total_buildings,
-                                            },
-                                            {
-                                                icon: Columns3,
-                                                label: 'Cells',
-                                                value: scopeSummary.total_cells,
-                                            },
-                                            {
-                                                icon: PersonStanding,
-                                                label: 'PDLs',
-                                                value: scopeSummary.total_pdls,
-                                            },
-                                        ].map(
-                                            ({ icon: Icon, label, value }) => (
-                                                <div
-                                                    key={label}
-                                                    className="rounded-2xl border bg-background p-4"
-                                                >
-                                                    <Icon className="h-4 w-4 text-muted-foreground" />
-                                                    <div className="mt-4 text-3xl font-semibold">
-                                                        {value}
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {label}
-                                                    </p>
-                                                </div>
-                                            ),
-                                        )}
-                                    </CardContent>
-                                </Card>
+                            <div className="mt-3">
+                                <div className="text-xs font-bold text-foreground">
+                                    Pending Visit
+                                </div>
+                                <div className="text-[11px] text-muted-foreground -mt-0.5">
+                                    Approvals
+                                </div>
+                                <Link
+                                    href="/jail-officer/assigned-visit-sessions"
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-600 dark:text-orange-400 hover:underline mt-2.5"
+                                >
+                                    Review applications <ArrowRight className="w-3 h-3" />
+                                </Link>
                             </div>
-                        </TabsContent>
+                        </div>
 
-                        <TabsContent value="reports" className="space-y-6">
-                            <div className="grid gap-6 lg:grid-cols-3">
-                                <Card className="shadow-none lg:col-span-2">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-base">
-                                            <Columns3 className="h-4 w-4" />
-                                            Cell occupancy overview
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        {cellOccupancy.length > 0 ? (
-                                            <div className="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                                                {cellOccupancy
-                                                    .slice(0, 12)
-                                                    .map((cell) => {
-                                                        const barColor =
-                                                            cell.percentage >=
-                                                            90
-                                                                ? 'bg-red-500'
-                                                                : cell.percentage >=
-                                                                    70
-                                                                  ? 'bg-amber-500'
-                                                                  : 'bg-green-500';
-                                                        return (
-                                                            <div
-                                                                key={cell.cell}
-                                                                className="rounded-2xl border bg-background p-4"
-                                                            >
-                                                                <div className="flex items-center justify-between gap-3">
-                                                                    <p className="text-sm font-medium">
-                                                                        {
-                                                                            cell.cell
-                                                                        }
-                                                                    </p>
-                                                                    <p className="text-sm font-semibold">
-                                                                        {
-                                                                            cell.percentage
-                                                                        }
-                                                                        %
-                                                                    </p>
-                                                                </div>
-                                                                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                                                                    <div
-                                                                        className={`h-full rounded-full ${barColor}`}
-                                                                        style={{
-                                                                            width: `${cell.percentage}%`,
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                                <p className="mt-2 text-xs text-muted-foreground">
-                                                                    {
-                                                                        cell.occupied
-                                                                    }{' '}
-                                                                    of{' '}
-                                                                    {
-                                                                        cell.capacity
-                                                                    }{' '}
-                                                                    occupied
-                                                                </p>
-                                                            </div>
-                                                        );
-                                                    })}
+                        {/* 2. Pending e-Burol Requests (Light Peach / Coral) */}
+                        <div className="bg-[#fff9f6] dark:bg-orange-950/15 border border-orange-100/90 dark:border-orange-900/30 rounded-2xl p-4 flex flex-col justify-between shadow-2xs transition hover:shadow-sm">
+                            <div className="flex items-start justify-between">
+                                <div className="w-10 h-10 rounded-xl bg-orange-100/80 dark:bg-orange-900/40 text-orange-600 flex items-center justify-center">
+                                    <Heart className="w-5 h-5" />
+                                </div>
+                                <div className="text-3xl font-extrabold text-foreground tracking-tight">
+                                    {kpis.pending_eburols}
+                                </div>
+                            </div>
+                            <div className="mt-3">
+                                <div className="text-xs font-bold text-foreground">
+                                    Pending e-Burol
+                                </div>
+                                <div className="text-[11px] text-muted-foreground -mt-0.5">
+                                    Requests
+                                </div>
+                                <Link
+                                    href="/jail-officer/eburol-monitoring"
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-600 dark:text-orange-400 hover:underline mt-2.5"
+                                >
+                                    Review requests <ArrowRight className="w-3 h-3" />
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* 3. Today's Scheduled Visits (Light Sky Blue) */}
+                        <div className="bg-[#f5faff] dark:bg-blue-950/15 border border-blue-100/90 dark:border-blue-900/30 rounded-2xl p-4 flex flex-col justify-between shadow-2xs transition hover:shadow-sm">
+                            <div className="flex items-start justify-between">
+                                <div className="w-10 h-10 rounded-xl bg-blue-100/80 dark:bg-blue-900/40 text-blue-600 flex items-center justify-center">
+                                    <Calendar className="w-5 h-5" />
+                                </div>
+                                <div className="text-3xl font-extrabold text-foreground tracking-tight">
+                                    {kpis.today_visits}
+                                </div>
+                            </div>
+                            <div className="mt-3">
+                                <div className="text-xs font-bold text-foreground">
+                                    Today's Scheduled
+                                </div>
+                                <div className="text-[11px] text-muted-foreground -mt-0.5">
+                                    Visits
+                                </div>
+                                <Link
+                                    href="/jail-officer/assigned-visit-sessions"
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline mt-2.5"
+                                >
+                                    View schedule <ArrowRight className="w-3 h-3" />
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* 4. Active Monitoring Sessions (Mint Green) */}
+                        <div className="bg-[#f3fbf7] dark:bg-emerald-950/15 border border-emerald-100/90 dark:border-emerald-900/30 rounded-2xl p-4 flex flex-col justify-between shadow-2xs transition hover:shadow-sm">
+                            <div className="flex items-start justify-between">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-600 flex items-center justify-center">
+                                    <Video className="w-5 h-5" />
+                                </div>
+                                <div className="text-3xl font-extrabold text-foreground tracking-tight">
+                                    {kpis.active_sessions}
+                                </div>
+                            </div>
+                            <div className="mt-3">
+                                <div className="text-xs font-bold text-foreground">
+                                    Active Monitoring
+                                </div>
+                                <div className="text-[11px] text-muted-foreground -mt-0.5">
+                                    Sessions
+                                </div>
+                                <Link
+                                    href="/jail-officer/assigned-sessions"
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline mt-2.5"
+                                >
+                                    Open live sessions <ArrowRight className="w-3 h-3" />
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* 5. Total PDLs (Lilac / Soft Violet) */}
+                        <div className="bg-[#f9f8ff] dark:bg-purple-950/15 border border-purple-100/90 dark:border-purple-900/30 rounded-2xl p-4 flex flex-col justify-between shadow-2xs transition hover:shadow-sm">
+                            <div className="flex items-start justify-between">
+                                <div className="w-10 h-10 rounded-xl bg-purple-100/80 dark:bg-purple-900/40 text-purple-600 flex items-center justify-center">
+                                    <Users className="w-5 h-5" />
+                                </div>
+                                <div className="text-3xl font-extrabold text-foreground tracking-tight">
+                                    {kpis.total_pdls}
+                                </div>
+                            </div>
+                            <div className="mt-3">
+                                <div className="text-xs font-bold text-foreground">
+                                    Total PDLs
+                                </div>
+                                <div className="text-[11px] text-muted-foreground -mt-0.5">
+                                    In Assigned Scope
+                                </div>
+                                <Link
+                                    href="/jail-officer/inmates-hierarchical"
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:underline mt-2.5"
+                                >
+                                    View PDLs <ArrowRight className="w-3 h-3" />
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* 6. Occupied Cells (Rose / Soft Pink) */}
+                        <div className="bg-[#fff6f6] dark:bg-rose-950/15 border border-rose-100/90 dark:border-rose-900/30 rounded-2xl p-4 flex flex-col justify-between shadow-2xs transition hover:shadow-sm">
+                            <div className="flex items-start justify-between">
+                                <div className="w-10 h-10 rounded-xl bg-rose-100/80 dark:bg-rose-900/40 text-rose-600 flex items-center justify-center">
+                                    <Warehouse className="w-5 h-5" />
+                                </div>
+                                <div className="text-3xl font-extrabold text-foreground tracking-tight">
+                                    {kpis.occupied_cells}
+                                </div>
+                            </div>
+                            <div className="mt-3">
+                                <div className="text-xs font-bold text-foreground">
+                                    Occupied Cells
+                                </div>
+                                <div className="text-[11px] text-muted-foreground -mt-0.5">
+                                    {kpis.occupied_cells} / {scopeSummary.total_cells} capacity
+                                </div>
+                                <Link
+                                    href="/jail-officer/cells-hierarchical"
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline mt-2.5"
+                                >
+                                    View facility <ArrowRight className="w-3 h-3" />
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ──────────────────────────────────────────────────────────
+                        ROW 2: THREE-COLUMN MIDDLE SECTION
+                        Col 1: Requires Attention
+                        Col 2: Today's Operations
+                        Col 3: Live Session Monitoring
+                       ────────────────────────────────────────────────────────── */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                        {/* ── CARD 1: Requires Attention (3.5 cols) ── */}
+                        <div className="lg:col-span-4 bg-white dark:bg-card border border-border/80 rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-7 h-7 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                                            !
+                                        </div>
+                                        <h2 className="text-base font-bold text-foreground">
+                                            Requires Attention
+                                        </h2>
+                                    </div>
+                                    <Link
+                                        href="/jail-officer/assigned-visit-sessions"
+                                        className="text-xs font-semibold text-muted-foreground hover:text-foreground border border-border/80 rounded-xl px-2.5 py-1 transition"
+                                    >
+                                        View All
+                                    </Link>
+                                </div>
+
+                                <div className="divide-y divide-border/60">
+                                    {/* Item 1: Visit Approvals */}
+                                    <Link
+                                        href="/jail-officer/assigned-visit-sessions"
+                                        className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-xl bg-orange-50 dark:bg-orange-950/30 text-orange-600 flex items-center justify-center shrink-0">
+                                                <Calendar className="w-4 h-4" />
                                             </div>
-                                        ) : (
-                                            <EmptyState message="No cell occupancy data" />
-                                        )}
-                                    </CardContent>
-                                </Card>
+                                            <div>
+                                                <div className="text-xs font-bold text-foreground group-hover:text-primary transition">
+                                                    Visit Approvals
+                                                </div>
+                                                <div className="text-[11px] text-muted-foreground">
+                                                    New visitation applications for review
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-6 h-6 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                                                {attention.pending_visits}
+                                            </span>
+                                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition" />
+                                        </div>
+                                    </Link>
 
-                                <Card className="shadow-none">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-base">
-                                            <Video className="h-4 w-4" />
-                                            Session monitoring
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3">
-                                        {[
-                                            {
-                                                label: 'Completed',
-                                                value: sessionStats.completed,
-                                                accent: 'bg-emerald-500',
-                                                iconBg: 'bg-emerald-50 dark:bg-emerald-950/30',
-                                                iconColor: 'text-emerald-600 dark:text-emerald-400',
-                                            },
-                                            {
-                                                label: 'Active',
-                                                value: sessionStats.active,
-                                                accent: 'bg-sky-500',
-                                                iconBg: 'bg-sky-50 dark:bg-sky-950/30',
-                                                iconColor: 'text-sky-600 dark:text-sky-400',
-                                            },
-                                            {
-                                                label: 'Flagged',
-                                                value: sessionStats.flagged,
-                                                accent: 'bg-amber-500',
-                                                iconBg: 'bg-amber-50 dark:bg-amber-950/30',
-                                                iconColor: 'text-amber-600 dark:text-amber-400',
-                                            },
-                                        ].map((item) => (
+                                    {/* Item 2: e-Burol Requests */}
+                                    <Link
+                                        href="/jail-officer/eburol-monitoring"
+                                        className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-xl bg-orange-50 dark:bg-orange-950/30 text-orange-600 flex items-center justify-center shrink-0">
+                                                <Heart className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-bold text-foreground group-hover:text-primary transition">
+                                                    e-Burol Requests
+                                                </div>
+                                                <div className="text-[11px] text-muted-foreground">
+                                                    Compassionate visitation requests
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-6 h-6 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                                                {attention.pending_eburols}
+                                            </span>
+                                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition" />
+                                        </div>
+                                    </Link>
+
+                                    {/* Item 3: Flagged Communications */}
+                                    <Link
+                                        href="/jail-officer/chat-recordings"
+                                        className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 flex items-center justify-center shrink-0">
+                                                <MessageSquare className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-bold text-foreground group-hover:text-primary transition">
+                                                    Flagged Communications
+                                                </div>
+                                                <div className="text-[11px] text-muted-foreground">
+                                                    Messages that require review
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-6 h-6 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                                                {attention.flagged_communications}
+                                            </span>
+                                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition" />
+                                        </div>
+                                    </Link>
+
+                                    {/* Item 4: Unresolved Incidents */}
+                                    <Link
+                                        href="/jail-officer/audit-logs"
+                                        className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/30 text-rose-600 flex items-center justify-center shrink-0">
+                                                <ShieldAlert className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-bold text-foreground group-hover:text-primary transition">
+                                                    Unresolved Incidents
+                                                </div>
+                                                <div className="text-[11px] text-muted-foreground">
+                                                    Monitoring incidents for investigation
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-6 h-6 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                                                {attention.unresolved_incidents}
+                                            </span>
+                                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition" />
+                                        </div>
+                                    </Link>
+
+                                    {/* Item 5: Scheduling Conflicts */}
+                                    <Link
+                                        href="/jail-officer/cell-schedules"
+                                        className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/30 text-sky-600 flex items-center justify-center shrink-0">
+                                                <Clock className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-bold text-foreground group-hover:text-primary transition">
+                                                    Scheduling Conflicts
+                                                </div>
+                                                <div className="text-[11px] text-muted-foreground">
+                                                    Conflicting or overlapping schedules
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-6 h-6 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                                                {attention.scheduling_conflicts}
+                                            </span>
+                                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition" />
+                                        </div>
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── CARD 2: Today's Operations (4 cols) ── */}
+                        <div className="lg:col-span-4 bg-white dark:bg-card border border-border/80 rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-7 h-7 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-xs">
+                                            <Calendar className="w-4 h-4" />
+                                        </div>
+                                        <h2 className="text-base font-bold text-foreground">
+                                            Today's Operations
+                                        </h2>
+                                    </div>
+                                    <Link
+                                        href="/jail-officer/assigned-visit-sessions"
+                                        className="text-xs font-semibold text-muted-foreground hover:text-foreground border border-border/80 rounded-xl px-2.5 py-1 transition"
+                                    >
+                                        View Schedule
+                                    </Link>
+                                </div>
+
+                                {/* Filter Pills */}
+                                <div className="flex items-center gap-1.5 p-1 bg-muted/60 rounded-2xl mb-4 overflow-x-auto">
+                                    <button
+                                        type="button"
+                                        onClick={() => setOperationFilter('all')}
+                                        className={`px-3 py-1 text-xs font-bold rounded-xl transition flex items-center gap-1.5 ${
+                                            operationFilter === 'all'
+                                                ? 'bg-orange-500 text-white shadow-xs'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        All{' '}
+                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${operationFilter === 'all' ? 'bg-orange-600/70 text-white' : 'bg-muted text-foreground'}`}>
+                                            {todayCounts.all}
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setOperationFilter('physical')}
+                                        className={`px-3 py-1 text-xs font-bold rounded-xl transition flex items-center gap-1.5 ${
+                                            operationFilter === 'physical'
+                                                ? 'bg-orange-500 text-white shadow-xs'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        Physical{' '}
+                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${operationFilter === 'physical' ? 'bg-orange-600/70 text-white' : 'bg-muted text-foreground'}`}>
+                                            {todayCounts.physical}
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setOperationFilter('virtual')}
+                                        className={`px-3 py-1 text-xs font-bold rounded-xl transition flex items-center gap-1.5 ${
+                                            operationFilter === 'virtual'
+                                                ? 'bg-orange-500 text-white shadow-xs'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        Virtual{' '}
+                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${operationFilter === 'virtual' ? 'bg-orange-600/70 text-white' : 'bg-muted text-foreground'}`}>
+                                            {todayCounts.virtual}
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setOperationFilter('eburol')}
+                                        className={`px-3 py-1 text-xs font-bold rounded-xl transition flex items-center gap-1.5 ${
+                                            operationFilter === 'eburol'
+                                                ? 'bg-orange-500 text-white shadow-xs'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        e-Burol{' '}
+                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${operationFilter === 'eburol' ? 'bg-orange-600/70 text-white' : 'bg-muted text-foreground'}`}>
+                                            {todayCounts.eburol}
+                                        </span>
+                                    </button>
+                                </div>
+
+                                {/* Content or Empty State */}
+                                {filteredTodayActivities.length > 0 ? (
+                                    <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                                        {filteredTodayActivities.map((act) => (
                                             <div
-                                                key={item.label}
-                                                className="rounded-2xl border bg-background p-4"
+                                                key={`${act.type}-${act.id}`}
+                                                className="p-3 bg-muted/40 hover:bg-muted/70 rounded-2xl border border-border/60 transition flex items-center justify-between"
                                             >
-                                                <p className="text-sm text-muted-foreground">
-                                                    {item.label}
-                                                </p>
-                                                <p className="mt-2 text-3xl font-semibold text-foreground">
-                                                    {item.value}
-                                                </p>
+                                                <div className="min-w-0 pr-2">
+                                                    <div className="text-xs font-bold text-foreground truncate">
+                                                        {act.title}
+                                                    </div>
+                                                    <div className="text-[11px] text-muted-foreground truncate">
+                                                        {act.subtitle}
+                                                    </div>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <div className="text-[11px] font-bold text-foreground">
+                                                        {act.time}
+                                                    </div>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="text-[10px] uppercase font-semibold mt-0.5 border-orange-200 bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300"
+                                                    >
+                                                        {act.type}
+                                                    </Badge>
+                                                </div>
                                             </div>
                                         ))}
-                                    </CardContent>
-                                </Card>
-                            </div>
-
-                            <div className="grid gap-6 lg:grid-cols-2">
-                                <ActivityList
-                                    title="PDL distribution by cell"
-                                    icon={PersonStanding}
-                                >
-                                    {pdlDistribution.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {pdlDistribution.map((cell) => {
-                                                const pct = Math.round(
-                                                    (cell.count /
-                                                        Math.max(
-                                                            cell.capacity,
-                                                            1,
-                                                        )) *
-                                                        100,
-                                                );
-                                                return (
-                                                    <div key={cell.name}>
-                                                        <div className="mb-1 flex justify-between text-sm">
-                                                            <span className="font-medium">
-                                                                {cell.name}
-                                                            </span>
-                                                            <span className="text-muted-foreground">
-                                                                {cell.count}/
-                                                                {cell.capacity}
-                                                            </span>
-                                                        </div>
-                                                        <div className="h-2 overflow-hidden rounded-full bg-muted">
-                                                            <div
-                                                                className="h-full rounded-full bg-foreground"
-                                                                style={{
-                                                                    width: `${pct}%`,
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <EmptyState message="No distribution data" />
-                                    )}
-                                </ActivityList>
-
-                                <ActivityList
-                                    title="Facility alerts"
-                                    icon={AlertTriangle}
-                                >
-                                    <div className="mb-4 flex gap-2">
-                                        {['all', 'high', 'medium', 'low'].map(
-                                            (severity) => (
-                                                <Button
-                                                    key={severity}
-                                                    size="sm"
-                                                    variant={
-                                                        severityFilter ===
-                                                        severity
-                                                            ? 'default'
-                                                            : 'outline'
-                                                    }
-                                                    onClick={() =>
-                                                        setSeverityFilter(
-                                                            severity,
-                                                        )
-                                                    }
-                                                >
-                                                    {severity}
-                                                </Button>
-                                            ),
-                                        )}
                                     </div>
-                                    {filteredAlerts.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {filteredAlerts.map(
-                                                (alert, index) => (
-                                                    <div
-                                                        key={`${alert.title}-${index}`}
-                                                        className="rounded-2xl border bg-background p-4"
-                                                    >
-                                                        <div className="flex items-start justify-between gap-3">
-                                                            <div>
-                                                                <p className="font-medium">
-                                                                    {
-                                                                        alert.title
-                                                                    }
-                                                                </p>
-                                                                <p className="mt-1 text-sm text-muted-foreground">
-                                                                    {
-                                                                        alert.description
-                                                                    }
-                                                                </p>
-                                                            </div>
-                                                            <StatusBadge
-                                                                status={
-                                                                    alert.severity
-                                                                }
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                ),
-                                            )}
+                                ) : (
+                                    <div className="py-8 flex flex-col items-center justify-center text-center">
+                                        <div className="w-16 h-16 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground mb-3">
+                                            <Calendar className="w-7 h-7 stroke-1" />
                                         </div>
-                                    ) : (
-                                        <EmptyState message="No facility alerts for this filter" />
-                                    )}
-                                </ActivityList>
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="activities" className="space-y-6">
-                            <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-                                <ActivityList
-                                    title="Recent activity"
-                                    icon={Activity}
-                                >
-                                    <div className="mb-4 flex flex-wrap gap-2">
-                                        {[
-                                            'all',
-                                            'pending',
-                                            'approved',
-                                            'completed',
-                                            'rejected',
-                                        ].map((status) => (
-                                            <Button
-                                                key={status}
-                                                size="sm"
-                                                variant={
-                                                    activityStatusFilter ===
-                                                    status
-                                                        ? 'default'
-                                                        : 'outline'
-                                                }
-                                                onClick={() =>
-                                                    setActivityStatusFilter(
-                                                        status,
-                                                    )
-                                                }
-                                            >
-                                                {status}
-                                            </Button>
-                                        ))}
+                                        <div className="text-sm font-bold text-foreground">
+                                            No scheduled activities today
+                                        </div>
+                                        <p className="text-xs text-muted-foreground max-w-[260px] mt-1">
+                                            There are no visits, virtual sessions, or e-Burol sessions scheduled for today.
+                                        </p>
+                                        <Link
+                                            href="/jail-officer/assigned-visit-sessions"
+                                            className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/60 rounded-xl px-4 py-2 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition shadow-2xs"
+                                        >
+                                            View Full Schedule <ArrowRight className="w-3.5 h-3.5" />
+                                        </Link>
                                     </div>
-                                    {filteredActivities.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {filteredActivities
-                                                .slice(0, 10)
-                                                .map((activity) => (
-                                                    <div
-                                                        key={activity.id}
-                                                        className="rounded-2xl border bg-background p-4"
-                                                    >
-                                                        <div className="flex items-start justify-between gap-3">
-                                                            <div>
-                                                                <p className="font-medium">
-                                                                    {
-                                                                        activity.title
-                                                                    }
-                                                                </p>
-                                                                <p className="mt-1 text-sm text-muted-foreground">
-                                                                    {
-                                                                        activity.description
-                                                                    }
-                                                                </p>
-                                                                <p className="mt-2 text-xs text-muted-foreground">
-                                                                    {
-                                                                        activity.created_at
-                                                                    }
-                                                                </p>
-                                                            </div>
-                                                            <StatusBadge
-                                                                status={
-                                                                    activity.status
-                                                                }
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                    ) : (
-                                        <EmptyState message="No recent activity for this filter" />
-                                    )}
-                                </ActivityList>
-
-                                <ActivityList
-                                    title="Upcoming visits"
-                                    icon={Calendar}
-                                >
-                                    <div className="mb-4 flex gap-2">
-                                        {['all', 'physical', 'virtual'].map(
-                                            (type) => (
-                                                <Button
-                                                    key={type}
-                                                    size="sm"
-                                                    variant={
-                                                        visitTypeFilter === type
-                                                            ? 'default'
-                                                            : 'outline'
-                                                    }
-                                                    onClick={() =>
-                                                        setVisitTypeFilter(type)
-                                                    }
-                                                >
-                                                    {type}
-                                                </Button>
-                                            ),
-                                        )}
-                                    </div>
-                                    {filteredVisits.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {filteredVisits.map((visit) => (
-                                                <Link
-                                                    key={visit.id}
-                                                    href={`/jail-officer/assigned-visit-sessions/${visit.id}`}
-                                                    className="block rounded-2xl border bg-background p-4 transition hover:bg-muted/50"
-                                                >
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div>
-                                                            <p className="font-medium">
-                                                                {
-                                                                    visit.visitor_name
-                                                                }
-                                                            </p>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                to{' '}
-                                                                {
-                                                                    visit.inmate_name
-                                                                }
-                                                            </p>
-                                                            <p className="mt-2 text-xs text-muted-foreground">
-                                                                {
-                                                                    visit.scheduled_date
-                                                                }{' '}
-                                                                ·{' '}
-                                                                {
-                                                                    visit.scheduled_time
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <StatusBadge
-                                                                status={
-                                                                    visit.visit_type
-                                                                }
-                                                            />
-                                                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                                        </div>
-                                                    </div>
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <EmptyState message="No upcoming visits for this filter" />
-                                    )}
-                                </ActivityList>
+                                )}
                             </div>
+                        </div>
 
-                            <div className="grid gap-6 lg:grid-cols-3">
-                                <ActivityList
-                                    title="Pending approvals"
-                                    icon={UserCheck}
-                                >
-                                    {pendingApprovals.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {pendingApprovals.map(
-                                                (approval) => (
-                                                    <div
-                                                        key={approval.id}
-                                                        className="rounded-2xl border border-amber-200 bg-amber-50 p-4"
-                                                    >
-                                                        <p className="font-medium text-amber-950">
-                                                            {
-                                                                approval.visitor_name
-                                                            }
-                                                        </p>
-                                                        <p className="text-sm text-amber-800">
-                                                            to{' '}
-                                                            {
-                                                                approval.inmate_name
-                                                            }
-                                                        </p>
-                                                        <p className="mt-2 text-xs text-amber-700">
-                                                            {
-                                                                approval.scheduled_date
-                                                            }{' '}
-                                                            ·{' '}
-                                                            {
-                                                                approval.scheduled_time
-                                                            }
-                                                        </p>
-                                                        <div className="mt-3 flex gap-2">
-                                                            <Button
-                                                                size="sm"
-                                                                className="flex-1 bg-primary hover:bg-primary/90 text-white"
-                                                            >
-                                                                <CheckCircle2 className="h-4 w-4" />
-                                                                Approve
-                                                            </Button>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="flex-1"
-                                                            >
-                                                                <XCircle className="h-4 w-4" />
-                                                                Reject
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                ),
-                                            )}
+                        {/* ── CARD 3: Live Session Monitoring (4.5 cols) ── */}
+                        <div className="lg:col-span-4 bg-white dark:bg-card border border-border/80 rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-7 h-7 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-xs">
+                                            <Video className="w-4 h-4" />
                                         </div>
-                                    ) : (
-                                        <EmptyState message="All approvals are up to date" />
-                                    )}
-                                </ActivityList>
+                                        <h2 className="text-base font-bold text-foreground">
+                                            Live Session Monitoring
+                                        </h2>
+                                    </div>
+                                    <Link
+                                        href="/jail-officer/assigned-sessions"
+                                        className="text-xs font-semibold text-muted-foreground hover:text-foreground border border-border/80 rounded-xl px-2.5 py-1 transition"
+                                    >
+                                        View All
+                                    </Link>
+                                </div>
 
-                                <ActivityList title="Flagged chats" icon={Flag}>
-                                    {filteredFlags.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {filteredFlags.map((item) => (
+                                {/* Active / Upcoming / Completed Filter Pills */}
+                                <div className="flex items-center gap-1.5 p-1 bg-muted/60 rounded-2xl mb-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLiveSessionTab('active')}
+                                        className={`px-3 py-1 text-xs font-bold rounded-xl transition flex items-center gap-1.5 ${
+                                            liveSessionTab === 'active'
+                                                ? 'bg-orange-500 text-white shadow-xs'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        Active{' '}
+                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${liveSessionTab === 'active' ? 'bg-orange-600/70 text-white' : 'bg-muted text-foreground'}`}>
+                                            {liveSessionCounts.active}
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setLiveSessionTab('upcoming')}
+                                        className={`px-3 py-1 text-xs font-bold rounded-xl transition flex items-center gap-1.5 ${
+                                            liveSessionTab === 'upcoming'
+                                                ? 'bg-orange-500 text-white shadow-xs'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        Upcoming{' '}
+                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${liveSessionTab === 'upcoming' ? 'bg-orange-600/70 text-white' : 'bg-muted text-foreground'}`}>
+                                            {liveSessionCounts.upcoming}
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setLiveSessionTab('completed')}
+                                        className={`px-3 py-1 text-xs font-bold rounded-xl transition flex items-center gap-1.5 ${
+                                            liveSessionTab === 'completed'
+                                                ? 'bg-orange-500 text-white shadow-xs'
+                                                : 'text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        Completed{' '}
+                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${liveSessionTab === 'completed' ? 'bg-orange-600/70 text-white' : 'bg-muted text-foreground'}`}>
+                                            {liveSessionCounts.completed}
+                                        </span>
+                                    </button>
+                                </div>
+
+                                {/* Tab Content: Active Sessions */}
+                                {liveSessionTab === 'active' && (
+                                    activeSessionsList.length > 0 ? (
+                                        <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                                            {activeSessionsList.map((session) => (
                                                 <div
-                                                    key={item.id}
-                                                    className="rounded-2xl border bg-background p-4"
+                                                    key={session.id}
+                                                    className="p-3 bg-muted/40 hover:bg-muted/70 rounded-2xl border border-border/60 transition flex items-center justify-between"
                                                 >
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div>
-                                                            <p className="text-sm font-medium">
-                                                                {item.message}
-                                                            </p>
-                                                            <p className="mt-1 text-xs text-muted-foreground">
-                                                                {
-                                                                    item.visitor_name
-                                                                }{' '}
-                                                                ·{' '}
-                                                                {
-                                                                    item.created_at
-                                                                }
-                                                            </p>
+                                                    <div className="min-w-0 pr-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                            <span className="text-xs font-bold text-foreground truncate">
+                                                                {session.pdl_name}
+                                                            </span>
                                                         </div>
-                                                        <StatusBadge
-                                                            status={
-                                                                item.severity
-                                                            }
-                                                        />
+                                                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                                                            Visitor: {session.visitor_name} · Cell {session.cell}
+                                                        </div>
                                                     </div>
+                                                    <Link
+                                                        href="/jail-officer/assigned-sessions"
+                                                        className="shrink-0 px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-xl shadow-2xs transition"
+                                                    >
+                                                        Monitor
+                                                    </Link>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <EmptyState message="No flagged incidents" />
-                                    )}
-                                </ActivityList>
+                                        <div className="py-8 flex flex-col items-center justify-center text-center">
+                                            <div className="w-16 h-16 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground mb-3">
+                                                <Video className="w-7 h-7 stroke-1" />
+                                            </div>
+                                            <div className="text-sm font-bold text-foreground">
+                                                No active sessions
+                                            </div>
+                                            <p className="text-xs text-muted-foreground max-w-[260px] mt-1">
+                                                There are no ongoing virtual visitation or e-Burol sessions at the moment.
+                                            </p>
+                                            <Link
+                                                href="/jail-officer/assigned-sessions"
+                                                className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/60 rounded-xl px-4 py-2 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition shadow-2xs"
+                                            >
+                                                Go to Live Sessions <ArrowRight className="w-3.5 h-3.5" />
+                                            </Link>
+                                        </div>
+                                    )
+                                )}
 
-                                <ActivityList
-                                    title="Upcoming e-Burol"
-                                    icon={Heart}
-                                >
-                                    {upcomingEburols.length > 0 ? (
-                                        <div className="space-y-3">
+                                {/* Tab Content: Upcoming Sessions */}
+                                {liveSessionTab === 'upcoming' && (
+                                    (upcomingVisits.length > 0 || upcomingEburols.length > 0) ? (
+                                        <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                                            {upcomingVisits.map((item) => (
+                                                <div
+                                                    key={`visit-${item.id}`}
+                                                    className="p-3 bg-muted/40 hover:bg-muted/70 rounded-2xl border border-border/60 transition flex items-center justify-between"
+                                                >
+                                                    <div className="min-w-0 pr-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full bg-blue-500" />
+                                                            <span className="text-xs font-bold text-foreground truncate">
+                                                                {item.inmate_name}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                                            Visitor: {item.visitor_name} · {item.scheduled_date}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                        <div className="text-[11px] font-bold text-foreground">
+                                                            {item.scheduled_time}
+                                                        </div>
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-[10px] uppercase font-semibold mt-0.5 border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
+                                                        >
+                                                            {item.visit_type}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                            ))}
                                             {upcomingEburols.map((eburol) => (
                                                 <div
-                                                    key={eburol.id}
-                                                    className="rounded-2xl border bg-background p-4"
+                                                    key={`eburol-${eburol.id}`}
+                                                    className="p-3 bg-muted/40 hover:bg-muted/70 rounded-2xl border border-border/60 transition flex items-center justify-between"
                                                 >
-                                                    <p className="font-medium">
-                                                        {eburol.visitor_name}
-                                                    </p>
-                                                    <p className="mt-1 text-sm text-muted-foreground">
-                                                        {eburol.scheduled_date}{' '}
-                                                        ·{' '}
-                                                        {eburol.scheduled_time}
-                                                    </p>
+                                                    <div className="min-w-0 pr-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                            <span className="text-xs font-bold text-foreground truncate">
+                                                                e-Burol: {eburol.visitor_name}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                                            Date: {eburol.scheduled_date}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                        <div className="text-[11px] font-bold text-foreground">
+                                                            {eburol.scheduled_time}
+                                                        </div>
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-[10px] uppercase font-semibold mt-0.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                                        >
+                                                            e-burol
+                                                        </Badge>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <EmptyState message="No upcoming e-Burol schedules" />
-                                    )}
-                                </ActivityList>
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-                </div>
-            </div>
-        </AppLayout>
-    );
-}
-
-interface LegacyOfficerDashboardProps {
-    scopeSummary: {
-        total_dormitories: number;
-        total_buildings: number;
-        total_cells: number;
-        total_pdls: number;
-    };
-    kpis: {
-        total_pdls: number;
-        occupied_cells: number;
-        available_cells: number;
-        pending_visits: number;
-        pending_eburols: number;
-        active_sessions: number;
-        today_visits: number;
-    };
-    visitVolume: Array<{ date: string; count: number }>;
-    pdlDistribution: Array<{ name: string; count: number; capacity: number }>;
-    cellOccupancy: Array<{
-        cell: string;
-        occupied: number;
-        capacity: number;
-        percentage: number;
-    }>;
-    sessionStats: { completed: number; active: number; flagged: number };
-    recentActivities: Array<{
-        id: number;
-        type: string;
-        title: string;
-        description: string;
-        status: string;
-        created_at: string;
-    }>;
-    upcomingVisits: Array<{
-        id: number;
-        visitor_name: string;
-        inmate_name: string;
-        scheduled_date: string;
-        scheduled_time: string;
-        visit_type: string;
-    }>;
-    upcomingEburols: Array<{
-        id: number;
-        visitor_name: string;
-        scheduled_date: string;
-        scheduled_time: string;
-    }>;
-    pendingApprovals: Array<{
-        id: number;
-        visitor_name: string;
-        inmate_name: string;
-        scheduled_date: string;
-        scheduled_time: string;
-    }>;
-    flaggedItems: Array<{
-        id: number;
-        message: string;
-        severity: string;
-        visitor_name: string;
-        created_at: string;
-    }>;
-    facilityAlerts: Array<{
-        type: string;
-        title: string;
-        description: string;
-        severity: string;
-    }>;
-}
-
-const SeverityDot = ({ severity }: { severity: string }) => {
-    const map: Record<string, string> = {
-        high: 'bg-red-500',
-        medium: 'bg-amber-400',
-        low: 'bg-blue-400',
-    };
-    return (
-        <span
-            className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${map[severity] ?? 'bg-muted-foreground'}`}
-        />
-    );
-};
-
-const getSeverityBadgeClass = (severity: string) => {
-    switch (severity) {
-        case 'high':
-            return 'bg-red-50 text-red-700 border border-red-200';
-        case 'medium':
-            return 'bg-amber-50 text-amber-700 border border-amber-200';
-        case 'low':
-            return 'bg-blue-50 text-blue-700 border border-blue-200';
-        default:
-            return 'bg-muted text-muted-foreground border border-border';
-    }
-};
-
-const getStatusClass = (status: string) => {
-    switch (status) {
-        case 'pending':
-            return 'bg-amber-50 text-amber-700 border border-amber-200';
-        case 'approved':
-            return 'bg-green-50 text-green-700 border border-green-200';
-        case 'rejected':
-            return 'bg-red-50 text-red-700 border border-red-200';
-        case 'completed':
-            return 'bg-blue-50 text-blue-700 border border-blue-200';
-        default:
-            return 'bg-muted text-muted-foreground border border-border';
-    }
-};
-
-function LegacyOfficerDashboard({
-    scopeSummary,
-    kpis,
-    visitVolume,
-    pdlDistribution,
-    cellOccupancy,
-    sessionStats,
-    recentActivities,
-    upcomingVisits,
-    upcomingEburols,
-    pendingApprovals,
-    flaggedItems,
-    facilityAlerts,
-}: LegacyOfficerDashboardProps) {
-    const page = usePage<SharedData>();
-    const userName = (page.props.auth?.user?.name as string) ?? 'Officer';
-
-    // Initialize real-time notifications
-    const {
-        notifications: realTimeNotifications,
-        unreadCount: realTimeUnreadCount,
-        setUnreadCount: setRealTimeUnreadCount,
-        requestNotificationPermission,
-    } = useRealTimeNotifications();
-
-    // Show toast for new real-time notifications
-    useEffect(() => {
-        if (realTimeNotifications.length > 0) {
-            const latestNotification = realTimeNotifications[0];
-
-            // Show toast notification
-            toast.info(latestNotification.title, {
-                description: latestNotification.message,
-                duration: 8000,
-                action: {
-                    label: 'View',
-                    onClick: () => {
-                        window.location.href = '/jail-officer/notifications';
-                    },
-                },
-            });
-        }
-    }, [realTimeNotifications]);
-
-    // Request notification permission on mount
-    useEffect(() => {
-        requestNotificationPermission();
-    }, []);
-
-    const maxVisit =
-        visitVolume.length > 0
-            ? Math.max(...visitVolume.map((v) => v.count), 1)
-            : 1;
-    const today = new Date().toLocaleDateString('en-PH', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-
-    const urgentAlertCount =
-        facilityAlerts.filter((a) => a.severity === 'high').length +
-        flaggedItems.filter((f) => f.severity === 'high').length;
-
-    return (
-        <AppLayout>
-            <Head title="Jail Officer Dashboard" />
-
-            <div className="min-h-screen bg-muted">
-                {/* ── Top Bar ── */}
-                <header className="sticky top-0 z-20 border-b border-border bg-card">
-                    <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-6 py-4">
-                        <div>
-                            <h1 className="text-lg font-medium text-foreground">
-                                Hello, {userName}
-                            </h1>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                                {today}
-                            </p>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            {urgentAlertCount > 0 && (
-                                <span className="flex items-center gap-1.5 rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
-                                    <ShieldAlert className="h-3.5 w-3.5" />
-                                    {urgentAlertCount}
-                                </span>
-                            )}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 gap-1.5 border-border text-xs hover:bg-muted"
-                            >
-                                <Filter className="h-3.5 w-3.5" />
-                                Filter
-                            </Button>
-                        </div>
-                    </div>
-                </header>
-
-                <main className="mx-auto max-w-[1600px] space-y-6 px-6 py-6">
-                    {/* ── Jurisdiction Summary ── */}
-                    <div className="rounded-lg border border-border bg-card p-5">
-                        <div className="mb-4 flex items-center justify-between">
-                            <p className="text-sm font-medium tracking-wide text-foreground/80 uppercase">
-                                Assigned Jurisdiction
-                            </p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                            {[
-                                {
-                                    icon: Building2,
-                                    label: 'Dormitories',
-                                    value: scopeSummary.total_dormitories,
-                                },
-                                {
-                                    icon: Warehouse,
-                                    label: 'Buildings',
-                                    value: scopeSummary.total_buildings,
-                                },
-                                {
-                                    icon: Columns3,
-                                    label: 'Cells',
-                                    value: scopeSummary.total_cells,
-                                },
-                                {
-                                    icon: PersonStanding,
-                                    label: 'PDLs',
-                                    value: scopeSummary.total_pdls,
-                                },
-                            ].map(({ icon: Icon, label, value }) => (
-                                <div
-                                    key={label}
-                                    className="border-l-2 border-border pl-4"
-                                >
-                                    <div className="text-2xl font-semibold text-foreground">
-                                        {value}
-                                    </div>
-                                    <div className="mt-0.5 text-xs text-muted-foreground">
-                                        {label}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* ── KPI Strip ── */}
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-                        {[
-                            {
-                                label: 'Total PDLs',
-                                value: kpis.total_pdls,
-                                icon: Users,
-                                color: 'text-blue-600',
-                                bg: 'bg-blue-50',
-                                border: 'border-blue-200',
-                            },
-                            {
-                                label: 'Occupied Cells',
-                                value: kpis.occupied_cells,
-                                icon: UserCheck,
-                                color: 'text-green-600',
-                                bg: 'bg-green-50',
-                                border: 'border-green-200',
-                            },
-                            {
-                                label: 'Available Cells',
-                                value: kpis.available_cells,
-                                icon: UserX,
-                                color: 'text-emerald-600',
-                                bg: 'bg-emerald-50',
-                                border: 'border-emerald-200',
-                            },
-                            {
-                                label: 'Pending Visits',
-                                value: kpis.pending_visits,
-                                icon: Calendar,
-                                color: 'text-amber-600',
-                                bg: 'bg-amber-50',
-                                border: 'border-amber-200',
-                            },
-                            {
-                                label: 'Pending E-Burol',
-                                value: kpis.pending_eburols,
-                                icon: Heart,
-                                color: 'text-rose-600',
-                                bg: 'bg-rose-50',
-                                border: 'border-rose-200',
-                            },
-                            {
-                                label: 'Active Sessions',
-                                value: kpis.active_sessions,
-                                icon: Video,
-                                color: 'text-purple-600',
-                                bg: 'bg-purple-50',
-                                border: 'border-purple-200',
-                            },
-                            {
-                                label: "Today's Visits",
-                                value: kpis.today_visits,
-                                icon: Clock,
-                                color: 'text-cyan-600',
-                                bg: 'bg-cyan-50',
-                                border: 'border-cyan-200',
-                            },
-                        ].map(
-                            ({
-                                label,
-                                value,
-                                icon: Icon,
-                                color,
-                                bg,
-                                border,
-                            }) => (
-                                <div
-                                    key={label}
-                                    className={`border bg-card ${border} rounded-lg p-4`}
-                                >
-                                    <div
-                                        className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${bg} mb-2.5`}
-                                    >
-                                        <Icon className={`h-4 w-4 ${color}`} />
-                                    </div>
-                                    <div className="mb-0.5 text-2xl font-semibold text-foreground">
-                                        {value}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {label}
-                                    </div>
-                                </div>
-                            ),
-                        )}
-                    </div>
-
-                    {/* ── Analytics Row ── */}
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                        {/* Visit Volume */}
-                        <div className="rounded-lg border border-border bg-card p-5">
-                            <div className="mb-4 flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4 text-foreground/80" />
-                                <h2 className="text-sm font-medium text-foreground">
-                                    Visit Volume — Last 7 Days
-                                </h2>
-                            </div>
-                            {visitVolume.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={200}>
-                                    <LineChart data={visitVolume} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                                        <XAxis
-                                            dataKey="date"
-                                            tick={{ fontSize: 10, fill: '#64748b' }}
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tickFormatter={(value) =>
-                                                new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                                            }
-                                        />
-                                        <YAxis
-                                            tick={{ fontSize: 10, fill: '#64748b' }}
-                                            axisLine={false}
-                                            tickLine={false}
-                                            allowDecimals={false}
-                                        />
-                                        <Tooltip
-                                            labelFormatter={(value) =>
-                                                new Date(value).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                                            }
-                                            contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
-                                        />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="count"
-                                            stroke="#475569"
-                                            strokeWidth={2}
-                                            dot={{ fill: '#475569', r: 3 }}
-                                            activeDot={{ r: 5, fill: '#334155' }}
-                                            name="Visits"
-                                        />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <EmptyState message="No visit data for this period" />
-                            )}
-                        </div>
-
-                        {/* Session Stats */}
-                        <div className="rounded-lg border border-border bg-card p-5">
-                            <div className="mb-4 flex items-center gap-2">
-                                <Video className="h-4 w-4 text-foreground/80" />
-                                <h2 className="text-sm font-medium text-foreground">
-                                    Session Monitoring — Last 7 Days
-                                </h2>
-                            </div>
-                            <div className="mb-5 grid grid-cols-3 gap-3">
-                                {[
-                                    {
-                                        label: 'Completed',
-                                        value: sessionStats.completed,
-                                        color: 'text-green-600',
-                                        bg: 'bg-green-50',
-                                        border: 'border-green-200',
-                                    },
-                                    {
-                                        label: 'Active',
-                                        value: sessionStats.active,
-                                        color: 'text-blue-600',
-                                        bg: 'bg-blue-50',
-                                        border: 'border-blue-200',
-                                    },
-                                    {
-                                        label: 'Flagged',
-                                        value: sessionStats.flagged,
-                                        color: 'text-red-600',
-                                        bg: 'bg-red-50',
-                                        border: 'border-red-200',
-                                    },
-                                ].map(({ label, value, color, bg, border }) => (
-                                    <div
-                                        key={label}
-                                        className={`${bg} ${border} rounded-lg border p-4 text-center`}
-                                    >
-                                        <div
-                                            className={`text-3xl font-semibold ${color}`}
-                                        >
-                                            {value}
+                                        <div className="py-8 flex flex-col items-center justify-center text-center">
+                                            <div className="w-16 h-16 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground mb-3">
+                                                <Calendar className="w-7 h-7 stroke-1" />
+                                            </div>
+                                            <div className="text-sm font-bold text-foreground">
+                                                No upcoming sessions
+                                            </div>
+                                            <p className="text-xs text-muted-foreground max-w-[260px] mt-1">
+                                                There are no scheduled visits or e-Burol sessions in the upcoming queue.
+                                            </p>
+                                            <Link
+                                                href="/jail-officer/assigned-visit-sessions"
+                                                className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/60 rounded-xl px-4 py-2 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition shadow-2xs"
+                                            >
+                                                View Schedule <ArrowRight className="w-3.5 h-3.5" />
+                                            </Link>
                                         </div>
-                                        <div className="mt-1 text-xs text-muted-foreground">
-                                            {label}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            {/* PDL Distribution inside same card to fill space */}
-                            <div className="border-t border-border pt-4">
-                                <p className="mb-3 text-xs font-medium tracking-wide text-foreground/80 uppercase">
-                                    PDL Distribution by Cell
-                                </p>
-                                <div className="max-h-36 space-y-2.5 overflow-y-auto pr-1">
-                                    {pdlDistribution.length > 0 ? (
-                                        pdlDistribution.map((cell) => {
-                                            const pct = Math.round(
-                                                (cell.count /
-                                                    Math.max(
-                                                        cell.capacity,
-                                                        1,
-                                                    )) *
-                                                    100,
-                                            );
-                                            const barColor =
-                                                pct >= 90
-                                                    ? 'bg-red-500'
-                                                    : pct >= 70
-                                                      ? 'bg-amber-500'
-                                                      : 'bg-blue-500';
-                                            return (
+                                    )
+                                )}
+
+                                {/* Tab Content: Completed Sessions */}
+                                {liveSessionTab === 'completed' && (
+                                    completedSessionsList.length > 0 ? (
+                                        <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                                            {completedSessionsList.map((session) => (
                                                 <div
-                                                    key={cell.name}
-                                                    className="space-y-1"
+                                                    key={session.id}
+                                                    className="p-3 bg-muted/40 hover:bg-muted/70 rounded-2xl border border-border/60 transition flex items-center justify-between"
                                                 >
-                                                    <div className="flex justify-between text-xs">
-                                                        <span className="font-medium text-foreground/80">
-                                                            {cell.name}
-                                                        </span>
-                                                        <span className="text-muted-foreground">
-                                                            {cell.count}/
-                                                            {cell.capacity}
-                                                        </span>
+                                                    <div className="min-w-0 pr-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-2 h-2 rounded-full bg-slate-400" />
+                                                            <span className="text-xs font-bold text-foreground truncate">
+                                                                {session.pdl_name}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                                            Visitor: {session.visitor_name} · Cell {session.cell}
+                                                        </div>
                                                     </div>
-                                                    <div className="h-2 overflow-hidden rounded-full bg-muted">
-                                                        <div
-                                                            className={`${barColor} h-full rounded-full transition-all`}
-                                                            style={{
-                                                                width: `${pct}%`,
-                                                            }}
-                                                        />
+                                                    <div className="text-right shrink-0">
+                                                        <div className="text-[11px] font-bold text-muted-foreground">
+                                                            {session.ended_at}
+                                                        </div>
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-[10px] uppercase font-semibold mt-0.5 border-slate-200 bg-slate-50 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
+                                                        >
+                                                            {session.visit_type}
+                                                        </Badge>
                                                     </div>
                                                 </div>
-                                            );
-                                        })
+                                            ))}
+                                        </div>
                                     ) : (
-                                        <p className="text-xs text-muted-foreground">
-                                            No distribution data
-                                        </p>
-                                    )}
-                                </div>
+                                        <div className="py-8 flex flex-col items-center justify-center text-center">
+                                            <div className="w-16 h-16 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground mb-3">
+                                                <Clock className="w-7 h-7 stroke-1" />
+                                            </div>
+                                            <div className="text-sm font-bold text-foreground">
+                                                No completed sessions yet
+                                            </div>
+                                            <p className="text-xs text-muted-foreground max-w-[260px] mt-1">
+                                                Completed visit records and finished monitoring logs will appear here.
+                                            </p>
+                                        </div>
+                                    )
+                                )}
                             </div>
                         </div>
                     </div>
 
-                    {/* ── Cell Occupancy ── */}
-                    <div className="rounded-lg border border-border bg-card p-5">
-                        <div className="mb-4 flex items-center gap-2">
-                            <Columns3 className="h-4 w-4 text-foreground/80" />
-                            <h2 className="text-sm font-medium text-foreground">
-                                Cell Occupancy Overview
-                            </h2>
-                            <div className="ml-auto flex items-center gap-3 text-[11px] text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-border" />{' '}
-                                    Normal
-                                </span>
-                                <span className="flex items-center gap-1">
-                                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-foreground/60" />{' '}
-                                    High
-                                </span>
-                                <span className="flex items-center gap-1">
-                                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-foreground" />{' '}
-                                    Critical
-                                </span>
+                    {/* ──────────────────────────────────────────────────────────
+                        ROW 3: BOTTOM ANALYTICS ROW
+                        Col 1: Facility Snapshot (3.5 cols)
+                        Col 2: Visit Volume Trend (5 cols)
+                        Col 3: Visitation Status (3.5 cols)
+                       ────────────────────────────────────────────────────────── */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                        {/* ── CARD 1: Facility Snapshot ── */}
+                        <div className="lg:col-span-4 bg-white dark:bg-card border border-border/80 rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-7 h-7 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-xs">
+                                            <Building2 className="w-4 h-4" />
+                                        </div>
+                                        <h2 className="text-base font-bold text-foreground">
+                                            Facility Snapshot
+                                        </h2>
+                                    </div>
+                                    <Link
+                                        href="/jail-officer/cells-hierarchical"
+                                        className="text-xs font-semibold text-muted-foreground hover:text-foreground border border-border/80 rounded-xl px-2.5 py-1 transition"
+                                    >
+                                        View Facilities
+                                    </Link>
+                                </div>
+
+                                {/* 4 Pastel Scope Badges */}
+                                <div className="grid grid-cols-4 gap-2 mb-5">
+                                    {/* Dormitories */}
+                                    <div className="bg-orange-50/70 dark:bg-orange-950/20 border border-orange-100/80 dark:border-orange-900/40 rounded-2xl p-2.5 text-center">
+                                        <div className="flex items-center justify-center gap-1 text-orange-600 font-extrabold text-base">
+                                            <Warehouse className="w-3.5 h-3.5" />
+                                            {scopeSummary.total_dormitories}
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground font-medium mt-0.5 truncate">
+                                            Dormitories
+                                        </div>
+                                    </div>
+
+                                    {/* Buildings */}
+                                    <div className="bg-blue-50/70 dark:bg-blue-950/20 border border-blue-100/80 dark:border-blue-900/40 rounded-2xl p-2.5 text-center">
+                                        <div className="flex items-center justify-center gap-1 text-blue-600 font-extrabold text-base">
+                                            <Building2 className="w-3.5 h-3.5" />
+                                            {scopeSummary.total_buildings}
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground font-medium mt-0.5 truncate">
+                                            Buildings
+                                        </div>
+                                    </div>
+
+                                    {/* Cells */}
+                                    <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-100/80 dark:border-emerald-900/40 rounded-2xl p-2.5 text-center">
+                                        <div className="flex items-center justify-center gap-1 text-emerald-600 font-extrabold text-base">
+                                            <Radio className="w-3.5 h-3.5" />
+                                            {scopeSummary.total_cells}
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground font-medium mt-0.5 truncate">
+                                            Cells
+                                        </div>
+                                    </div>
+
+                                    {/* PDLs */}
+                                    <div className="bg-purple-50/70 dark:bg-purple-950/20 border border-purple-100/80 dark:border-purple-900/40 rounded-2xl p-2.5 text-center">
+                                        <div className="flex items-center justify-center gap-1 text-purple-600 font-extrabold text-base">
+                                            <Users className="w-3.5 h-3.5" />
+                                            {scopeSummary.total_pdls}
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground font-medium mt-0.5 truncate">
+                                            PDLs
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bottom Split: Cell Occupancy progress bar vs Available Cells count */}
+                                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
+                                    <div>
+                                        <div className="text-[11px] font-semibold text-muted-foreground">
+                                            Cell Occupancy
+                                        </div>
+                                        <div className="text-2xl font-black text-foreground mt-0.5">
+                                            {occupancyPercentage}%
+                                        </div>
+                                        {/* Red indicator bar matching image */}
+                                        <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
+                                            <div
+                                                className="h-full bg-red-500 rounded-full transition-all duration-500"
+                                                style={{ width: `${Math.min(occupancyPercentage, 100)}%` }}
+                                            />
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground mt-1.5">
+                                            {occupiedCells}/{totalCells} cells occupied
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="text-[11px] font-semibold text-muted-foreground">
+                                            Available Cells
+                                        </div>
+                                        <div className="text-2xl font-black text-foreground mt-0.5">
+                                            {kpis.available_cells}
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground mt-5">
+                                            {kpis.available_cells} cells available
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        {cellOccupancy.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                {cellOccupancy.slice(0, 8).map((cell) => {
-                                    const fillColor =
-                                        cell.percentage >= 90
-                                            ? 'bg-red-500'
-                                            : cell.percentage >= 70
-                                              ? 'bg-amber-400'
-                                              : 'bg-green-500';
-                                    const textColor =
-                                        cell.percentage >= 90
-                                            ? 'text-red-600'
-                                            : cell.percentage >= 70
-                                              ? 'text-amber-600'
-                                              : 'text-green-600';
-                                    return (
-                                        <div
-                                            key={cell.cell}
-                                            className="rounded-xl border border-border bg-muted p-3"
+
+                        {/* ── CARD 2: Visit Volume Trend ── */}
+                        <div className="lg:col-span-5 bg-white dark:bg-card border border-border/80 rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-7 h-7 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-xs">
+                                            <TrendingUp className="w-4 h-4" />
+                                        </div>
+                                        <h2 className="text-base font-bold text-foreground">
+                                            Visit Volume Trend
+                                        </h2>
+                                    </div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <button
+                                                type="button"
+                                                className="text-xs font-semibold text-muted-foreground border border-border/80 rounded-xl px-2.5 py-1 flex items-center gap-1 hover:border-border cursor-pointer transition"
+                                            >
+                                                {periodLabels[currentPeriod] || 'This Week'} <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="rounded-xl w-32">
+                                            <DropdownMenuItem
+                                                onClick={() => handlePeriodChange('today')}
+                                                className={currentPeriod === 'today' ? 'font-bold text-orange-600' : ''}
+                                            >
+                                                Today
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => handlePeriodChange('week')}
+                                                className={currentPeriod === 'week' ? 'font-bold text-orange-600' : ''}
+                                            >
+                                                This Week
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => handlePeriodChange('month')}
+                                                className={currentPeriod === 'month' ? 'font-bold text-orange-600' : ''}
+                                            >
+                                                This Month
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+
+                                {/* Responsive Line Chart */}
+                                <div className="h-[185px] w-full pt-2">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart
+                                            data={chartData}
+                                            margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
                                         >
-                                            <div className="mb-2 flex items-center justify-between">
-                                                <span className="text-xs font-semibold text-foreground/80">
-                                                    {cell.cell}
-                                                </span>
-                                                <span
-                                                    className={`text-xs font-bold ${textColor}`}
-                                                >
-                                                    {cell.percentage}%
-                                                </span>
-                                            </div>
-                                            <div className="h-2 overflow-hidden rounded-full bg-border">
-                                                <div
-                                                    className={`${fillColor} h-full rounded-full transition-all`}
-                                                    style={{
-                                                        width: `${cell.percentage}%`,
-                                                    }}
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis
+                                                dataKey="date"
+                                                tickLine={false}
+                                                axisLine={{ stroke: '#e2e8f0' }}
+                                                tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                            />
+                                            <YAxis
+                                                allowDecimals={false}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                                domain={[0, 'dataMax + 2']}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                    borderRadius: '12px',
+                                                    border: '1px solid #e2e8f0',
+                                                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                                                    fontSize: '11px',
+                                                }}
+                                            />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="physical"
+                                                stroke="#f97316"
+                                                strokeWidth={2.5}
+                                                dot={{ r: 3, fill: '#f97316' }}
+                                                name="Physical Visits"
+                                            />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="virtual"
+                                                stroke="#3b82f6"
+                                                strokeWidth={2.5}
+                                                dot={{ r: 3, fill: '#3b82f6' }}
+                                                name="Virtual Visits"
+                                            />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="eburol"
+                                                stroke="#10b981"
+                                                strokeWidth={2.5}
+                                                dot={{ r: 3, fill: '#10b981' }}
+                                                name="e-Burol Sessions"
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                {/* Custom Legend */}
+                                <div className="flex items-center justify-center gap-6 pt-2 text-[11px] font-medium text-muted-foreground border-t border-border/50">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+                                        Physical Visits
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                                        Virtual Visits
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                        e-Burol Sessions
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── CARD 3: Visitation Status ── */}
+                        <div className="lg:col-span-3 bg-white dark:bg-card border border-border/80 rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-7 h-7 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-xs">
+                                            <Calendar className="w-4 h-4" />
+                                        </div>
+                                        <h2 className="text-base font-bold text-foreground">
+                                            Visitation Status
+                                        </h2>
+                                    </div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <button
+                                                type="button"
+                                                className="text-xs font-semibold text-muted-foreground border border-border/80 rounded-xl px-2.5 py-1 flex items-center gap-1 hover:border-border cursor-pointer transition"
+                                            >
+                                                {periodLabels[currentPeriod] || 'This Week'} <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="rounded-xl w-32">
+                                            <DropdownMenuItem
+                                                onClick={() => handlePeriodChange('today')}
+                                                className={currentPeriod === 'today' ? 'font-bold text-orange-600' : ''}
+                                            >
+                                                Today
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => handlePeriodChange('week')}
+                                                className={currentPeriod === 'week' ? 'font-bold text-orange-600' : ''}
+                                            >
+                                                This Week
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => handlePeriodChange('month')}
+                                                className={currentPeriod === 'month' ? 'font-bold text-orange-600' : ''}
+                                            >
+                                                This Month
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+
+                                <div className="grid grid-cols-12 gap-3 items-center">
+                                    {/* Left: Donut Chart with Total Visits in Center */}
+                                    <div className="col-span-5 flex items-center justify-center">
+                                        <div className="relative w-28 h-28 flex items-center justify-center">
+                                            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                                                {/* Background Track */}
+                                                <circle
+                                                    cx="50"
+                                                    cy="50"
+                                                    r="38"
+                                                    fill="transparent"
+                                                    stroke="#f1f5f9"
+                                                    strokeWidth="10"
                                                 />
-                                            </div>
-                                            <div className="mt-1.5 text-[11px] text-muted-foreground">
-                                                {cell.occupied} /{' '}
-                                                {cell.capacity} occupied
+                                                {/* Colored Segments */}
+                                                {donutSegments.map((seg) => (
+                                                    <circle
+                                                        key={seg.label}
+                                                        cx="50"
+                                                        cy="50"
+                                                        r="38"
+                                                        fill="transparent"
+                                                        stroke={seg.strokeColor}
+                                                        strokeWidth="10"
+                                                        strokeDasharray={seg.strokeDasharray}
+                                                        strokeDashoffset={seg.strokeDashoffset}
+                                                        strokeLinecap="round"
+                                                        className="transition-all duration-700"
+                                                    />
+                                                ))}
+                                            </svg>
+                                            {/* Center Label */}
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center leading-none">
+                                                <span className="text-2xl font-black text-foreground">
+                                                    {totalWeekVisits}
+                                                </span>
+                                                <span className="text-[10px] text-muted-foreground font-semibold mt-1">
+                                                    Total Visits
+                                                </span>
                                             </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <EmptyState message="No cell occupancy data" />
-                        )}
-                    </div>
+                                    </div>
 
-                    {/* ── Activity + Upcoming Split ── */}
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                        {/* Recent Activity — wider */}
-                        <div className="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm lg:col-span-2">
-                            <div className="mb-4 flex items-center gap-2">
-                                <div className="rounded-lg bg-orange-50 p-1.5">
-                                    <Activity className="h-4 w-4 text-orange-600" />
-                                </div>
-                                <h2 className="text-sm font-semibold text-foreground">
-                                    Recent Activity
-                                </h2>
-                            </div>
-                            {recentActivities.length > 0 ? (
-                                <div className="max-h-80 space-y-1.5 overflow-y-auto">
-                                    {recentActivities
-                                        .slice(0, 10)
-                                        .map((activity) => (
+                                    {/* Right: Status Table Breakdown */}
+                                    <div className="col-span-7 space-y-1.5 pl-1">
+                                        {statusItems.map((item) => (
                                             <div
-                                                key={activity.id}
-                                                className="group flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted"
+                                                key={item.label}
+                                                className="flex items-center justify-between text-xs"
                                             >
-                                                <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-orange-400" />
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <p className="truncate text-sm font-medium text-foreground">
-                                                            {activity.title}
-                                                        </p>
-                                                        <span
-                                                            className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${getStatusClass(activity.status)}`}
-                                                        >
-                                                            {activity.status}
-                                                        </span>
-                                                    </div>
-                                                    <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
-                                                        {activity.description}
-                                                    </p>
-                                                    <p className="mt-1 text-[10px] text-muted-foreground">
-                                                        {activity.created_at}
-                                                    </p>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`w-2.5 h-2.5 rounded-sm ${item.color} shrink-0`} />
+                                                    <span className="text-[11px] font-medium text-foreground">
+                                                        {item.label}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[11px] font-bold text-foreground">
+                                                        {item.count}
+                                                    </span>
+                                                    <span className="text-[10px] text-muted-foreground w-7 text-right">
+                                                        {item.pct}%
+                                                    </span>
                                                 </div>
                                             </div>
                                         ))}
-                                </div>
-                            ) : (
-                                <EmptyState message="No recent activity to show" />
-                            )}
-                        </div>
-
-                        {/* Upcoming Visits */}
-                        <div className="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm">
-                            <div className="mb-4 flex items-center gap-2">
-                                <div className="rounded-lg bg-blue-50 p-1.5">
-                                    <Calendar className="h-4 w-4 text-blue-600" />
-                                </div>
-                                <h2 className="text-sm font-semibold text-foreground">
-                                    Upcoming Visits
-                                </h2>
-                            </div>
-                            {upcomingVisits.length > 0 ? (
-                                <div className="max-h-80 space-y-2 overflow-y-auto">
-                                    {upcomingVisits.map((visit) => (
-                                        <Link
-                                            key={visit.id}
-                                            href={`/jail-officer/assigned-visit-sessions/${visit.id}`}
-                                            className="group flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:border-orange-200 hover:bg-orange-50"
-                                        >
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm font-medium text-foreground">
-                                                    {visit.visitor_name}
-                                                </p>
-                                                <p className="truncate text-xs text-muted-foreground">
-                                                    → {visit.inmate_name}
-                                                </p>
-                                                <div className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-                                                    <Clock className="h-3 w-3" />
-                                                    {visit.scheduled_date} ·{' '}
-                                                    {visit.scheduled_time}
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-shrink-0 flex-col items-end gap-2">
-                                                <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">
-                                                    {visit.visit_type}
-                                                </span>
-                                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-colors group-hover:text-orange-500" />
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState message="No upcoming visits scheduled" />
-                            )}
-                        </div>
-                    </div>
-
-                    {/* ── Action + Alerts Row ── */}
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                        {/* Pending Approvals */}
-                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                            <div className="mb-4 flex items-center gap-2">
-                                <div className="rounded-lg bg-amber-50 p-1.5">
-                                    <UserCheck className="h-4 w-4 text-amber-600" />
-                                </div>
-                                <h2 className="text-sm font-semibold text-foreground">
-                                    Pending Approvals
-                                </h2>
-                                {pendingApprovals.length > 0 && (
-                                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-xs font-semibold text-white">
-                                        {pendingApprovals.length}
-                                    </span>
-                                )}
-                            </div>
-                            {pendingApprovals.length > 0 ? (
-                                <div className="max-h-72 space-y-3 overflow-y-auto">
-                                    {pendingApprovals.map((approval) => (
-                                        <div
-                                            key={approval.id}
-                                            className="rounded-xl border border-amber-100 bg-amber-50 p-3"
-                                        >
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <p className="truncate text-sm font-medium text-foreground">
-                                                        {approval.visitor_name}
-                                                    </p>
-                                                    <p className="truncate text-xs text-muted-foreground">
-                                                        → {approval.inmate_name}
-                                                    </p>
-                                                </div>
-                                                <span className="flex-shrink-0 rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                                                    Pending
-                                                </span>
-                                            </div>
-                                            <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-                                                <Clock className="h-3 w-3" />
-                                                {approval.scheduled_date} ·{' '}
-                                                {approval.scheduled_time}
-                                            </div>
-                                            <div className="mt-3 flex gap-2">
-                                                <button className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-green-600 py-1.5 text-xs font-medium text-white transition-colors hover:bg-green-700">
-                                                    <CheckCircle2 className="h-3.5 w-3.5" />{' '}
-                                                    Approve
-                                                </button>
-                                                <button className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-border py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted">
-                                                    <XCircle className="h-3.5 w-3.5" />{' '}
-                                                    Reject
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState message="All approvals are up to date" />
-                            )}
-                        </div>
-
-                        {/* Flagged Chats */}
-                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                            <div className="mb-4 flex items-center gap-2">
-                                <div className="rounded-lg bg-red-50 p-1.5">
-                                    <Flag className="h-4 w-4 text-red-600" />
-                                </div>
-                                <h2 className="text-sm font-semibold text-foreground">
-                                    Flagged Chats & Incidents
-                                </h2>
-                                {flaggedItems.length > 0 && (
-                                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-semibold text-white">
-                                        {flaggedItems.length}
-                                    </span>
-                                )}
-                            </div>
-                            {flaggedItems.length > 0 ? (
-                                <div className="max-h-72 space-y-2.5 overflow-y-auto">
-                                    {flaggedItems.map((item) => (
-                                        <div
-                                            key={item.id}
-                                            className="rounded-xl border border-border p-3 transition-colors hover:bg-muted"
-                                        >
-                                            <div className="flex items-start gap-2">
-                                                <SeverityDot
-                                                    severity={item.severity}
-                                                />
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-xs leading-snug font-medium text-foreground">
-                                                        {item.message}
-                                                    </p>
-                                                    <div className="mt-1.5 flex items-center justify-between">
-                                                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                                            <Users className="h-3 w-3" />{' '}
-                                                            {item.visitor_name}
-                                                        </span>
-                                                        <span
-                                                            className={`rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${getSeverityBadgeClass(item.severity)}`}
-                                                        >
-                                                            {item.severity}
-                                                        </span>
-                                                    </div>
-                                                    <p className="mt-1 text-[10px] text-muted-foreground">
-                                                        {item.created_at}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState message="No flagged incidents" />
-                            )}
-                        </div>
-
-                        {/* Facility Alerts */}
-                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                            <div className="mb-4 flex items-center gap-2">
-                                <div className="rounded-lg bg-red-50 p-1.5">
-                                    <AlertTriangle className="h-4 w-4 text-red-600" />
-                                </div>
-                                <h2 className="text-sm font-semibold text-foreground">
-                                    Facility Alerts
-                                </h2>
-                                {facilityAlerts.length > 0 && (
-                                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-semibold text-white">
-                                        {facilityAlerts.length}
-                                    </span>
-                                )}
-                            </div>
-                            {facilityAlerts.length > 0 ? (
-                                <div className="max-h-72 space-y-2.5 overflow-y-auto">
-                                    {facilityAlerts.map((alert, index) => (
-                                        <div
-                                            key={index}
-                                            className={`flex items-start gap-3 rounded-xl border p-3 ${getSeverityBadgeClass(alert.severity)}`}
-                                        >
-                                            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-xs font-semibold">
-                                                    {alert.title}
-                                                </p>
-                                                <p className="mt-0.5 text-[11px] leading-snug opacity-80">
-                                                    {alert.description}
-                                                </p>
-                                            </div>
-                                            <span className="flex-shrink-0 text-[10px] font-medium capitalize opacity-80">
-                                                {alert.severity}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState message="No facility alerts" />
-                            )}
-                        </div>
-                    </div>
-
-                    {/* ── E-Burol Row ── */}
-                    {upcomingEburols.length > 0 && (
-                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                            <div className="mb-4 flex items-center gap-2">
-                                <div className="rounded-lg bg-pink-50 p-1.5">
-                                    <Heart className="h-4 w-4 text-pink-600" />
-                                </div>
-                                <h2 className="text-sm font-semibold text-foreground">
-                                    Upcoming E-Burol Schedules
-                                </h2>
-                            </div>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                {upcomingEburols.map((eburol) => (
-                                    <div
-                                        key={eburol.id}
-                                        className="rounded-xl border border-pink-100 bg-pink-50 p-3"
-                                    >
-                                        <p className="text-sm font-medium text-foreground">
-                                            {eburol.visitor_name}
-                                        </p>
-                                        <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
-                                            <Clock className="h-3 w-3" />
-                                            {eburol.scheduled_date} ·{' '}
-                                            {eburol.scheduled_time}
-                                        </div>
                                     </div>
-                                ))}
+                                </div>
                             </div>
                         </div>
-                    )}
-                </main>
+                    </div>
+                </div>
             </div>
         </AppLayout>
-    );
-}
-
-function LegacyOfficerEmptyState({ message }: { message: string }) {
-    return (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                <span className="text-lg leading-none text-muted-foreground">·</span>
-            </div>
-            <p className="text-xs text-muted-foreground">{message}</p>
-        </div>
     );
 }

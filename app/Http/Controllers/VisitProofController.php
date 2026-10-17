@@ -24,7 +24,7 @@ class VisitProofController extends Controller
             if ($visit->user_id !== $user->id) {
                 abort(403, 'You can only view proof for your own visits.');
             }
-        } elseif (! in_array($role, ['super_admin', 'bjmp_officer'], true)) {
+        } elseif (! in_array($role, ['super_admin', 'jail_warden', 'jail_officer', 'bjmp_officer'], true)) {
             abort(403, 'Unauthorized.');
         }
 

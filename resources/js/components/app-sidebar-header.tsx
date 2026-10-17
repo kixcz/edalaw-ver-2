@@ -1,7 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, MessageSquare } from 'lucide-react';
+import { Bell, MessageSquare, Tv } from 'lucide-react';
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { HeaderQuickCalendar } from '@/components/header-quick-calendar';
 import HeaderUserDropdown from '@/components/header-user-dropdown';
 import ThemeSelector from '@/components/theme-selector';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +56,28 @@ export function AppSidebarHeader({
             <div className="flex items-center gap-2">
                 {/* Theme Selector */}
                 <ThemeSelector />
+
+                {/* Header Quick Calendar for Jail Officer and Visitor */}
+                {(role === 'jail_officer' || role === 'visitor') && (
+                    <HeaderQuickCalendar
+                        endpoint={role === 'visitor' ? '/visitor/quick-calendar-events' : '/jail-officer/quick-calendar-events'}
+                    />
+                )}
+
+                {/* Jail Officer Shortcuts: TV Queue Display */}
+                {role === 'jail_officer' && (
+                    <a
+                        href="/jail-officer/visit-queue-tv"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-700 shadow-sm transition-all hover:bg-sky-100 hover:text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300 dark:hover:bg-sky-900/60"
+                        title="Open TV Queue Display in a new tab"
+                        aria-label="Open TV Queue Display in a new tab"
+                    >
+                        <Tv className="size-3.5 text-sky-600 dark:text-sky-400" />
+                        <span className="hidden md:inline">TV Queue</span>
+                    </a>
+                )}
 
                 {/* Notification Bell */}
                 {href && (

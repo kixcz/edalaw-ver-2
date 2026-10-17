@@ -566,6 +566,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::middleware(['role:visitor'])->prefix('visitor')->name('visitor.')->group(function () {
         Route::get('schedules/booked-slots', [\App\Http\Controllers\Visitor\ScheduleController::class, 'getBookedTimeSlots'])
             ->name('schedules.booked-slots');
+        Route::get('quick-calendar-events', [\App\Http\Controllers\Visitor\ScheduleController::class, 'quickCalendarEvents'])
+            ->name('quick-calendar-events');
         Route::get('schedule', [\App\Http\Controllers\Visitor\ScheduleController::class, 'index'])
             ->name('schedule.index');
         Route::post('schedule', [\App\Http\Controllers\Visitor\ScheduleController::class, 'store'])
@@ -806,6 +808,12 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         // Assigned Visit Sessions (Merged approval + monitoring)
         Route::get('assigned-visit-sessions', [\App\Http\Controllers\JailOfficer\AssignedVisitSessionsController::class, 'index'])
             ->name('assigned-visit-sessions.index');
+        Route::get('visit-queue-tv', [\App\Http\Controllers\JailOfficer\AssignedVisitSessionsController::class, 'queueTv'])
+            ->name('assigned-visit-sessions.queue-tv');
+        Route::get('visit-queue-tv/data', [\App\Http\Controllers\JailOfficer\AssignedVisitSessionsController::class, 'queueData'])
+            ->name('assigned-visit-sessions.queue-data');
+        Route::get('quick-calendar-events', [\App\Http\Controllers\JailOfficer\AssignedVisitSessionsController::class, 'quickCalendarEvents'])
+            ->name('assigned-visit-sessions.quick-calendar-events');
         Route::post('assigned-visit-sessions/{visit}/approve', [\App\Http\Controllers\JailOfficer\AssignedVisitSessionsController::class, 'approve'])
             ->name('assigned-visit-sessions.approve');
         Route::post('assigned-visit-sessions/{visit}/reject', [\App\Http\Controllers\JailOfficer\AssignedVisitSessionsController::class, 'reject'])
@@ -880,6 +888,13 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->name('assigned-sessions.join');
 
         // Visit & Eburol Monitoring
+        Route::get('physical-sessions', [\App\Http\Controllers\JailOfficer\PhysicalSessionsController::class, 'index'])
+            ->name('physical-sessions.index');
+        Route::post('physical-sessions/{visit}/complete', [\App\Http\Controllers\JailOfficer\PhysicalSessionsController::class, 'markCompleted'])
+            ->name('physical-sessions.complete');
+        Route::post('physical-sessions/{visit}/no-show', [\App\Http\Controllers\JailOfficer\PhysicalSessionsController::class, 'markNoShow'])
+            ->name('physical-sessions.no-show');
+
         Route::get('visit-monitoring', \App\Http\Controllers\JailOfficer\VisitMonitoringController::class)
             ->name('visit-monitoring');
         Route::get('eburol-monitoring', \App\Http\Controllers\JailOfficer\EburolMonitoringController::class)

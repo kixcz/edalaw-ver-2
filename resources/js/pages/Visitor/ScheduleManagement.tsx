@@ -11,9 +11,10 @@ import { Calendar } from '@/components/ui/calendar';
 import { RelationshipPicker } from '@/components/RelationshipPicker';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Clock, Plus, Scale, User, Video, X, CalendarClock, FileText, MoreVertical, FileOutput, VideoIcon, Search, Building, AlertCircle, CheckCircle2, Upload, Eye, ShieldCheck, Download, Image, CalendarDays, Hourglass, CircleCheck, CircleX, Monitor, Users } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Scale, User, Video, X, CalendarClock, FileText, MoreVertical, FileOutput, VideoIcon, Search, Building, AlertCircle, CheckCircle2, Upload, Eye, ShieldCheck, Download, Image, CalendarDays, Hourglass, CircleCheck, CircleX, Monitor, Users, ChevronLeft, ChevronRight, Heart } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataTable } from '@/components/data-table';
 import InputError from '@/components/input-error';
 import { PrivacyNotice } from '@/components/privacy-notice';
@@ -49,7 +50,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
-import { formatVisitSchedule } from '@/lib/formatVisitSchedule';
+import { formatTime12, formatVisitSchedule } from '@/lib/formatVisitSchedule';
 import visitor from '@/routes/visitor/index';
 import type { BreadcrumbItem } from '@/types';
 
@@ -299,11 +300,43 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
     const [beforeScheduleSession, setBeforeScheduleSession] = useState<{ sessionId: number; visit: Visit } | null>(null);
     const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
     const [selectedVisitForDetails, setSelectedVisitForDetails] = useState<Visit | null>(null);
-    const todayDate = new Date();
-    const today = todayDate.toISOString().split('T')[0];
-    const tomorrow = new Date(todayDate);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const minScheduleDate = (usePage().props as Props).today_unavailable ? tomorrow.toISOString().split('T')[0] : today;
+
+    // Timetable & Calendar Navigation State
+    const [activeTab, setActiveTab] = useState<'records' | 'timetable' | 'calendar'>(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const tabParam = params.get('tab');
+            if (tabParam === 'timetable' || tabParam === 'calendar' || tabParam === 'records') {
+                return tabParam;
+            }
+        }
+        return 'records';
+    });
+
+    const [calendarSelectedDate, setCalendarSelectedDate] = useState(() => {
+        return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+    });
+
+    const [currentMonth, setCurrentMonth] = useState(() => {
+        const d = new Date();
+        return new Date(d.getFullYear(), d.getMonth(), 1);
+    });
+
+    const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+        const d = new Date();
+        const day = d.getDay(); // 0 is Sunday
+        const diff = d.getDate() - day; // Sunday start
+        const sunday = new Date(d.setDate(diff));
+        sunday.setHours(0, 0, 0, 0);
+        return sunday;
+    });
+
+    // Philippine date strings (YYYY-MM-DD)
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+    const tomorrowDate = new Date();
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    const tomorrowStr = tomorrowDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+    const minScheduleDate = (usePage().props as Props).today_unavailable ? tomorrowStr : today;
 
     // Listen for video room close events (from localStorage)
     useEffect(() => {
@@ -440,6 +473,137 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
         });
     }, [visits, statusFilter, visitTypeFilter]);
 
+    // Visits grouped by date string (YYYY-MM-DD)
+    const visitsByDate = useMemo(() => {
+        const map = new Map<string, Visit[]>();
+        visits.forEach((visit) => {
+            const dateKey = visit.scheduled_date;
+            if (!map.has(dateKey)) {
+                map.set(dateKey, []);
+            }
+            map.get(dateKey)!.push(visit);
+        });
+        return map;
+    }, [visits]);
+
+    // 7-day week overview for weekly timetable
+    const weekDays = useMemo(() => {
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(currentWeekStart);
+            d.setDate(d.getDate() + i);
+            const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+            days.push({
+                date: d,
+                dateStr,
+                dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
+                dayNumber: d.getDate(),
+                isToday: today === dateStr,
+                isSelected: calendarSelectedDate === dateStr,
+            });
+        }
+        return days;
+    }, [currentWeekStart, calendarSelectedDate, today]);
+
+    // Visits on the selected date for timetable view
+    const selectedDateVisits = useMemo(() => {
+        const list = visitsByDate.get(calendarSelectedDate) || [];
+        return [...list].sort((a, b) => (a.scheduled_time || '').localeCompare(b.scheduled_time || ''));
+    }, [visitsByDate, calendarSelectedDate]);
+
+    // Month calendar grid calculation
+    const monthCalendarGrid = useMemo(() => {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+
+        const firstDayOfMonth = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+        const days = [];
+
+        // Previous month filler days
+        for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+            const d = new Date(year, month - 1, daysInPrevMonth - i);
+            const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+            days.push({
+                date: d,
+                dateStr,
+                dayNumber: d.getDate(),
+                isCurrentMonth: false,
+                isToday: today === dateStr,
+                visits: visitsByDate.get(dateStr) || [],
+            });
+        }
+
+        // Current month days
+        for (let i = 1; i <= daysInMonth; i++) {
+            const d = new Date(year, month, i);
+            const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+            days.push({
+                date: d,
+                dateStr,
+                dayNumber: i,
+                isCurrentMonth: true,
+                isToday: today === dateStr,
+                visits: visitsByDate.get(dateStr) || [],
+            });
+        }
+
+        // Next month filler days to complete rows (multiples of 7)
+        const remainingDays = (7 - (days.length % 7)) % 7;
+        for (let i = 1; i <= remainingDays; i++) {
+            const d = new Date(year, month + 1, i);
+            const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+            days.push({
+                date: d,
+                dateStr,
+                dayNumber: i,
+                isCurrentMonth: false,
+                isToday: today === dateStr,
+                visits: visitsByDate.get(dateStr) || [],
+            });
+        }
+
+        return days;
+    }, [currentMonth, visitsByDate, today]);
+
+    const prevWeek = () => {
+        const next = new Date(currentWeekStart);
+        next.setDate(next.getDate() - 7);
+        setCurrentWeekStart(next);
+    };
+
+    const nextWeek = () => {
+        const next = new Date(currentWeekStart);
+        next.setDate(next.getDate() + 7);
+        setCurrentWeekStart(next);
+    };
+
+    const goToCurrentWeek = () => {
+        const d = new Date();
+        const day = d.getDay();
+        const diff = d.getDate() - day;
+        const sunday = new Date(d.setDate(diff));
+        sunday.setHours(0, 0, 0, 0);
+        setCurrentWeekStart(sunday);
+        setCalendarSelectedDate(today);
+    };
+
+    const prevMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    };
+
+    const nextMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    };
+
+    const goToCurrentMonth = () => {
+        const d = new Date();
+        setCurrentMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+        setCalendarSelectedDate(today);
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
@@ -465,6 +629,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
         
         form.transform((data) => ({
             ...data,
+            inmate_id: selectedInmateId || undefined,
             use_existing_documents: !!isInmateTagged,
         }));
         
@@ -789,6 +954,12 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                 }
                 if (typeof data.intervalMinutes === 'number') {
                     setRescheduleIntervalMinutes(data.intervalMinutes);
+                }
+                if (typeof data.startTime === 'string') {
+                    setStartTime(data.startTime);
+                }
+                if (typeof data.endTime === 'string') {
+                    setEndTime(data.endTime);
                 }
             } catch (error) {
                 console.error('Error fetching reschedule slot capacities:', error);
@@ -1134,59 +1305,543 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                         <StatCard icon={<CircleX className="w-5 h-5" />} value={stats?.rejected_visits || 0} label="Rejected" accent="bg-red-600" iconBg="bg-red-50" iconColor="text-red-600" />
                     </div>
 
-                    {/* Table */}
-                    <Card className="border-0 shadow-sm">
-                        <div className="px-6 py-4 border-b border-slate-100">
-                            <h3 className="font-semibold text-slate-800">My Visits</h3>
-                            <p className="text-xs text-slate-500 mt-0.5">{filteredVisits.length} of {visits.length} visit{visits.length !== 1 ? 's' : ''}</p>
-                        </div>
-                        <div className="p-6">
-                            <DataTable
-                            columns={columns}
-                            data={filteredVisits}
-                            searchKey="inmate_first_name"
-                            searchPlaceholder="Search by inmate name, date..."
-                            initialSorting={[{ id: 'scheduled_date', desc: true }]}
-                            headerActions={
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                        <SelectTrigger className="w-[150px]">
-                                            <SelectValue placeholder="All Statuses" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Statuses</SelectItem>
-                                            <SelectItem value="pending">Pending</SelectItem>
-                                            <SelectItem value="approved">Approved</SelectItem>
-                                            <SelectItem value="rejected">Rejected</SelectItem>
-                                            <SelectItem value="completed">Completed</SelectItem>
-                                            <SelectItem value="missed">Missed</SelectItem>
-                                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <Select value={visitTypeFilter} onValueChange={setVisitTypeFilter}>
-                                        <SelectTrigger className="w-[130px]">
-                                            <SelectValue placeholder="All Types" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Types</SelectItem>
-                                            <SelectItem value="virtual">Virtual</SelectItem>
-                                            <SelectItem value="physical">Physical</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            }
-                            emptyStateAction={
-                                <button
-                                    type="button"
-                                    onClick={handleOpenScheduleModal}
-                                    className="text-sm text-primary hover:underline font-medium"
+                    {/* Navigation Tabs Bar */}
+                    <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)} className="space-y-6">
+                        <div className="border-b border-slate-200">
+                            <TabsList className="bg-transparent p-0 h-auto gap-8 rounded-none border-b-0">
+                                <TabsTrigger
+                                    value="records"
+                                    className="relative rounded-none border-b-2 border-transparent px-1 pb-3 pt-2 text-sm font-semibold text-slate-500 transition-all data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none dark:data-[state=active]:border-emerald-500 dark:data-[state=active]:text-emerald-400"
                                 >
-                                    Apply for Visit
-                                </button>
-                            }
-                        />
+                                    My Visits
+                                    {stats?.pending_visits ? (
+                                        <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                            {stats.pending_visits}
+                                        </span>
+                                    ) : null}
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="timetable"
+                                    className="relative rounded-none border-b-2 border-transparent px-1 pb-3 pt-2 text-sm font-semibold text-slate-500 transition-all data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none dark:data-[state=active]:border-emerald-500 dark:data-[state=active]:text-emerald-400"
+                                >
+                                    Weekly Schedule & Timetable
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="calendar"
+                                    className="relative rounded-none border-b-2 border-transparent px-1 pb-3 pt-2 text-sm font-semibold text-slate-500 transition-all data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none dark:data-[state=active]:border-emerald-500 dark:data-[state=active]:text-emerald-400"
+                                >
+                                    Calendar Quick View
+                                </TabsTrigger>
+                            </TabsList>
                         </div>
-                    </Card>
+
+                        {/* TAB 1: Records Table */}
+                        <TabsContent value="records" className="space-y-4 m-0">
+                            <Card className="border-0 shadow-sm">
+                                <div className="px-6 py-4 border-b border-slate-100">
+                                    <h3 className="font-semibold text-slate-800">My Visits</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5">{filteredVisits.length} of {visits.length} visit{visits.length !== 1 ? 's' : ''}</p>
+                                </div>
+                                <div className="p-6">
+                                    <DataTable
+                                    columns={columns}
+                                    data={filteredVisits}
+                                    searchKey="inmate_first_name"
+                                    searchPlaceholder="Search by inmate name, date..."
+                                    initialSorting={[{ id: 'scheduled_date', desc: true }]}
+                                    headerActions={
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                                <SelectTrigger className="w-[150px]">
+                                                    <SelectValue placeholder="All Statuses" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">All Statuses</SelectItem>
+                                                    <SelectItem value="pending">Pending</SelectItem>
+                                                    <SelectItem value="approved">Approved</SelectItem>
+                                                    <SelectItem value="rejected">Rejected</SelectItem>
+                                                    <SelectItem value="completed">Completed</SelectItem>
+                                                    <SelectItem value="missed">Missed</SelectItem>
+                                                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <Select value={visitTypeFilter} onValueChange={setVisitTypeFilter}>
+                                                <SelectTrigger className="w-[130px]">
+                                                    <SelectValue placeholder="All Types" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">All Types</SelectItem>
+                                                    <SelectItem value="virtual">Virtual</SelectItem>
+                                                    <SelectItem value="physical">Physical</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    }
+                                    emptyStateAction={
+                                        <button
+                                            type="button"
+                                            onClick={handleOpenScheduleModal}
+                                            className="text-sm text-primary hover:underline font-medium"
+                                        >
+                                            Apply for Visit
+                                        </button>
+                                    }
+                                />
+                                </div>
+                            </Card>
+                        </TabsContent>
+
+                        {/* TAB 2: Weekly Schedule & Timetable */}
+                        <TabsContent value="timetable" className="space-y-4 m-0">
+                            <Card className="border-0 shadow-sm">
+                                <div className="px-6 py-4 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <CalendarDays className="w-5 h-5 text-emerald-600" />
+                                            <h3 className="font-semibold text-foreground text-base">Weekly Schedule Timetable</h3>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                            Week of {weekDays[0].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {weekDays[6].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex items-center bg-muted/60 p-1 rounded-lg border border-border">
+                                            <Button variant="ghost" size="sm" onClick={prevWeek} className="h-8 w-8 p-0">
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={goToCurrentWeek} className="h-8 px-2.5 text-xs font-medium">
+                                                Today
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={nextWeek} className="h-8 w-8 p-0">
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                            <SelectTrigger className="w-[130px] h-9 text-xs">
+                                                <SelectValue placeholder="Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Status</SelectItem>
+                                                <SelectItem value="pending">Pending</SelectItem>
+                                                <SelectItem value="approved">Approved</SelectItem>
+                                                <SelectItem value="rejected">Rejected</SelectItem>
+                                                <SelectItem value="completed">Completed</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Select value={visitTypeFilter} onValueChange={setVisitTypeFilter}>
+                                            <SelectTrigger className="w-[120px] h-9 text-xs">
+                                                <SelectValue placeholder="Type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Types</SelectItem>
+                                                <SelectItem value="virtual">Virtual</SelectItem>
+                                                <SelectItem value="physical">Physical</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <CardContent className="p-4 sm:p-6">
+                                    {/* 7-Day Overview Cards */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 mb-6">
+                                        {weekDays.map((day) => {
+                                            const dayVisits = visitsByDate.get(day.dateStr) || [];
+                                            const pendingCount = dayVisits.filter(v => v.status === 'pending').length;
+                                            const approvedCount = dayVisits.filter(v => v.status === 'approved').length;
+                                            const hasItems = dayVisits.length > 0;
+
+                                            return (
+                                                <button
+                                                    key={day.dateStr}
+                                                    type="button"
+                                                    onClick={() => setCalendarSelectedDate(day.dateStr)}
+                                                    className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden group ${day.isSelected
+                                                        ? 'border-emerald-600 ring-2 ring-emerald-600/20 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-sm'
+                                                        : day.isToday
+                                                            ? 'border-blue-300 dark:border-blue-700 bg-blue-50/40 dark:bg-blue-950/20'
+                                                            : 'border-border/80 bg-card hover:border-emerald-600/40 hover:bg-muted/40'
+                                                        }`}
+                                                >
+                                                    {day.isToday && (
+                                                        <span className="absolute top-1 right-2 text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                                                            Today
+                                                        </span>
+                                                    )}
+                                                    <div className="text-xs font-semibold text-muted-foreground uppercase">{day.dayName}</div>
+                                                    <div className="text-xl font-bold text-foreground mt-0.5">{day.dayNumber}</div>
+
+                                                    <div className="mt-2.5 flex items-center justify-between gap-1 text-[11px]">
+                                                        {hasItems ? (
+                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                {pendingCount > 0 && (
+                                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                                                        {pendingCount} pend
+                                                                    </span>
+                                                                )}
+                                                                {approvedCount > 0 && (
+                                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                                                        {approvedCount} appv
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[11px] text-muted-foreground/60">No visits</span>
+                                                        )}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Daily Timetable Breakdown */}
+                                    <div className="rounded-xl border border-border bg-card overflow-hidden">
+                                        <div className="bg-muted/40 px-5 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <Clock className="w-4 h-4 text-emerald-600" />
+                                                <span className="font-semibold text-sm text-foreground">
+                                                    Timetable for {new Date(calendarSelectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                                                </span>
+                                                <Badge variant="outline" className="text-xs font-normal">
+                                                    {selectedDateVisits.length} {selectedDateVisits.length === 1 ? 'Visit' : 'Visits'} Scheduled
+                                                </Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <span className="flex items-center gap-1">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" /> Pending
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> Approved
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" /> Completed
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="divide-y divide-border/60">
+                                            {selectedDateVisits.length === 0 ? (
+                                                <div className="py-12 text-center">
+                                                    <CalendarDays className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
+                                                    <p className="text-sm font-medium text-foreground">No visits scheduled on this day</p>
+                                                    <p className="text-xs text-muted-foreground mt-0.5">Select another date from the week view or apply for a new visit</p>
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => handleOpenScheduleModal()}
+                                                        className="mt-3 h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                    >
+                                                        <Plus className="w-3.5 h-3.5 mr-1" />
+                                                        Apply for Visit on this Day
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                selectedDateVisits.map((visit) => {
+                                                    const formattedTime = visit.scheduled_time ? formatTime12(visit.scheduled_time) : 'Time TBD';
+
+                                                    return (
+                                                        <div
+                                                            key={visit.id}
+                                                            className="p-4 hover:bg-muted/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+                                                        >
+                                                            <div className="flex items-start gap-4">
+                                                                <div className="w-24 shrink-0 text-center bg-muted/60 rounded-lg p-2 border border-border">
+                                                                    <div className="text-xs font-bold text-foreground">
+                                                                        {formattedTime}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-muted-foreground uppercase font-medium mt-0.5">
+                                                                        {visit.visit_type}
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="space-y-1">
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        <span className="text-xs text-muted-foreground">Visiting:</span>
+                                                                        <span className="font-semibold text-foreground text-sm bg-muted/80 px-2 py-0.5 rounded">
+                                                                            {visit.inmate_first_name} {visit.inmate_last_name}
+                                                                        </span>
+                                                                        {getStatusBadge(visit.status)}
+                                                                        {getVisitTypeBadge(visit.visit_type)}
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                                                                        <span>Duration: <strong className="text-foreground">{visit.duration_minutes || 20} mins</strong></span>
+                                                                        {visit.jail_officer_name && (
+                                                                            <span>Officer: {visit.jail_officer_name}</span>
+                                                                        )}
+                                                                        {visit.access_key && (
+                                                                            <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                                                                                Key: {visit.access_key}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {visit.notes && (
+                                                                        <p className="text-xs text-muted-foreground italic line-clamp-1 mt-1">
+                                                                            "{visit.notes}"
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => {
+                                                                        setSelectedVisitForDetails(visit);
+                                                                        setIsViewDetailsModalOpen(true);
+                                                                    }}
+                                                                    className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                                                                >
+                                                                    <Eye className="w-3.5 h-3.5" />
+                                                                    Details
+                                                                </Button>
+                                                                {visit.visit_type === 'physical' && visit.status === 'approved' && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        onClick={() => window.open(`/visits/${visit.id}/proof`, '_blank')}
+                                                                        className="h-8 gap-1.5 text-xs font-medium"
+                                                                    >
+                                                                        <FileOutput className="w-3.5 h-3.5" />
+                                                                        Appointment Proof
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* TAB 3: Calendar Quick View */}
+                        <TabsContent value="calendar" className="space-y-4 m-0">
+                            <Card className="border-0 shadow-sm">
+                                <div className="px-6 py-4 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <CalendarIcon className="w-5 h-5 text-emerald-600" />
+                                            <h3 className="font-semibold text-foreground text-base">
+                                                {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                            </h3>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                            Click any date to inspect scheduled visits or apply for visits
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex items-center bg-muted/60 p-1 rounded-lg border border-border">
+                                            <Button variant="ghost" size="sm" onClick={prevMonth} className="h-8 w-8 p-0">
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={goToCurrentMonth} className="h-8 px-2.5 text-xs font-medium">
+                                                Current Month
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={nextMonth} className="h-8 w-8 p-0">
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                            <SelectTrigger className="w-[130px] h-9 text-xs">
+                                                <SelectValue placeholder="Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Status</SelectItem>
+                                                <SelectItem value="pending">Pending</SelectItem>
+                                                <SelectItem value="approved">Approved</SelectItem>
+                                                <SelectItem value="rejected">Rejected</SelectItem>
+                                                <SelectItem value="completed">Completed</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Select value={visitTypeFilter} onValueChange={setVisitTypeFilter}>
+                                            <SelectTrigger className="w-[120px] h-9 text-xs">
+                                                <SelectValue placeholder="Type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Types</SelectItem>
+                                                <SelectItem value="virtual">Virtual</SelectItem>
+                                                <SelectItem value="physical">Physical</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <CardContent className="p-4 sm:p-6 space-y-6">
+                                    {/* Month Calendar Grid */}
+                                    <div className="rounded-xl border border-border overflow-hidden bg-card">
+                                        {/* Day of Week Headers */}
+                                        <div className="grid grid-cols-7 bg-muted/50 border-b border-border text-center text-xs font-semibold text-muted-foreground py-2.5">
+                                            <div>Sun</div>
+                                            <div>Mon</div>
+                                            <div>Tue</div>
+                                            <div>Wed</div>
+                                            <div>Thu</div>
+                                            <div>Fri</div>
+                                            <div>Sat</div>
+                                        </div>
+
+                                        {/* Day Cells */}
+                                        <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-border/60">
+                                            {monthCalendarGrid.map((day, idx) => {
+                                                const dayVisits = day.visits;
+                                                const isSelected = calendarSelectedDate === day.dateStr;
+                                                const pendingVisits = dayVisits.filter(v => v.status === 'pending');
+                                                const approvedVisits = dayVisits.filter(v => v.status === 'approved');
+
+                                                return (
+                                                    <div
+                                                        key={`${day.dateStr}-${idx}`}
+                                                        onClick={() => setCalendarSelectedDate(day.dateStr)}
+                                                        className={`min-h-[105px] p-2 transition-all cursor-pointer flex flex-col justify-between ${isSelected
+                                                            ? 'bg-emerald-50/50 dark:bg-emerald-950/20 ring-2 ring-emerald-600 ring-inset z-10'
+                                                            : !day.isCurrentMonth
+                                                                ? 'bg-muted/15 text-muted-foreground/50'
+                                                                : 'hover:bg-muted/30 bg-card'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <span className={`text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center ${day.isToday
+                                                                ? 'bg-blue-600 text-white font-bold'
+                                                                : isSelected
+                                                                    ? 'bg-emerald-600 text-white font-bold'
+                                                                    : day.isCurrentMonth
+                                                                        ? 'text-foreground'
+                                                                        : 'text-muted-foreground/60'
+                                                                }`}>
+                                                                {day.dayNumber}
+                                                            </span>
+                                                            {dayVisits.length > 0 && (
+                                                                <span className="text-[10px] font-bold text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
+                                                                    {dayVisits.length}
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Preview badges */}
+                                                        <div className="space-y-1 my-1 flex-1 overflow-hidden">
+                                                            {pendingVisits.length > 0 && (
+                                                                <div className="text-[10px] bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded font-medium truncate flex items-center gap-1">
+                                                                    <Clock className="w-2.5 h-2.5 shrink-0" />
+                                                                    <span>{pendingVisits.length} Pending</span>
+                                                                </div>
+                                                            )}
+                                                            {approvedVisits.length > 0 && (
+                                                                <div className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-medium truncate flex items-center gap-1">
+                                                                    <CheckCircle2 className="w-2.5 h-2.5 shrink-0" />
+                                                                    <span>{approvedVisits.length} Approved</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {dayVisits.length > 0 ? (
+                                                            <div className="text-[10px] text-muted-foreground truncate">
+                                                                {dayVisits[0].inmate_first_name} {dayVisits[0].inmate_last_name}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="h-3" />
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Selected Day Quick Inspector */}
+                                    <div className="rounded-xl border border-border p-5 bg-muted/20">
+                                        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                                            <div>
+                                                <h4 className="font-semibold text-foreground text-sm flex items-center gap-2">
+                                                    <CalendarDays className="w-4 h-4 text-emerald-600" />
+                                                    Visits on {new Date(calendarSelectedDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                </h4>
+                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                    Inspect scheduled details for this selected day
+                                                </p>
+                                            </div>
+                                            <Badge variant="outline" className="text-xs">
+                                                {selectedDateVisits.length} {selectedDateVisits.length === 1 ? 'Visit' : 'Visits'}
+                                            </Badge>
+                                        </div>
+
+                                        {selectedDateVisits.length === 0 ? (
+                                            <div className="text-center py-8 text-muted-foreground text-xs space-y-2">
+                                                <p>No visits scheduled for this selected day.</p>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleOpenScheduleModal()}
+                                                    className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                >
+                                                    <Plus className="w-3.5 h-3.5 mr-1" />
+                                                    Apply for Visit on this Day
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                {selectedDateVisits.map((visit) => (
+                                                    <div
+                                                        key={visit.id}
+                                                        className="p-3.5 bg-card rounded-lg border border-border/80 shadow-xs hover:border-emerald-600/40 transition-colors flex flex-col justify-between"
+                                                    >
+                                                        <div>
+                                                            <div className="flex items-center justify-between gap-2 mb-2">
+                                                                <span className="text-xs font-semibold px-2 py-0.5 bg-muted rounded">
+                                                                    {visit.scheduled_time ? formatTime12(visit.scheduled_time) : 'Time TBD'}
+                                                                </span>
+                                                                {getStatusBadge(visit.status)}
+                                                            </div>
+
+                                                            <div className="font-semibold text-sm text-foreground">
+                                                                Visiting: {visit.inmate_first_name} {visit.inmate_last_name}
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground mt-0.5">
+                                                                Type: <span className="capitalize font-medium text-foreground">{visit.visit_type}</span> ({visit.duration_minutes || 20} mins)
+                                                            </div>
+                                                            {visit.notes && (
+                                                                <div className="text-[11px] text-muted-foreground mt-1 line-clamp-1 italic">
+                                                                    "{visit.notes}"
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="pt-3 mt-3 border-t border-border flex items-center justify-between gap-2">
+                                                            {getVisitTypeBadge(visit.visit_type)}
+
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => {
+                                                                        setSelectedVisitForDetails(visit);
+                                                                        setIsViewDetailsModalOpen(true);
+                                                                    }}
+                                                                    className="h-7 text-xs px-2"
+                                                                >
+                                                                    Details
+                                                                </Button>
+                                                                {visit.visit_type === 'physical' && visit.status === 'approved' && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        onClick={() => window.open(`/visits/${visit.id}/proof`, '_blank')}
+                                                                        className="h-7 text-xs px-2"
+                                                                    >
+                                                                        Proof
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
 
                 <Dialog open={videoTermsModalOpen} onOpenChange={setVideoTermsModalOpen}>
                     <DialogContent className="sm:max-w-lg">
@@ -1325,7 +1980,7 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                             <span className="text-muted-foreground text-xs block mb-1.5">Scheduled Time</span>
                                             <div className="font-medium text-sm flex items-center gap-1.5">
                                                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                                {selectedVisitForDetails.scheduled_time || 'Not specified'}
+                                                {selectedVisitForDetails.scheduled_time ? formatTime12(selectedVisitForDetails.scheduled_time) : 'Not specified'}
                                             </div>
                                         </div>
                                         <div>
@@ -1721,11 +2376,10 @@ export default function ScheduleManagement({ visits, bookedTimeSlots = [], stats
                                                 }}
                                                 initialFocus
                                                 disabled={(date) => {
-                                                    const minDate = new Date(minScheduleDate);
-                                                    // Allow today's date - only disable past dates
-                                                    const today = new Date();
-                                                    today.setHours(0, 0, 0, 0);
-                                                    return date < today;
+                                                    const minParts = minScheduleDate.split('-').map(Number);
+                                                    const min = new Date(minParts[0], minParts[1] - 1, minParts[2]);
+                                                    min.setHours(0, 0, 0, 0);
+                                                    return date < min;
                                                 }}
                                             />
                                         </PopoverContent>

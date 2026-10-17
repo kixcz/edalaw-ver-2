@@ -46,7 +46,7 @@ class JailOfficerManagementController extends Controller
             
             $officers = $officers->filter(function($officer) use ($wardenCellIds, $joResolver) {
                 if ($officer->assignedScopes->isEmpty()) {
-                    return false;
+                    return true;
                 }
                 $joCellIds = $joResolver->getAuthorizedCellIds($officer);
                 return count(array_intersect($wardenCellIds, $joCellIds)) > 0;
@@ -58,6 +58,7 @@ class JailOfficerManagementController extends Controller
                 'id' => $officer->id,
                 'name' => $officer->full_name,
                 'email' => $officer->email,
+                'contact_number' => $officer->contact_number,
                 'scopes' => $officer->assignedScopes->map(function ($scope) {
                     $description = match($scope->scope_type) {
                         'annex' => $scope->annex?->name ?? 'Unknown',
@@ -149,7 +150,11 @@ class JailOfficerManagementController extends Controller
             'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
+            'contact_number' => ['required', 'string', 'max:20', 'unique:users,contact_number'],
             'password' => 'required|min:8|confirmed',
+        ], [
+            'contact_number.required' => 'A contact number is required so the officer can receive login OTPs.',
+            'contact_number.unique' => 'This contact number is already in use by another account.',
         ]);
 
         // Get the jail officer role
@@ -161,6 +166,7 @@ class JailOfficerManagementController extends Controller
             'middle_name' => $validated['middle_name'] ?? null,
             'last_name' => $validated['last_name'],
             'email' => $validated['email'],
+            'contact_number' => $validated['contact_number'],
             'password' => bcrypt($validated['password']),
             'role_id' => $jailOfficerRole->id,
             'branch_id' => $user->branch_id,
@@ -235,6 +241,7 @@ class JailOfficerManagementController extends Controller
                 'id' => $officer->id,
                 'name' => $officer->full_name,
                 'email' => $officer->email,
+                'contact_number' => $officer->contact_number,
                 'scopes' => $officer->assignedScopes->map(function ($scope) {
                     $description = match($scope->scope_type) {
                         'annex' => $scope->annex?->name ?? 'Unknown',

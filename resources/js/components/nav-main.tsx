@@ -42,7 +42,7 @@ export function NavMain({ items = [], groups = [] }: NavMainProps) {
                                             {item.icon && <item.icon />}
                                             <span className="flex-1">{item.title}</span>
                                             {item.badge !== undefined && item.badge > 0 && (
-                                                <Badge variant="default" className="ml-auto bg-blue-500 hover:bg-blue-600">
+                                                <Badge variant="default" className={item.badgeClassName ?? 'ml-auto bg-blue-500 hover:bg-blue-600'}>
                                                     {item.badge}
                                                 </Badge>
                                             )}
@@ -73,7 +73,7 @@ export function NavMain({ items = [], groups = [] }: NavMainProps) {
                                 {item.icon && <item.icon />}
                                 <span className="flex-1">{item.title}</span>
                                 {item.badge !== undefined && item.badge > 0 && (
-                                    <Badge variant="default" className="ml-auto bg-blue-500 hover:bg-blue-600">
+                                    <Badge variant="default" className={item.badgeClassName ?? 'ml-auto bg-blue-500 hover:bg-blue-600'}>
                                         {item.badge}
                                     </Badge>
                                 )}

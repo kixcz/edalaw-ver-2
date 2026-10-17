@@ -112,24 +112,30 @@ export function TimeSlotPicker({
 
     const isUserBooked = (slot: TimeSlot): boolean => userBookedSlots.includes(slot.value);
 
-    // Check if a time slot is in the past (for today's date)
+    // Check if a time slot is in the past (matching Philippine Time: Asia/Manila)
     const isPastTimeSlot = (slot: TimeSlot): boolean => {
         if (!selectedDate) return false;
         
-        const today = new Date();
-        const selected = new Date(selectedDate);
+        const now = new Date();
+        const phToday = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
         
-        // Check if selected date is today
-        const isToday = today.toDateString() === selected.toDateString();
-        if (!isToday) return false;
+        // Check if selected date is today in Philippine time
+        if (selectedDate !== phToday) return false;
         
         // Parse slot time (HH:MM format)
         const [slotHour, slotMinute] = slot.value.split(':').map(Number);
         const slotTime = slotHour * 60 + slotMinute;
         
-        // Get current time in minutes
-        const currentHour = today.getHours();
-        const currentMinute = today.getMinutes();
+        // Get current Philippine time in minutes
+        const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Asia/Manila',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        });
+        const parts = timeFormatter.format(now).split(':').map(Number);
+        const currentHour = parts[0] ?? now.getHours();
+        const currentMinute = parts[1] ?? now.getMinutes();
         const currentTime = currentHour * 60 + currentMinute;
         
         // Disable if slot time is in the past

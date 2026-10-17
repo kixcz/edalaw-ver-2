@@ -270,6 +270,11 @@ export function AppSidebar() {
                         icon: Calendar,
                     },
                     {
+                        title: 'Timetable & Calendar',
+                        href: '/visitor/schedule?tab=timetable',
+                        icon: Clock,
+                    },
+                    {
                         title: 'Apply for E-Burol',
                         href: '/visitor/eburol',
                         icon: Heart,
@@ -489,6 +494,10 @@ export function AppSidebar() {
         | undefined;
     if (userRole === 'jail_officer') {
         const unreadJailCount = page.props.unreadNotificationCount ?? 0;
+        const jailKpis = (page.props as any).kpis ?? {};
+        const pendingVisitsCount = jailKpis.pending_visits ?? 0;
+        const pendingEburolsCount = jailKpis.pending_eburols ?? 0;
+        const activeSessionsCount = jailKpis.active_sessions ?? 0;
 
         // Get user's active scopes
         const userScopes: any[] = Array.isArray(
@@ -511,10 +520,10 @@ export function AppSidebar() {
         const highestScope = hasBuildingScope
             ? 'building'
             : hasDormitoryScope
-              ? 'dormitory'
-              : hasCellScope
-                ? 'cell'
-                : null;
+                ? 'dormitory'
+                : hasCellScope
+                    ? 'cell'
+                    : null;
 
         // Build facility management items based on scope levels
         const facilityItems: NavItem[] = [];
@@ -563,45 +572,55 @@ export function AppSidebar() {
 
         jailOfficerNavGroups = [
             {
-                label: 'Main',
+                label: 'MAIN',
                 items: [
                     {
-                        title: 'Dashboard',
+                        title: 'Overview',
                         href: '/dashboard/jail-officer',
                         icon: LayoutGrid,
-                    },
-                    {
-                        title: 'Notifications',
-                        href: '/jail-officer/notifications',
-                        icon: Bell,
-                        badge:
-                            unreadJailCount > 0 ? unreadJailCount : undefined,
                     },
                 ],
             },
             {
-                label: 'Schedule Management',
+                label: 'VISITATION MANAGEMENT',
                 items: [
                     {
                         title: 'Visit Approvals',
                         href: '/jail-officer/assigned-visit-sessions',
                         icon: Calendar,
+                        badge: pendingVisitsCount > 0 ? pendingVisitsCount : undefined,
+                        badgeClassName: 'ml-auto rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold text-[11px] h-5 min-w-5 flex items-center justify-center px-1.5',
                     },
                     {
-                        title: 'E-Burol Monitoring',
+                        title: 'eBurol Approvals',
                         href: '/jail-officer/eburol-monitoring',
                         icon: Heart,
+                        badge: pendingEburolsCount > 0 ? pendingEburolsCount : undefined,
+                        badgeClassName: 'ml-auto rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold text-[11px] h-5 min-w-5 flex items-center justify-center px-1.5',
                     },
+
                 ],
             },
             {
-                label: 'Session Monitoring',
+                label: 'SESSION MONITORING',
                 items: [
                     {
                         title: 'Virtual Sessions',
                         href: '/jail-officer/assigned-sessions',
                         icon: Video,
+                        badge: activeSessionsCount > 0 ? activeSessionsCount : undefined,
+                        badgeClassName: 'ml-auto rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold text-[11px] h-5 min-w-5 flex items-center justify-center px-1.5',
                     },
+                    {
+                        title: 'Physical Sessions',
+                        href: '/jail-officer/physical-sessions',
+                        icon: Users,
+                    },
+                    // {
+                    //     title: 'eBurol Sessions',
+                    //     href: '/jail-officer/eburol-monitoring',
+                    //     icon: Heart,
+                    // },
                     {
                         title: 'Chat Archive',
                         href: '/jail-officer/chat-recordings',
@@ -621,11 +640,11 @@ export function AppSidebar() {
             },
             ...(facilityItems.length > 0
                 ? [
-                      {
-                          label: 'Facility Management',
-                          items: facilityItems,
-                      },
-                  ]
+                    {
+                        label: 'Facility Management',
+                        items: facilityItems,
+                    },
+                ]
                 : []),
             {
                 label: 'Configuration',
@@ -856,7 +875,7 @@ export function AppSidebar() {
             ref={sidebarRef}
             collapsible="icon"
             variant="inset"
-            className="sidebar-scroll-custom"
+            className="sidebar-scroll-custom scrollbar-hide"
         >
             <SidebarHeader>
                 <SidebarMenu>
@@ -870,7 +889,7 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="scrollbar-hide">
                 {userRole === 'visitor' && visitorNavGroups ? (
                     <NavMain groups={visitorNavGroups} />
                 ) : userRole === 'national' && nationalOfficeNavGroups ? (
@@ -880,7 +899,7 @@ export function AppSidebar() {
                 ) : userRole === 'bjmp_officer' && bjmpOfficerNavGroups ? (
                     <NavMain groups={bjmpOfficerNavGroups} />
                 ) : userRole === 'monitoring_officer' &&
-                  monitoringOfficerNavGroups ? (
+                    monitoringOfficerNavGroups ? (
                     <NavMain groups={monitoringOfficerNavGroups} />
                 ) : userRole === 'jail_officer' && jailOfficerNavGroups ? (
                     <NavMain groups={jailOfficerNavGroups} />

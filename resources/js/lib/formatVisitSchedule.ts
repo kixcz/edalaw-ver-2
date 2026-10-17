@@ -23,11 +23,22 @@ const dateOptions: Intl.DateTimeFormatOptions = {
 };
 
 /** Format hour/minute as 12-hour string (e.g. "3:00 PM"). */
-function to12hr(hours: number, minutes: number): string {
+export function to12hr(hours: number, minutes: number): string {
     const period = hours < 12 ? 'AM' : 'PM';
     const h = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
     const m = minutes.toString().padStart(2, '0');
     return `${h}:${m} ${period}`;
+}
+
+/** Format a time string like "14:05" or "14:05:00" into "2:05 PM" */
+export function formatTime12(timeStr?: string | null): string {
+    if (!timeStr) return '—';
+    const parts = timeStr.trim().split(':');
+    if (parts.length < 2) return timeStr;
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    if (isNaN(h) || isNaN(m)) return timeStr;
+    return to12hr(h, m);
 }
 
 /**

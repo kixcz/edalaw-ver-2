@@ -42,8 +42,12 @@ import { cn } from '@/lib/utils';
 type ScheduleDay = {
     virtual_available: boolean;
     physical_available: boolean;
-    start_time: string | null;
-    end_time: string | null;
+    virtual_start_time: string | null;
+    virtual_end_time: string | null;
+    physical_start_time: string | null;
+    physical_end_time: string | null;
+    start_time?: string | null;
+    end_time?: string | null;
 };
 
 type Cell = {
@@ -84,7 +88,16 @@ type ApplyTarget = 'all' | 'selected' | 'single';
 
 function emptyWeek(): Record<number, ScheduleDay> {
     const week: Record<number, ScheduleDay> = {};
-    DAYS.forEach((d) => (week[d] = { virtual_available: false, physical_available: false, start_time: '09:00', end_time: '16:00' }));
+    DAYS.forEach((d) => (week[d] = { 
+        virtual_available: false, 
+        physical_available: false, 
+        virtual_start_time: '09:00', 
+        virtual_end_time: '17:00',
+        physical_start_time: '09:00',
+        physical_end_time: '17:00',
+        start_time: '09:00', 
+        end_time: '17:00' 
+    }));
     return week;
 }
 
@@ -93,11 +106,16 @@ function buildScheduleMap(cells: Cell[]): Record<number, Record<number, Schedule
     cells.forEach((cell) => {
         const week = emptyWeek();
         DAYS.forEach((day) => {
+            const sched = cell.schedules[day];
             week[day] = {
-                virtual_available: cell.schedules[day]?.virtual_available ?? false,
-                physical_available: cell.schedules[day]?.physical_available ?? false,
-                start_time: cell.schedules[day]?.start_time ? cell.schedules[day].start_time.substring(0, 5) : '09:00',
-                end_time: cell.schedules[day]?.end_time ? cell.schedules[day].end_time.substring(0, 5) : '16:00',
+                virtual_available: sched?.virtual_available ?? false,
+                physical_available: sched?.physical_available ?? false,
+                virtual_start_time: sched?.virtual_start_time ? sched.virtual_start_time.substring(0, 5) : (sched?.start_time ? sched.start_time.substring(0, 5) : '09:00'),
+                virtual_end_time: sched?.virtual_end_time ? sched.virtual_end_time.substring(0, 5) : (sched?.end_time ? sched.end_time.substring(0, 5) : '17:00'),
+                physical_start_time: sched?.physical_start_time ? sched.physical_start_time.substring(0, 5) : (sched?.start_time ? sched.start_time.substring(0, 5) : '09:00'),
+                physical_end_time: sched?.physical_end_time ? sched.physical_end_time.substring(0, 5) : (sched?.end_time ? sched.end_time.substring(0, 5) : '17:00'),
+                start_time: sched?.start_time ? sched.start_time.substring(0, 5) : '09:00',
+                end_time: sched?.end_time ? sched.end_time.substring(0, 5) : '17:00',
             };
         });
         map[cell.id] = week;
@@ -110,8 +128,10 @@ function weekEquals(a: Record<number, ScheduleDay>, b: Record<number, ScheduleDa
         (d) =>
             a[d].virtual_available === b[d].virtual_available &&
             a[d].physical_available === b[d].physical_available &&
-            a[d].start_time === b[d].start_time &&
-            a[d].end_time === b[d].end_time
+            a[d].virtual_start_time === b[d].virtual_start_time &&
+            a[d].virtual_end_time === b[d].virtual_end_time &&
+            a[d].physical_start_time === b[d].physical_start_time &&
+            a[d].physical_end_time === b[d].physical_end_time
     );
 }
 
@@ -190,7 +210,11 @@ export default function CellScheduleTemplate({ cells, dayNames, settings }: Prop
         }));
     };
 
-    const handleTimeChange = (day: number, field: 'start_time' | 'end_time', value: string) => {
+    const handleTimeChange = (
+        day: number, 
+        field: 'virtual_start_time' | 'virtual_end_time' | 'physical_start_time' | 'physical_end_time', 
+        value: string
+    ) => {
         setBuilderWeek((prev) => ({
             ...prev,
             [day]: { ...prev[day], [field]: value },
@@ -273,8 +297,12 @@ export default function CellScheduleTemplate({ cells, dayNames, settings }: Prop
                 day_of_week: day,
                 virtual_available: schedules[cellId][day].virtual_available,
                 physical_available: schedules[cellId][day].physical_available,
-                start_time: schedules[cellId][day].start_time,
-                end_time: schedules[cellId][day].end_time,
+                virtual_start_time: schedules[cellId][day].virtual_start_time,
+                virtual_end_time: schedules[cellId][day].virtual_end_time,
+                physical_start_time: schedules[cellId][day].physical_start_time,
+                physical_end_time: schedules[cellId][day].physical_end_time,
+                start_time: schedules[cellId][day].virtual_start_time,
+                end_time: schedules[cellId][day].virtual_end_time,
             })),
         }));
 
@@ -283,7 +311,6 @@ export default function CellScheduleTemplate({ cells, dayNames, settings }: Prop
             { cell_schedules: payload },
             { 
                 onSuccess: () => {
-                    setDirtyCellIds(new Set());
                     toast.success('Cell schedules updated successfully.');
                 },
                 onError: () => {
@@ -736,122 +763,211 @@ function DayGrid({
 }: {
     week: Record<number, ScheduleDay>;
     onToggle: (day: number, type: VisitType) => void;
-    onTimeChange: (day: number, field: 'start_time' | 'end_time', value: string) => void;
+    onTimeChange: (
+        day: number,
+        field: 'virtual_start_time' | 'virtual_end_time' | 'physical_start_time' | 'physical_end_time',
+        value: string
+    ) => void;
     onBulk: (days: number[], type: VisitType) => void;
 }) {
-    const rows: { type: VisitType; label: string; icon: React.ReactNode }[] = [
-        { type: 'virtual', label: 'Virtual', icon: <Monitor className="h-3.5 w-3.5" /> },
-        { type: 'physical', label: 'Physical', icon: <UserCheck className="h-3.5 w-3.5" /> },
-    ];
-
     return (
-        <table className="w-full border-collapse text-sm">
-            <thead>
-                <tr>
-                    <th className="w-24 pb-2 text-left text-xs font-medium text-muted-foreground">
-                        Visit type
-                    </th>
-                    {DAYS.map((day) => (
-                        <th
-                            key={day}
-                            className="pb-2 text-center text-xs font-medium text-muted-foreground"
-                        >
-                            {DAY_ABBR[day]}
-                        </th>
-                    ))}
-                    <th className="w-44 pb-2 text-right text-xs font-medium text-muted-foreground">
-                        Quick fill
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                {rows.map((row) => (
-                    <tr key={row.type} className="border-t">
-                        <td className="py-2.5 pr-2">
-                            <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                                {row.icon}
-                                {row.label}
-                            </span>
-                        </td>
-                        {DAYS.map((day) => {
-                            const isOn = week[day][`${row.type}_available`];
-                            return (
-                                <td key={day} className="py-1.5 text-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => onToggle(day, row.type)}
-                                        aria-pressed={isOn}
-                                        aria-label={`${row.label} on ${DAY_ABBR[day]}`}
-                                        className={cn(
-                                            'mx-auto flex h-8 w-9 items-center justify-center rounded-md border text-xs font-medium transition-colors',
-                                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-                                            isOn
-                                                ? 'border-primary bg-primary text-primary-foreground'
-                                                : 'border-input bg-background text-muted-foreground/40 hover:bg-muted'
-                                        )}
+        <div className="space-y-6">
+            {/* Virtual Sessions Section */}
+            <div className="rounded-lg border bg-blue-50/20 p-3.5 dark:bg-blue-950/10">
+                <div className="flex items-center justify-between pb-3 border-b">
+                    <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                        <Monitor className="h-4 w-4 text-blue-500" />
+                        Virtual Visit Schedule
+                    </span>
+                    <div className="flex items-center gap-1">
+                        <QuickFillButton
+                            label="Weekdays"
+                            onClick={() => onBulk(WEEKDAYS, 'virtual')}
+                        />
+                        <QuickFillButton
+                            label="Weekend"
+                            onClick={() => onBulk(WEEKEND, 'virtual')}
+                        />
+                        <QuickFillButton label="All" onClick={() => onBulk(DAYS, 'virtual')} />
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto mt-2">
+                    <table className="w-full border-collapse text-sm">
+                        <thead>
+                            <tr>
+                                <th className="w-24 pb-2 text-left text-xs font-medium text-muted-foreground">
+                                    Setting
+                                </th>
+                                {DAYS.map((day) => (
+                                    <th
+                                        key={day}
+                                        className="pb-2 text-center text-xs font-medium text-muted-foreground"
                                     >
-                                        {isOn ? (
-                                            <Check className="h-3.5 w-3.5" />
-                                        ) : (
-                                            <Minus className="h-3 w-3" />
-                                        )}
-                                    </button>
-                                </td>
-                            );
-                        })}
-                        <td className="py-1.5 text-right">
-                            <div className="flex justify-end gap-1">
-                                <QuickFillButton
-                                    label="Weekdays"
-                                    onClick={() => onBulk(WEEKDAYS, row.type)}
-                                />
-                                <QuickFillButton
-                                    label="Weekend"
-                                    onClick={() => onBulk(WEEKEND, row.type)}
-                                />
-                                <QuickFillButton label="All" onClick={() => onBulk(DAYS, row.type)} />
-                            </div>
-                        </td>
-                    </tr>
-                ))}
-                <tr className="border-t bg-muted/10">
-                    <td className="py-2.5 pr-2">
-                        <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                            Start Time
-                        </span>
-                    </td>
-                    {DAYS.map((day) => (
-                        <td key={day} className="py-1.5 text-center">
-                            <input
-                                type="time"
-                                value={week[day].start_time || ''}
-                                onChange={(e) => onTimeChange(day, 'start_time', e.target.value)}
-                                className="h-8 w-[4.5rem] rounded-md border border-input bg-background px-1 text-[11px]"
-                            />
-                        </td>
-                    ))}
-                    <td></td>
-                </tr>
-                <tr className="border-t bg-muted/10">
-                    <td className="py-2.5 pr-2">
-                        <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                            End Time
-                        </span>
-                    </td>
-                    {DAYS.map((day) => (
-                        <td key={day} className="py-1.5 text-center">
-                            <input
-                                type="time"
-                                value={week[day].end_time || ''}
-                                onChange={(e) => onTimeChange(day, 'end_time', e.target.value)}
-                                className="h-8 w-[4.5rem] rounded-md border border-input bg-background px-1 text-[11px]"
-                            />
-                        </td>
-                    ))}
-                    <td></td>
-                </tr>
-            </tbody>
-        </table>
+                                        {DAY_ABBR[day]}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td className="py-2 pr-2 text-xs font-medium text-muted-foreground">Available</td>
+                                {DAYS.map((day) => {
+                                    const isOn = week[day].virtual_available;
+                                    return (
+                                        <td key={day} className="py-1 text-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => onToggle(day, 'virtual')}
+                                                aria-pressed={isOn}
+                                                aria-label={`Virtual on ${DAY_ABBR[day]}`}
+                                                className={cn(
+                                                    'mx-auto flex h-8 w-9 items-center justify-center rounded-md border text-xs font-medium transition-colors',
+                                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                                                    isOn
+                                                        ? 'border-blue-600 bg-blue-600 text-white'
+                                                        : 'border-input bg-background text-muted-foreground/40 hover:bg-muted'
+                                                )}
+                                            >
+                                                {isOn ? (
+                                                    <Check className="h-3.5 w-3.5" />
+                                                ) : (
+                                                    <Minus className="h-3 w-3" />
+                                                )}
+                                            </button>
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                            <tr className="border-t border-muted/50">
+                                <td className="py-2 pr-2 text-xs font-medium text-muted-foreground">Start Time</td>
+                                {DAYS.map((day) => (
+                                    <td key={day} className="py-1 text-center">
+                                        <input
+                                            type="time"
+                                            value={week[day].virtual_start_time || ''}
+                                            onChange={(e) => onTimeChange(day, 'virtual_start_time', e.target.value)}
+                                            className="h-8 w-[4.6rem] rounded-md border border-input bg-background px-1 text-[11px]"
+                                        />
+                                    </td>
+                                ))}
+                            </tr>
+                            <tr className="border-t border-muted/50">
+                                <td className="py-2 pr-2 text-xs font-medium text-muted-foreground">End Time</td>
+                                {DAYS.map((day) => (
+                                    <td key={day} className="py-1 text-center">
+                                        <input
+                                            type="time"
+                                            value={week[day].virtual_end_time || ''}
+                                            onChange={(e) => onTimeChange(day, 'virtual_end_time', e.target.value)}
+                                            className="h-8 w-[4.6rem] rounded-md border border-input bg-background px-1 text-[11px]"
+                                        />
+                                    </td>
+                                ))}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Physical Sessions Section */}
+            <div className="rounded-lg border bg-emerald-50/20 p-3.5 dark:bg-emerald-950/10">
+                <div className="flex items-center justify-between pb-3 border-b">
+                    <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                        <UserCheck className="h-4 w-4 text-emerald-500" />
+                        Physical Visit Schedule
+                    </span>
+                    <div className="flex items-center gap-1">
+                        <QuickFillButton
+                            label="Weekdays"
+                            onClick={() => onBulk(WEEKDAYS, 'physical')}
+                        />
+                        <QuickFillButton
+                            label="Weekend"
+                            onClick={() => onBulk(WEEKEND, 'physical')}
+                        />
+                        <QuickFillButton label="All" onClick={() => onBulk(DAYS, 'physical')} />
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto mt-2">
+                    <table className="w-full border-collapse text-sm">
+                        <thead>
+                            <tr>
+                                <th className="w-24 pb-2 text-left text-xs font-medium text-muted-foreground">
+                                    Setting
+                                </th>
+                                {DAYS.map((day) => (
+                                    <th
+                                        key={day}
+                                        className="pb-2 text-center text-xs font-medium text-muted-foreground"
+                                    >
+                                        {DAY_ABBR[day]}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td className="py-2 pr-2 text-xs font-medium text-muted-foreground">Available</td>
+                                {DAYS.map((day) => {
+                                    const isOn = week[day].physical_available;
+                                    return (
+                                        <td key={day} className="py-1 text-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => onToggle(day, 'physical')}
+                                                aria-pressed={isOn}
+                                                aria-label={`Physical on ${DAY_ABBR[day]}`}
+                                                className={cn(
+                                                    'mx-auto flex h-8 w-9 items-center justify-center rounded-md border text-xs font-medium transition-colors',
+                                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                                                    isOn
+                                                        ? 'border-emerald-600 bg-emerald-600 text-white'
+                                                        : 'border-input bg-background text-muted-foreground/40 hover:bg-muted'
+                                                )}
+                                            >
+                                                {isOn ? (
+                                                    <Check className="h-3.5 w-3.5" />
+                                                ) : (
+                                                    <Minus className="h-3 w-3" />
+                                                )}
+                                            </button>
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                            <tr className="border-t border-muted/50">
+                                <td className="py-2 pr-2 text-xs font-medium text-muted-foreground">Start Time</td>
+                                {DAYS.map((day) => (
+                                    <td key={day} className="py-1 text-center">
+                                        <input
+                                            type="time"
+                                            value={week[day].physical_start_time || ''}
+                                            onChange={(e) => onTimeChange(day, 'physical_start_time', e.target.value)}
+                                            className="h-8 w-[4.6rem] rounded-md border border-input bg-background px-1 text-[11px]"
+                                        />
+                                    </td>
+                                ))}
+                            </tr>
+                            <tr className="border-t border-muted/50">
+                                <td className="py-2 pr-2 text-xs font-medium text-muted-foreground">End Time</td>
+                                {DAYS.map((day) => (
+                                    <td key={day} className="py-1 text-center">
+                                        <input
+                                            type="time"
+                                            value={week[day].physical_end_time || ''}
+                                            onChange={(e) => onTimeChange(day, 'physical_end_time', e.target.value)}
+                                            className="h-8 w-[4.6rem] rounded-md border border-input bg-background px-1 text-[11px]"
+                                        />
+                                    </td>
+                                ))}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     );
 }
 

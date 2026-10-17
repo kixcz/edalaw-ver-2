@@ -1,6 +1,6 @@
 import { Head, useForm, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Users, MoreVertical, Plus, List, BarChart2, CheckCircle, UserCheck, Shield, Mail } from 'lucide-react';
+import { Users, MoreVertical, Plus, List, BarChart2, CheckCircle, UserCheck, Shield, Mail, Phone } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell as RechartsCell } from 'recharts';
 
@@ -43,16 +43,40 @@ type Props = {
 
 export default function JailOfficerManagement({ auth, officers, facilities, stats, chartData }: Props) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const form = useForm({ first_name: '', middle_name: '', last_name: '', email: '', password: '', password_confirmation: '' });
+    const form = useForm({ first_name: '', middle_name: '', last_name: '', email: '', contact_number: '', password: '', password_confirmation: '' });
 
-    const openCreateModal = () => { form.setData({ first_name: '', middle_name: '', last_name: '', email: '', password: '', password_confirmation: '' }); setIsCreateModalOpen(true); };
+    const openCreateModal = () => { form.setData({ first_name: '', middle_name: '', last_name: '', email: '', contact_number: '', password: '', password_confirmation: '' }); setIsCreateModalOpen(true); };
     const submitCreate = (e: React.FormEvent) => { e.preventDefault(); form.post('/jail-warden/officers', { onSuccess: () => { form.reset(); setIsCreateModalOpen(false); } }); };
 
     const columns: ColumnDef<any>[] = useMemo(() => [
         { accessorKey: 'name', header: 'Officer Name' },
         { accessorKey: 'email', header: 'Email', cell: ({ row }) => <span className="text-sm text-muted-foreground"><Mail className="w-3 h-3 inline mr-1" />{row.original.email}</span> },
-        { accessorKey: 'scopes', header: 'Assigned Scopes', cell: ({ row }) => <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200">{row.original.scopes.length} scope(s)</span> },
-        { id: 'actions', cell: ({ row }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => router.get(`/jail-warden/officers/${row.original.id}`)}><UserCheck className="mr-2 h-4 w-4" />View Details</DropdownMenuItem></DropdownMenuContent></DropdownMenu>), },
+        { 
+            accessorKey: 'contact_number', 
+            header: 'Contact Number', 
+            cell: ({ row }) => row.original.contact_number ? (
+                <span className="text-sm text-muted-foreground"><Phone className="w-3 h-3 inline mr-1" />{row.original.contact_number}</span>
+            ) : (
+                <span className="text-xs text-muted-foreground italic">None</span>
+            )
+        },
+        { 
+            accessorKey: 'scopes', 
+            header: 'Assigned Scopes', 
+            cell: ({ row }) => {
+                const count = row.original.scopes?.length || 0;
+                return (
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${
+                        count > 0 
+                            ? 'bg-violet-50 text-violet-700 border-violet-200' 
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                    }`}>
+                        {count > 0 ? `${count} scope(s)` : 'No scopes assigned'}
+                    </span>
+                );
+            }
+        },
+        { id: 'actions', cell: ({ row }) => (<DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onClick={() => router.get(`/jail-warden/officers/${row.original.id}`)}><UserCheck className="mr-2 h-4 w-4" />View Details / Manage Scopes</DropdownMenuItem></DropdownMenuContent></DropdownMenu>), },
     ], []);
 
     return (
@@ -119,6 +143,7 @@ export default function JailOfficerManagement({ auth, officers, facilities, stat
                         </div>
                         <div className="space-y-2"><Label htmlFor="middle_name">Middle Name</Label><Input id="middle_name" value={form.data.middle_name} onChange={(e) => form.setData('middle_name', e.target.value)} />{form.errors.middle_name && <p className="text-sm text-destructive">{form.errors.middle_name}</p>}</div>
                         <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} />{form.errors.email && <p className="text-sm text-destructive">{form.errors.email}</p>}</div>
+                        <div className="space-y-2"><Label htmlFor="contact_number">Contact Number (Mobile)</Label><Input id="contact_number" type="tel" placeholder="e.g. 09123456789" value={form.data.contact_number} onChange={(e) => form.setData('contact_number', e.target.value)} />{form.errors.contact_number && <p className="text-sm text-destructive">{form.errors.contact_number}</p>}<p className="text-xs text-muted-foreground">Required for officer OTP authentication during login.</p></div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" type="password" value={form.data.password} onChange={(e) => form.setData('password', e.target.value)} />{form.errors.password && <p className="text-sm text-destructive">{form.errors.password}</p>}</div>
                             <div className="space-y-2"><Label htmlFor="password_confirmation">Confirm Password</Label><Input id="password_confirmation" type="password" value={form.data.password_confirmation} onChange={(e) => form.setData('password_confirmation', e.target.value)} />{form.errors.password_confirmation && <p className="text-sm text-destructive">{form.errors.password_confirmation}</p>}</div>

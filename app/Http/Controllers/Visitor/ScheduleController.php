@@ -233,11 +233,31 @@ class ScheduleController extends Controller
                 $dayOfWeek = $dateCarbon->dayOfWeek; // 0 (Sunday) to 6 (Saturday)
                 $template = $inmate->cell->scheduleTemplates->where('day_of_week', $dayOfWeek)->first();
                 if ($template) {
-                    if ($template->start_time) {
-                        $startTime = \Carbon\Carbon::parse($template->start_time)->format('H:i');
-                    }
-                    if ($template->end_time) {
-                        $endTime = \Carbon\Carbon::parse($template->end_time)->format('H:i');
+                    if ($isPhysical) {
+                        if ($template->physical_start_time) {
+                            $startTime = \Carbon\Carbon::parse($template->physical_start_time)->format('H:i');
+                        } elseif ($template->start_time) {
+                            $startTime = \Carbon\Carbon::parse($template->start_time)->format('H:i');
+                        }
+
+                        if ($template->physical_end_time) {
+                            $endTime = \Carbon\Carbon::parse($template->physical_end_time)->format('H:i');
+                        } elseif ($template->end_time) {
+                            $endTime = \Carbon\Carbon::parse($template->end_time)->format('H:i');
+                        }
+                    } else {
+                        // Virtual visit
+                        if ($template->virtual_start_time) {
+                            $startTime = \Carbon\Carbon::parse($template->virtual_start_time)->format('H:i');
+                        } elseif ($template->start_time) {
+                            $startTime = \Carbon\Carbon::parse($template->start_time)->format('H:i');
+                        }
+
+                        if ($template->virtual_end_time) {
+                            $endTime = \Carbon\Carbon::parse($template->virtual_end_time)->format('H:i');
+                        } elseif ($template->end_time) {
+                            $endTime = \Carbon\Carbon::parse($template->end_time)->format('H:i');
+                        }
                     }
                 }
             }
@@ -300,53 +320,85 @@ class ScheduleController extends Controller
             }
         }
 
-        // Slots where the current user already has a visit on this date (so they cannot book again)
-        $userBookedSlots = Visit::where('user_id', auth()->id())
+        // Helper to convert HH:MM to minutes
+        $timeToMin = function (string $t): int {
+            $parts = explode(':', trim($t), 3);
+            return ((int) ($parts[0] ?? 0)) * 60 + ((int) ($parts[1] ?? 0));
+        };
+
+        // User existing visits on this date
+        $userVisits = Visit::where('user_id', auth()->id())
             ->where('scheduled_date', $date)
-            ->where('visit_type', VisitType::from($visitType))
             ->whereIn('status', [VisitStatus::Pending, VisitStatus::Approved])
             ->whereNotNull('scheduled_time')
-            ->get()
-            ->map(function ($visit) {
-                $t = $visit->scheduled_time;
-                if ($t instanceof \Carbon\Carbon) {
-                    return $t->format('H:i');
-                }
-                if (is_string($t) && preg_match('/^\d{2}:\d{2}/', $t)) {
-                    return substr($t, 0, 5);
-                }
+            ->get();
 
-                return (string) $t;
-            })
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
+        // Slots where the current user already has a visit or an overlapping visit on this date
+        $userBookedSlots = [];
+        foreach ($allTimeSlots as $timeSlot) {
+            $slotStart = $timeToMin($timeSlot);
+            $slotEnd = $slotStart + $durationMinutes;
+
+            foreach ($userVisits as $visit) {
+                $vStart = $timeToMin($visit->scheduled_time);
+                $vDuration = $visit->duration_minutes ?? null;
+                if (!$vDuration) {
+                    $vType = $visit->visit_type->value ?? 'virtual';
+                    $cap = \App\Models\TimeSlotCapacity::where('visit_type', $vType)
+                        ->where('time_slot', '<=', $visit->scheduled_time)
+                        ->orderBy('time_slot', 'desc')
+                        ->first();
+                    if (!$cap) {
+                        $cap = \App\Models\TimeSlotCapacity::where('visit_type', $vType)->first();
+                    }
+                    $vDuration = $cap?->duration_minutes ?? ($vType === 'virtual' ? 20 : 30);
+                }
+                $vEnd = $vStart + $vDuration;
+
+                if ($slotStart < $vEnd && $vStart < $slotEnd) {
+                    $userBookedSlots[] = $timeSlot;
+                    break;
+                }
+            }
+        }
+        $userBookedSlots = array_values(array_unique($userBookedSlots));
 
         // Inmate-specific booked slots (if inmate_id is provided)
         $inmateBookedSlots = [];
         if ($request->has('inmate_id')) {
-            $inmateBookedSlots = Visit::where('inmate_id', $request->inmate_id)
+            $inmateVisits = Visit::where('inmate_id', $request->inmate_id)
                 ->where('scheduled_date', $date)
-                ->where('visit_type', VisitType::from($visitType))
                 ->whereIn('status', [VisitStatus::Pending, VisitStatus::Approved])
                 ->whereNotNull('scheduled_time')
-                ->get()
-                ->map(function ($visit) {
-                    $t = $visit->scheduled_time;
-                    if ($t instanceof \Carbon\Carbon) {
-                        return $t->format('H:i');
-                    }
-                    if (is_string($t) && preg_match('/^\d{2}:\d{2}/', $t)) {
-                        return substr($t, 0, 5);
-                    }
+                ->get();
 
-                    return (string) $t;
-                })
-                ->filter()
-                ->unique()
-                ->values()
-                ->all();
+            foreach ($allTimeSlots as $timeSlot) {
+                $slotStart = $timeToMin($timeSlot);
+                $slotEnd = $slotStart + $durationMinutes;
+
+                foreach ($inmateVisits as $visit) {
+                    $vStart = $timeToMin($visit->scheduled_time);
+                    $vDuration = $visit->duration_minutes ?? null;
+                    if (!$vDuration) {
+                        $vType = $visit->visit_type->value ?? 'virtual';
+                        $cap = \App\Models\TimeSlotCapacity::where('visit_type', $vType)
+                            ->where('time_slot', '<=', $visit->scheduled_time)
+                            ->orderBy('time_slot', 'desc')
+                            ->first();
+                        if (!$cap) {
+                            $cap = \App\Models\TimeSlotCapacity::where('visit_type', $vType)->first();
+                        }
+                        $vDuration = $cap?->duration_minutes ?? ($vType === 'virtual' ? 20 : 30);
+                    }
+                    $vEnd = $vStart + $vDuration;
+
+                    if ($slotStart < $vEnd && $vStart < $slotEnd) {
+                        $inmateBookedSlots[] = $timeSlot;
+                        break;
+                    }
+                }
+            }
+            $inmateBookedSlots = array_values(array_unique($inmateBookedSlots));
         }
 
         return response()->json([
@@ -397,12 +449,49 @@ class ScheduleController extends Controller
         }
 
         $scheduledDate = \Carbon\Carbon::parse($request->scheduled_date)->startOfDay();
-        
-        // Get operating hours from database (branch-scoped)
+        $isPhysical = $request->visit_type === 'physical';
+
+        // Find the inmate first to retrieve their cell's dynamic schedule template if available
+        $inmate = null;
+        if ($request->filled('inmate_id')) {
+            $inmate = \App\Models\Inmate::with('cell.scheduleTemplates')->find($request->inmate_id);
+        }
+        if (!$inmate) {
+            $inmate = \App\Models\Inmate::with('cell.scheduleTemplates')
+                ->where('first_name', $request->inmate_first_name)
+                ->where('last_name', $request->inmate_last_name)
+                ->when($request->filled('inmate_middle_name'), function ($query) use ($request) {
+                    $query->where('middle_name', $request->inmate_middle_name);
+                })
+                ->first();
+        }
+
+        // Get operating hours from database (branch-scoped fallback)
         $userBranchId = auth()->user()->branch_id;
         $settings = \App\Models\TimeSlotCapacity::getTimeConfig($userBranchId, $request->visit_type);
-        $endTime = $settings?->end_time?->format('H:i') ?? ($request->visit_type === 'physical' ? '18:00' : '22:00');
-        $durationMinutes = $settings?->duration_minutes ?? ($request->visit_type === 'physical' ? 30 : 20);
+        $endTime = $settings?->end_time?->format('H:i') ?? ($isPhysical ? '18:00' : '22:00');
+        $durationMinutes = $settings?->duration_minutes ?? ($isPhysical ? 30 : 20);
+
+        // Override with Cell Schedule Template times if configured for this cell and day of week
+        if ($inmate && $inmate->cell) {
+            $dayOfWeek = $scheduledDate->dayOfWeek; // 0 (Sunday) to 6 (Saturday)
+            $template = $inmate->cell->scheduleTemplates->where('day_of_week', $dayOfWeek)->first();
+            if ($template) {
+                if ($isPhysical) {
+                    if ($template->physical_end_time) {
+                        $endTime = \Carbon\Carbon::parse($template->physical_end_time)->format('H:i');
+                    } elseif ($template->end_time) {
+                        $endTime = \Carbon\Carbon::parse($template->end_time)->format('H:i');
+                    }
+                } else {
+                    if ($template->virtual_end_time) {
+                        $endTime = \Carbon\Carbon::parse($template->virtual_end_time)->format('H:i');
+                    } elseif ($template->end_time) {
+                        $endTime = \Carbon\Carbon::parse($template->end_time)->format('H:i');
+                    }
+                }
+            }
+        }
         
         // Calculate cutoff time (when last slot starts)
         [$endHour, $endMinute] = explode(':', $endTime);
@@ -424,7 +513,6 @@ class ScheduleController extends Controller
                 ->withInput();
         }
         
-        $isPhysical = $request->visit_type === 'physical';
         if ($scheduledDate->isToday() && $request->scheduled_time > $dayCutoff) {
             // Format end time for display
             $displayHour = (int)$endHour;
@@ -457,9 +545,8 @@ class ScheduleController extends Controller
                 ->withInput();
         }
 
-        $durationMinutes = $isPhysical ? 60 : 10;
         $conflictService = new VisitorScheduleConflictService;
-        if ($conflictService->hasConflict(auth()->id(), $request->scheduled_date, $scheduledTime, $durationMinutes)) {
+        if ($conflictService->hasConflict(auth()->id(), $request->scheduled_date, $scheduledTime, $durationMinutes, null, $inmate)) {
             return redirect()->back()
                 ->withErrors(['scheduled_time' => 'You already have a virtual visit or e-burol scheduled in this time range. Please choose another slot.'])
                 ->withInput();
@@ -493,13 +580,15 @@ class ScheduleController extends Controller
             }
         }
 
-        // Find or create the inmate based on the provided name
-        $inmate = \App\Models\Inmate::where('first_name', $request->inmate_first_name)
-            ->where('last_name', $request->inmate_last_name)
-            ->when($request->filled('inmate_middle_name'), function ($query) use ($request) {
-                $query->where('middle_name', $request->inmate_middle_name);
-            })
-            ->first();
+        // Find the inmate if not already retrieved
+        if (!$inmate) {
+            $inmate = \App\Models\Inmate::where('first_name', $request->inmate_first_name)
+                ->where('last_name', $request->inmate_last_name)
+                ->when($request->filled('inmate_middle_name'), function ($query) use ($request) {
+                    $query->where('middle_name', $request->inmate_middle_name);
+                })
+                ->first();
+        }
 
         if (!$inmate) {
             return redirect()->back()
@@ -630,9 +719,57 @@ class ScheduleController extends Controller
                 ->withInput();
         }
 
-        if (\Carbon\Carbon::parse($request->scheduled_date)->isToday() && now()->format('H:i') >= '21:50') {
+        $rescheduleDate = \Carbon\Carbon::parse($request->scheduled_date)->startOfDay();
+        $isPhysical = $visit->visit_type->value === 'physical';
+        $userBranchId = auth()->user()->branch_id;
+        $settings = \App\Models\TimeSlotCapacity::getTimeConfig($userBranchId, $visit->visit_type->value);
+        $rescheduleEndTime = $settings?->end_time?->format('H:i') ?? ($isPhysical ? '18:00' : '22:00');
+        $rescheduleDurationMinutes = $settings?->duration_minutes ?? ($isPhysical ? 30 : 20);
+
+        if ($visit->inmate && $visit->inmate->cell) {
+            $dayOfWeek = $rescheduleDate->dayOfWeek;
+            $template = $visit->inmate->cell->scheduleTemplates->where('day_of_week', $dayOfWeek)->first();
+            if ($template) {
+                if ($isPhysical) {
+                    if ($template->physical_end_time) {
+                        $rescheduleEndTime = \Carbon\Carbon::parse($template->physical_end_time)->format('H:i');
+                    } elseif ($template->end_time) {
+                        $rescheduleEndTime = \Carbon\Carbon::parse($template->end_time)->format('H:i');
+                    }
+                } else {
+                    if ($template->virtual_end_time) {
+                        $rescheduleEndTime = \Carbon\Carbon::parse($template->virtual_end_time)->format('H:i');
+                    } elseif ($template->end_time) {
+                        $rescheduleEndTime = \Carbon\Carbon::parse($template->end_time)->format('H:i');
+                    }
+                }
+            }
+        }
+
+        [$rEndHour, $rEndMinute] = explode(':', $rescheduleEndTime);
+        $rEndMinutesTotal = ((int)$rEndHour) * 60 + (int)$rEndMinute;
+        $rLastSlotStartMinutes = $rEndMinutesTotal - $rescheduleDurationMinutes;
+        $rDayCutoff = sprintf('%02d:%02d', intdiv($rLastSlotStartMinutes, 60), $rLastSlotStartMinutes % 60);
+
+        if ($rescheduleDate->isToday() && now()->format('H:i') > $rDayCutoff) {
+            $rDispHour = (int)$rEndHour;
+            $rPeriod = $rDispHour >= 12 ? 'PM' : 'AM';
+            $rDispHour = $rDispHour > 12 ? $rDispHour - 12 : ($rDispHour === 0 ? 12 : $rDispHour);
+            $rFormattedEndTime = "{$rDispHour}:{$rEndMinute} {$rPeriod}";
+
             return redirect()->back()
-                ->withErrors(['scheduled_date' => 'This day is no longer available for scheduling (cutoff 9:50 PM). Please select another date.'])
+                ->withErrors(['scheduled_date' => "Schedule times for today end at {$rFormattedEndTime}. Please select another date."])
+                ->withInput();
+        }
+
+        if ($rescheduleDate->isToday() && $request->scheduled_time > $rDayCutoff) {
+            $rDispHour = (int)$rEndHour;
+            $rPeriod = $rDispHour >= 12 ? 'PM' : 'AM';
+            $rDispHour = $rDispHour > 12 ? $rDispHour - 12 : ($rDispHour === 0 ? 12 : $rDispHour);
+            $rFormattedEndTime = "{$rDispHour}:{$rEndMinute} {$rPeriod}";
+
+            return redirect()->back()
+                ->withErrors(['scheduled_time' => "Schedule times for today end at {$rFormattedEndTime}. Please select another date or time."])
                 ->withInput();
         }
 
@@ -663,6 +800,14 @@ class ScheduleController extends Controller
         if ($inmateAlreadyBooked) {
             return redirect()->back()
                 ->withErrors(['scheduled_time' => 'The selected PDL is already scheduled for a visit at this time. Please choose another time slot.'])
+                ->withInput();
+        }
+
+        // Check if the visitor has a conflicting schedule
+        $conflictService = new VisitorScheduleConflictService;
+        if ($conflictService->hasConflict(auth()->id(), $request->scheduled_date, $request->scheduled_time, $rescheduleDurationMinutes, $visit->id, $inmate)) {
+            return redirect()->back()
+                ->withErrors(['scheduled_time' => 'You already have a virtual visit or e-burol scheduled in this time range. Please choose another slot.'])
                 ->withInput();
         }
 
@@ -913,5 +1058,66 @@ class ScheduleController extends Controller
             ->first();
 
         return $matchingScope ? $matchingScope->jail_officer_id : null;
+    }
+
+    /**
+     * Get calendar events (visits + eburols) for the authenticated visitor.
+     * Used by quick calendar dropdown and calendar views.
+     */
+    public function quickCalendarEvents(Request $request): JsonResponse
+    {
+        $userId = auth()->id();
+
+        // Range of -2 months to +3 months
+        $startDate = now()->subMonths(2)->startOfMonth()->toDateString();
+        $endDate = now()->addMonths(3)->endOfMonth()->toDateString();
+
+        $visits = Visit::with(['inmate.cell.dormitory'])
+            ->where('user_id', $userId)
+            ->whereBetween('scheduled_date', [$startDate, $endDate])
+            ->orderBy('scheduled_date', 'asc')
+            ->orderBy('scheduled_time', 'asc')
+            ->get()
+            ->map(function ($v) {
+                return [
+                    'id' => $v->id,
+                    'type' => 'visit',
+                    'visit_type' => $v->visit_type->value ?? $v->visit_type,
+                    'title' => ($v->visit_type->value ?? $v->visit_type) === 'virtual' ? 'Virtual Visit' : 'Physical Visit',
+                    'date' => $v->scheduled_date->format('Y-m-d'),
+                    'time' => $v->scheduled_time ?? '00:00',
+                    'status' => $v->status->value ?? $v->status,
+                    'visitor_name' => trim("{$v->user?->first_name} {$v->user?->last_name}"),
+                    'pdl_name' => trim("{$v->inmate_first_name} {$v->inmate_last_name}"),
+                    'cell' => $v->inmate?->cell?->cell_number ?? null,
+                ];
+            });
+
+        // Also fetch any e-burol sessions for this visitor
+        $eburols = \App\Models\Eburol::where('user_id', $userId)
+            ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('wake_start_date', [$startDate, $endDate])
+                  ->orWhereBetween('wake_end_date', [$startDate, $endDate]);
+            })
+            ->get()
+            ->map(function ($eb) {
+                return [
+                    'id' => $eb->id,
+                    'type' => 'eburol',
+                    'visit_type' => 'eburol',
+                    'title' => 'e-Burol Wake',
+                    'date' => $eb->wake_start_date ? $eb->wake_start_date->format('Y-m-d') : now()->toDateString(),
+                    'time' => $eb->preferred_time ?? '09:00 AM',
+                    'status' => $eb->status->value ?? $eb->status,
+                    'visitor_name' => trim("{$eb->user?->first_name} {$eb->user?->last_name}"),
+                    'pdl_name' => trim("{$eb->inmate_first_name} {$eb->inmate_last_name}"),
+                    'deceased_name' => trim("{$eb->deceased_first_name} {$eb->deceased_last_name}"),
+                    'cell' => null,
+                ];
+            });
+
+        return response()->json([
+            'events' => $visits->concat($eburols)->values(),
+        ]);
     }
 }

@@ -81,6 +81,8 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
 
     // Schedule management states
     const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+    const [userBookedSlots, setUserBookedSlots] = useState<string[]>([]);
+    const [inmateBookedSlots, setInmateBookedSlots] = useState<string[]>([]);
     const [slotCapacities, setSlotCapacities] = useState<Record<string, { current: number; max: number; isFull: boolean }>>({});
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [dayUnavailable, setDayUnavailable] = useState(false);
@@ -89,10 +91,15 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
     const [startTime, setStartTime] = useState('07:00');
     const [endTime, setEndTime] = useState('18:00');
 
+    // Philippine today date (YYYY-MM-DD)
+    const phToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+
     // Fetch booked slots and capacities when date changes
     useEffect(() => {
         if (!selectedDate || !selectedInmate || !scheduleData.visit_type) {
             setBookedSlots([]);
+            setUserBookedSlots([]);
+            setInmateBookedSlots([]);
             setSlotCapacities({});
             return;
         }
@@ -125,10 +132,15 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
                     setEndTime(data.endTime);
                 }
                 
+                const userBooked = Array.isArray(data.userBookedSlots) ? data.userBookedSlots : [];
+                const inmateBooked = Array.isArray(data.inmateBookedSlots) ? data.inmateBookedSlots : [];
+                setUserBookedSlots(userBooked);
+                setInmateBookedSlots(inmateBooked);
+
                 // Combine all booked slots
                 const allBooked = [
-                    ...(data.userBookedSlots || []),
-                    ...(data.inmateBookedSlots || []),
+                    ...userBooked,
+                    ...inmateBooked,
                 ];
                 setBookedSlots(allBooked);
             } catch (error) {
@@ -177,6 +189,7 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
         if (!selectedInmate) return;
 
         router.post('/visitor/schedule', {
+            inmate_id: selectedInmate.inmate_id,
             scheduled_date: scheduleData.scheduled_date,
             scheduled_time: scheduleData.scheduled_time,
             visit_type: scheduleData.visit_type,
@@ -437,7 +450,7 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
                                             <input
                                                 type="date"
                                                 value={scheduleData.scheduled_date}
-                                                min={new Date().toISOString().split('T')[0]}
+                                                min={phToday}
                                                 onChange={(e) => {
                                                     setScheduleData({ ...scheduleData, scheduled_date: e.target.value, scheduled_time: '' });
                                                     setSelectedDate(e.target.value);
@@ -492,6 +505,8 @@ export default function TaggedInmates({ taggedInmates, stats }: Props) {
                                         <TimeSlotPicker
                                             selectedTime={scheduleData.scheduled_time}
                                             bookedSlots={bookedSlots}
+                                            userBookedSlots={userBookedSlots}
+                                            inmateBookedSlots={inmateBookedSlots}
                                             slotCapacities={slotCapacities}
                                             visitType={scheduleData.visit_type as 'physical' | 'virtual'}
                                             durationMinutes={durationMinutes}

@@ -50,6 +50,10 @@ class CellScheduleTemplateController extends Controller
                 $schedules[$template->day_of_week] = [
                     'virtual_available' => $template->virtual_available,
                     'physical_available' => $template->physical_available,
+                    'virtual_start_time' => $template->virtual_start_time ? substr($template->virtual_start_time, 0, 5) : ($template->start_time ? substr($template->start_time, 0, 5) : '09:00'),
+                    'virtual_end_time' => $template->virtual_end_time ? substr($template->virtual_end_time, 0, 5) : ($template->end_time ? substr($template->end_time, 0, 5) : '17:00'),
+                    'physical_start_time' => $template->physical_start_time ? substr($template->physical_start_time, 0, 5) : ($template->start_time ? substr($template->start_time, 0, 5) : '09:00'),
+                    'physical_end_time' => $template->physical_end_time ? substr($template->physical_end_time, 0, 5) : ($template->end_time ? substr($template->end_time, 0, 5) : '17:00'),
                     'start_time' => $template->start_time,
                     'end_time' => $template->end_time,
                 ];
@@ -129,90 +133,126 @@ class CellScheduleTemplateController extends Controller
     /**
      * Update schedule templates for a cell.
      */
-    public function update(Request $request, Cell $cell)
-    {
-        $validated = $request->validate([
-            'schedules' => 'required|array',
-            'schedules.*.day_of_week' => 'required|integer|between:0,6',
-            'schedules.*.virtual_available' => 'required|boolean',
-            'schedules.*.physical_available' => 'required|boolean',
-            'schedules.*.start_time' => 'nullable|date_format:H:i',
-            'schedules.*.end_time' => 'nullable|date_format:H:i|after:schedules.*.start_time',
-        ]);
+     public function update(Request $request, Cell $cell)
+     {
+         $user = $request->user();
+         $authorizedCellIds = $user->getAuthorizedCellIds();
+         if (!in_array($cell->id, $authorizedCellIds)) {
+             abort(403, 'Unauthorized action: You can only configure schedule templates for cells within your assigned scope.');
+         }
 
-        foreach ($validated['schedules'] as $schedule) {
-            CellScheduleTemplate::updateOrCreate(
-                [
-                    'cell_id' => $cell->id,
-                    'day_of_week' => $schedule['day_of_week'],
-                ],
-                [
-                    'virtual_available' => $schedule['virtual_available'],
-                    'physical_available' => $schedule['physical_available'],
-                    'start_time' => $schedule['start_time'] ?? null,
-                    'end_time' => $schedule['end_time'] ?? null,
-                ]
-            );
-        }
+         $validated = $request->validate([
+             'schedules' => 'required|array',
+             'schedules.*.day_of_week' => 'required|integer|between:0,6',
+             'schedules.*.virtual_available' => 'required|boolean',
+             'schedules.*.physical_available' => 'required|boolean',
+             'schedules.*.virtual_start_time' => 'nullable|date_format:H:i',
+             'schedules.*.virtual_end_time' => 'nullable|date_format:H:i|after:schedules.*.virtual_start_time',
+             'schedules.*.physical_start_time' => 'nullable|date_format:H:i',
+             'schedules.*.physical_end_time' => 'nullable|date_format:H:i|after:schedules.*.physical_start_time',
+             'schedules.*.start_time' => 'nullable|date_format:H:i',
+             'schedules.*.end_time' => 'nullable|date_format:H:i|after:schedules.*.start_time',
+         ]);
 
-        return redirect()->back()->with('success', 'Schedule templates updated successfully for ' . $cell->cell_number);
-    }
+         foreach ($validated['schedules'] as $schedule) {
+             CellScheduleTemplate::updateOrCreate(
+                 [
+                     'cell_id' => $cell->id,
+                     'day_of_week' => $schedule['day_of_week'],
+                 ],
+                 [
+                     'virtual_available' => $schedule['virtual_available'],
+                     'physical_available' => $schedule['physical_available'],
+                     'virtual_start_time' => $schedule['virtual_start_time'] ?? $schedule['start_time'] ?? null,
+                     'virtual_end_time' => $schedule['virtual_end_time'] ?? $schedule['end_time'] ?? null,
+                     'physical_start_time' => $schedule['physical_start_time'] ?? $schedule['start_time'] ?? null,
+                     'physical_end_time' => $schedule['physical_end_time'] ?? $schedule['end_time'] ?? null,
+                     'start_time' => $schedule['start_time'] ?? $schedule['virtual_start_time'] ?? null,
+                     'end_time' => $schedule['end_time'] ?? $schedule['virtual_end_time'] ?? null,
+                 ]
+             );
+         }
 
-    /**
-     * Get available days for a specific cell.
-     */
-    public function getAvailableDays(Cell $cell)
-    {
-        $templates = $cell->scheduleTemplates;
+         return redirect()->back()->with('success', 'Schedule templates updated successfully for ' . $cell->cell_number);
+     }
 
-        $availableDays = [];
-        foreach ($templates as $template) {
-            $availableDays[$template->day_of_week] = [
-                'virtual' => $template->virtual_available,
-                'physical' => $template->physical_available,
-            ];
-        }
+     /**
+      * Get available days for a specific cell.
+      */
+     public function getAvailableDays(Cell $cell)
+     {
+         $templates = $cell->scheduleTemplates;
 
-        return response()->json([
-            'cell_id' => $cell->id,
-            'cell_number' => $cell->cell_number,
-            'available_days' => $availableDays,
-        ]);
-    }
+         $availableDays = [];
+         foreach ($templates as $template) {
+             $availableDays[$template->day_of_week] = [
+                 'virtual' => $template->virtual_available,
+                 'physical' => $template->physical_available,
+                 'virtual_start_time' => $template->virtual_start_time ? substr($template->virtual_start_time, 0, 5) : ($template->start_time ? substr($template->start_time, 0, 5) : null),
+                 'virtual_end_time' => $template->virtual_end_time ? substr($template->virtual_end_time, 0, 5) : ($template->end_time ? substr($template->end_time, 0, 5) : null),
+                 'physical_start_time' => $template->physical_start_time ? substr($template->physical_start_time, 0, 5) : ($template->start_time ? substr($template->start_time, 0, 5) : null),
+                 'physical_end_time' => $template->physical_end_time ? substr($template->physical_end_time, 0, 5) : ($template->end_time ? substr($template->end_time, 0, 5) : null),
+             ];
+         }
 
-    /**
-     * Bulk update schedule templates for multiple cells.
-     */
-    public function bulkUpdate(Request $request)
-    {
-        $validated = $request->validate([
-            'cell_schedules' => 'required|array',
-            'cell_schedules.*.cell_id' => 'required|exists:cells,id',
-            'cell_schedules.*.schedules' => 'required|array',
-            'cell_schedules.*.schedules.*.day_of_week' => 'required|integer|between:0,6',
-            'cell_schedules.*.schedules.*.virtual_available' => 'required|boolean',
-            'cell_schedules.*.schedules.*.physical_available' => 'required|boolean',
-            'cell_schedules.*.schedules.*.start_time' => 'nullable|date_format:H:i',
-            'cell_schedules.*.schedules.*.end_time' => 'nullable|date_format:H:i|after:cell_schedules.*.schedules.*.start_time',
-        ]);
+         return response()->json([
+             'cell_id' => $cell->id,
+             'cell_number' => $cell->cell_number,
+             'available_days' => $availableDays,
+         ]);
+     }
 
-        foreach ($validated['cell_schedules'] as $cellSchedule) {
-            foreach ($cellSchedule['schedules'] as $schedule) {
-                CellScheduleTemplate::updateOrCreate(
-                    [
-                        'cell_id' => $cellSchedule['cell_id'],
-                        'day_of_week' => $schedule['day_of_week'],
-                    ],
-                    [
-                        'virtual_available' => $schedule['virtual_available'],
-                        'physical_available' => $schedule['physical_available'],
-                        'start_time' => $schedule['start_time'] ?? null,
-                        'end_time' => $schedule['end_time'] ?? null,
-                    ]
-                );
-            }
-        }
+     /**
+      * Bulk update schedule templates for multiple cells.
+      */
+     public function bulkUpdate(Request $request)
+     {
+         $user = $request->user();
+         $authorizedCellIds = $user->getAuthorizedCellIds();
 
-        return redirect()->back()->with('success', 'All schedule templates updated successfully.');
-    }
+         $validated = $request->validate([
+             'cell_schedules' => 'required|array',
+             'cell_schedules.*.cell_id' => 'required|exists:cells,id',
+             'cell_schedules.*.schedules' => 'required|array',
+             'cell_schedules.*.schedules.*.day_of_week' => 'required|integer|between:0,6',
+             'cell_schedules.*.schedules.*.virtual_available' => 'required|boolean',
+             'cell_schedules.*.schedules.*.physical_available' => 'required|boolean',
+             'cell_schedules.*.schedules.*.virtual_start_time' => 'nullable|date_format:H:i',
+             'cell_schedules.*.schedules.*.virtual_end_time' => 'nullable|date_format:H:i|after:cell_schedules.*.schedules.*.virtual_start_time',
+             'cell_schedules.*.schedules.*.physical_start_time' => 'nullable|date_format:H:i',
+             'cell_schedules.*.schedules.*.physical_end_time' => 'nullable|date_format:H:i|after:cell_schedules.*.schedules.*.physical_start_time',
+             'cell_schedules.*.schedules.*.start_time' => 'nullable|date_format:H:i',
+             'cell_schedules.*.schedules.*.end_time' => 'nullable|date_format:H:i|after:cell_schedules.*.schedules.*.start_time',
+         ]);
+
+         // Enforce that all targeted cells belong to the Jail Officer's authorized scope
+         foreach ($validated['cell_schedules'] as $cellSchedule) {
+             if (!in_array($cellSchedule['cell_id'], $authorizedCellIds)) {
+                 abort(403, 'Unauthorized action: You can only configure schedule templates for cells within your assigned scope.');
+             }
+         }
+
+         foreach ($validated['cell_schedules'] as $cellSchedule) {
+             foreach ($cellSchedule['schedules'] as $schedule) {
+                 CellScheduleTemplate::updateOrCreate(
+                     [
+                         'cell_id' => $cellSchedule['cell_id'],
+                         'day_of_week' => $schedule['day_of_week'],
+                     ],
+                     [
+                         'virtual_available' => $schedule['virtual_available'],
+                         'physical_available' => $schedule['physical_available'],
+                         'virtual_start_time' => $schedule['virtual_start_time'] ?? $schedule['start_time'] ?? null,
+                         'virtual_end_time' => $schedule['virtual_end_time'] ?? $schedule['end_time'] ?? null,
+                         'physical_start_time' => $schedule['physical_start_time'] ?? $schedule['start_time'] ?? null,
+                         'physical_end_time' => $schedule['physical_end_time'] ?? $schedule['end_time'] ?? null,
+                         'start_time' => $schedule['start_time'] ?? $schedule['virtual_start_time'] ?? null,
+                         'end_time' => $schedule['end_time'] ?? $schedule['virtual_end_time'] ?? null,
+                     ]
+                 );
+             }
+         }
+
+         return redirect()->back()->with('success', 'All schedule templates updated successfully.');
+     }
 }

@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 import { Button } from '@/components/ui/button';
+import { formatTime12 } from '@/lib/formatVisitSchedule';
 
 type VisitProofData = {
     id: number;
@@ -345,7 +346,7 @@ export default function VisitProof({ visit }: Props) {
                             <div className="field-row">
                                 <div>
                                     <div className="field-label">Scheduled Time</div>
-                                    <div className="field-value">{visit.scheduled_time ?? '—'}</div>
+                                    <div className="field-value">{visit.scheduled_time ? formatTime12(visit.scheduled_time) : '—'}</div>
                                 </div>
                             </div>
 

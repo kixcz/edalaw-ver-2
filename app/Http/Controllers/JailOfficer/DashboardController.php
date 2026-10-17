@@ -278,8 +278,239 @@ class DashboardController extends Controller
         
         $facilityAlerts = $facilityAlerts->merge($overcrowdedCells);
 
+        // ===== TODAY'S OPERATIONS ACTIVITIES =====
+        $todayPhysicalVisits = Visit::where('status', 'approved')
+            ->whereDate('scheduled_date', today())
+            ->where('visit_type', 'physical')
+            ->where(function($q) use ($user, $authorizedCellIds) {
+                $q->where('jail_officer_id', $user->id)
+                  ->orWhereHas('inmate', function($iq) use ($authorizedCellIds) {
+                      $iq->whereIn('cell_id', $authorizedCellIds);
+                  });
+            })
+            ->with(['user', 'inmate.cell'])
+            ->orderBy('scheduled_time')
+            ->get()
+            ->map(fn($v) => [
+                'id' => $v->id,
+                'title' => "Physical Visit: {$v->inmate?->full_name}",
+                'subtitle' => "Visitor: {$v->user?->full_name} · Cell {$v->inmate?->cell?->cell_number}",
+                'time' => $v->scheduled_time,
+                'type' => 'physical',
+                'status' => $v->status->value,
+            ]);
+
+        $todayVirtualVisits = Visit::where('status', 'approved')
+            ->whereDate('scheduled_date', today())
+            ->where('visit_type', 'virtual')
+            ->where(function($q) use ($user, $authorizedCellIds) {
+                $q->where('jail_officer_id', $user->id)
+                  ->orWhereHas('inmate', function($iq) use ($authorizedCellIds) {
+                      $iq->whereIn('cell_id', $authorizedCellIds);
+                  });
+            })
+            ->with(['user', 'inmate.cell', 'visitSessions'])
+            ->orderBy('scheduled_time')
+            ->get()
+            ->map(fn($v) => [
+                'id' => $v->id,
+                'title' => "Virtual Visit: {$v->inmate?->full_name}",
+                'subtitle' => "Visitor: {$v->user?->full_name} · Cell {$v->inmate?->cell?->cell_number}",
+                'time' => $v->scheduled_time,
+                'type' => 'virtual',
+                'status' => $v->status->value,
+            ]);
+
+        $todayEburolSessions = Eburol::where('status', 'approved')
+            ->whereDate('wake_start_date', '<=', today())
+            ->whereDate('wake_end_date', '>=', today())
+            ->where('jail_officer_id', $user->id)
+            ->with('user')
+            ->get()
+            ->map(fn($e) => [
+                'id' => $e->id,
+                'title' => "e-Burol: {$e->inmate_first_name} {$e->inmate_last_name}",
+                'subtitle' => "Deceased: {$e->deceased_first_name} {$e->deceased_last_name} · {$e->visitor_name}",
+                'time' => $e->preferred_time ?? '09:00',
+                'type' => 'eburol',
+                'status' => $e->status->value,
+            ]);
+
+        $todayActivities = $todayPhysicalVisits->concat($todayVirtualVisits)->concat($todayEburolSessions)->values();
+
+        // Period filter for Trends and Visitation Status ('today', 'week', 'month')
+        $period = $request->query('period', 'week');
+        if (!in_array($period, ['today', 'week', 'month'])) {
+            $period = 'week';
+        }
+
+        // Active / Live monitoring sessions list for preview
+        $activeSessionsList = VisitSession::whereIn('status', ['active'])
+            ->where(function($q) use ($user, $authorizedCellIds) {
+                $q->where('monitor_id', $user->id)
+                  ->orWhereHas('visit.inmate', function($iq) use ($authorizedCellIds) {
+                      $iq->whereIn('cell_id', $authorizedCellIds);
+                  });
+            })
+            ->with(['visit.user', 'visit.inmate.cell'])
+            ->limit(5)
+            ->get()
+            ->map(fn($s) => [
+                'id' => $s->id,
+                'pdl_name' => $s->visit?->inmate?->full_name ?? 'PDL',
+                'visitor_name' => $s->visit?->user?->full_name ?? 'Visitor',
+                'cell' => $s->visit?->inmate?->cell?->cell_number ?? 'N/A',
+                'started_at' => $s->started_at ? Carbon::parse($s->started_at)->format('h:i A') : 'Ongoing',
+                'visit_type' => $s->visit?->visit_type?->value ?? 'virtual',
+            ]);
+
+        // Completed sessions list
+        $completedSessionsList = VisitSession::where('status', 'completed')
+            ->where(function($q) use ($user, $authorizedCellIds) {
+                $q->where('monitor_id', $user->id)
+                  ->orWhereHas('visit.inmate', function($iq) use ($authorizedCellIds) {
+                      $iq->whereIn('cell_id', $authorizedCellIds);
+                  });
+            })
+            ->with(['visit.user', 'visit.inmate.cell'])
+            ->orderByDesc('ended_at')
+            ->limit(10)
+            ->get()
+            ->map(fn($s) => [
+                'id' => $s->id,
+                'pdl_name' => $s->visit?->inmate?->full_name ?? 'PDL',
+                'visitor_name' => $s->visit?->user?->full_name ?? 'Visitor',
+                'cell' => $s->visit?->inmate?->cell?->cell_number ?? 'N/A',
+                'ended_at' => $s->ended_at ? Carbon::parse($s->ended_at)->format('h:i A') : 'Completed',
+                'visit_type' => $s->visit?->visit_type?->value ?? 'virtual',
+            ]);
+
+        // If no visit sessions completed yet, fallback to completed visits today/recently
+        if ($completedSessionsList->isEmpty()) {
+            $completedVisitsFallback = Visit::where('status', 'completed')
+                ->where(function($q) use ($user, $authorizedCellIds) {
+                    $q->where('jail_officer_id', $user->id)
+                      ->orWhereHas('inmate', function($iq) use ($authorizedCellIds) {
+                          $iq->whereIn('cell_id', $authorizedCellIds);
+                      });
+                })
+                ->with(['user', 'inmate.cell'])
+                ->orderByDesc('scheduled_date')
+                ->limit(5)
+                ->get()
+                ->map(fn($v) => [
+                    'id' => $v->id,
+                    'pdl_name' => $v->inmate?->full_name ?? 'PDL',
+                    'visitor_name' => $v->user?->full_name ?? 'Visitor',
+                    'cell' => $v->inmate?->cell?->cell_number ?? 'N/A',
+                    'ended_at' => $v->scheduled_time ? Carbon::parse($v->scheduled_time)->format('h:i A') : 'Completed',
+                    'visit_type' => $v->visit_type?->value ?? 'physical',
+                ]);
+            $completedSessionsList = $completedVisitsFallback;
+        }
+
+        // ===== VISITATION STATUS PIE METRICS =====
+        if ($period === 'today') {
+            $periodStart = now()->startOfDay();
+            $periodEnd = now()->endOfDay();
+        } elseif ($period === 'month') {
+            $periodStart = now()->startOfMonth();
+            $periodEnd = now()->endOfMonth();
+        } else {
+            $periodStart = now()->startOfWeek();
+            $periodEnd = now()->endOfWeek();
+        }
+
+        $periodVisitsQuery = Visit::whereBetween('scheduled_date', [$periodStart, $periodEnd])
+            ->where(function($q) use ($user, $authorizedCellIds) {
+                $q->where('jail_officer_id', $user->id)
+                  ->orWhereHas('inmate', function($iq) use ($authorizedCellIds) {
+                      $iq->whereIn('cell_id', $authorizedCellIds);
+                  });
+            });
+
+        $weekStatusCounts = [
+            'completed' => (clone $periodVisitsQuery)->where('status', 'completed')->count(),
+            'in_progress' => (clone $periodVisitsQuery)->whereHas('visitSessions', fn($sq) => $sq->where('status', 'active'))->count(),
+            'approved' => (clone $periodVisitsQuery)->where('status', 'approved')->count(),
+            'cancelled' => (clone $periodVisitsQuery)->whereIn('status', ['rejected', 'cancelled'])->count(),
+            'missed' => (clone $periodVisitsQuery)->where('status', 'approved')->whereDate('scheduled_date', '<', today())->count(),
+        ];
+        $totalWeekVisits = array_sum($weekStatusCounts);
+
+        // ===== MULTI-LINE VISIT VOLUME (Physical, Virtual, e-Burol) BASED ON PERIOD =====
+        $trendDates = collect();
+        if ($period === 'today') {
+            // Hours or last 7 days ending today
+            for ($i = 6; $i >= 0; $i--) {
+                $trendDates->push(now()->subDays($i)->format('Y-m-d'));
+            }
+        } elseif ($period === 'month') {
+            // Last 30 days
+            for ($i = 29; $i >= 0; $i -= 3) {
+                $trendDates->push(now()->subDays($i)->format('Y-m-d'));
+            }
+        } else {
+            // Default 7 days
+            for ($i = 6; $i >= 0; $i--) {
+                $trendDates->push(now()->subDays($i)->format('Y-m-d'));
+            }
+        }
+
+        $volumeTrend = $trendDates->map(function ($date) use ($user, $authorizedCellIds) {
+            $physicalCount = Visit::whereDate('scheduled_date', $date)
+                ->where('visit_type', 'physical')
+                ->whereIn('status', ['approved', 'completed'])
+                ->where(function($q) use ($user, $authorizedCellIds) {
+                    $q->where('jail_officer_id', $user->id)
+                      ->orWhereHas('inmate', function($iq) use ($authorizedCellIds) {
+                          $iq->whereIn('cell_id', $authorizedCellIds);
+                      });
+                })->count();
+
+            $virtualCount = Visit::whereDate('scheduled_date', $date)
+                ->where('visit_type', 'virtual')
+                ->whereIn('status', ['approved', 'completed'])
+                ->where(function($q) use ($user, $authorizedCellIds) {
+                    $q->where('jail_officer_id', $user->id)
+                      ->orWhereHas('inmate', function($iq) use ($authorizedCellIds) {
+                          $iq->whereIn('cell_id', $authorizedCellIds);
+                      });
+                })->count();
+
+            $eburolCount = Eburol::whereDate('wake_start_date', '<=', $date)
+                ->whereDate('wake_end_date', '>=', $date)
+                ->where('jail_officer_id', $user->id)
+                ->where('status', 'approved')
+                ->count();
+
+            return [
+                'date' => Carbon::parse($date)->format('M d'),
+                'physical' => $physicalCount,
+                'virtual' => $virtualCount,
+                'eburol' => $eburolCount,
+                'total' => $physicalCount + $virtualCount + $eburolCount,
+            ];
+        });
+
+        // Requires Attention Breakdown Counts
+        $attentionCounts = [
+            'pending_visits' => $pendingVisits,
+            'pending_eburols' => $pendingEburols,
+            'flagged_communications' => ChatFlag::whereIn('severity', ['high', 'medium', 'low'])
+                ->whereHas('monitoringSession', function($q) use ($user, $authorizedCellIds) {
+                    $q->where('monitored_by', $user->id)
+                      ->orWhereHas('visit.inmate', function($iq) use ($authorizedCellIds) {
+                          $iq->whereIn('cell_id', $authorizedCellIds);
+                      });
+                })->count(),
+            'unresolved_incidents' => count($facilityAlerts),
+            'scheduling_conflicts' => 0, // Placeholder calculation
+        ];
+
         return Inertia::render('JailOfficer/Dashboard', [
             'scopeSummary' => $scopeSummary,
+            'currentPeriod' => $period,
             'kpis' => [
                 'total_pdls' => $totalPdls,
                 'occupied_cells' => $occupiedCells,
@@ -289,6 +520,13 @@ class DashboardController extends Controller
                 'active_sessions' => $activeSessions,
                 'today_visits' => $todayVisits,
             ],
+            'todayActivities' => $todayActivities,
+            'activeSessionsList' => $activeSessionsList,
+            'completedSessionsList' => $completedSessionsList,
+            'volumeTrend' => $volumeTrend,
+            'weekStatusCounts' => $weekStatusCounts,
+            'totalWeekVisits' => $totalWeekVisits,
+            'attentionCounts' => $attentionCounts,
             'visitVolume' => $visitVolume,
             'pdlDistribution' => $pdlDistribution,
             'cellOccupancy' => $cellOccupancy,

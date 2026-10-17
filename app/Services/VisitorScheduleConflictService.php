@@ -16,9 +16,11 @@ class VisitorScheduleConflictService
      * @param  int  $userId  Visitor user id
      * @param  string  $date  Date Y-m-d
      * @param  string  $timeStart  Slot start time e.g. "08:00"
-     * @param  int  $durationMinutes  Slot duration (e.g. 60 for e-burol, 10 for virtual visit)
+     * @param  int  $durationMinutes  Slot duration (e.g. 60 for e-burol, dynamic for visit)
+     * @param  int|null  $ignoreVisitId  Visit ID to exclude (e.g. during reschedule)
+     * @param  \App\Models\Inmate|null  $inmate  Optional inmate context
      */
-    public function hasConflict(int $userId, string $date, string $timeStart, int $durationMinutes): bool
+    public function hasConflict(int $userId, string $date, string $timeStart, int $durationMinutes, ?int $ignoreVisitId = null, $inmate = null): bool
     {
         $newStart = $this->timeToMinutes($timeStart);
         $newEnd = $newStart + $durationMinutes;
@@ -26,11 +28,28 @@ class VisitorScheduleConflictService
         $visits = Visit::where('user_id', $userId)
             ->where('scheduled_date', $date)
             ->whereIn('status', [VisitStatus::Pending, VisitStatus::Approved])
+            ->when($ignoreVisitId, function ($query, $id) {
+                $query->where('id', '!=', $id);
+            })
             ->get();
 
         foreach ($visits as $visit) {
             $slotStart = $this->timeToMinutes($visit->scheduled_time);
-            $slotDuration = $visit->visit_type->value === 'virtual' ? 10 : 60;
+            
+            // Calculate actual dynamic duration for existing visit
+            $visitTypeVal = $visit->visit_type->value ?? 'virtual';
+            $slotDuration = $visit->duration_minutes ?? null;
+            if (!$slotDuration) {
+                $capacity = \App\Models\TimeSlotCapacity::where('visit_type', $visitTypeVal)
+                    ->where('time_slot', '<=', $visit->scheduled_time)
+                    ->orderBy('time_slot', 'desc')
+                    ->first();
+                if (!$capacity) {
+                    $capacity = \App\Models\TimeSlotCapacity::where('visit_type', $visitTypeVal)->first();
+                }
+                $slotDuration = $capacity?->duration_minutes ?? ($visitTypeVal === 'virtual' ? 20 : 30);
+            }
+
             $slotEnd = $slotStart + $slotDuration;
             if ($this->rangesOverlap($newStart, $newEnd, $slotStart, $slotEnd)) {
                 return true;
